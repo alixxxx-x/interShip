@@ -6,7 +6,7 @@ class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True)
     class Meta:
         model = User
-        fields = ['id', 'date_joined', 'username', 'email', 'biography', 'profile_picture', 'role']
+        fields = ['id', 'date_joined', 'username', 'email', 'biography', 'profile_picture', 'role', 'password']
         read_only_fields = ['id', 'date_joined']
 
     def create(self, validated_data):

@@ -37,7 +37,7 @@ api.interceptors.response.use(
 
             try {
                 const res = await axios.post(     // we use axios. and not api. to avoid infinite loops api keeps calling its interceptor infinitely
-                    `{import.meta.env.VITE_API_URL}/refresh`,
+                    `${import.meta.env.VITE_API_URL}/auth/refresh/`,
                     { refresh: refreshToken }
                 );
 

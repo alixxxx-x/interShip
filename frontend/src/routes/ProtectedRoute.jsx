@@ -1,5 +1,5 @@
 import { Navigate } from "react-router-dom";
-import jwtDecode from "jwt-decode";
+import { jwtDecode } from "jwt-decode";
 import { REFRESH_TOKEN } from "../constants";
 
 function isTokenExpired(token) {

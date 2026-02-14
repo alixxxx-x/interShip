@@ -7,7 +7,7 @@ function AdminRoute({ children }) {
     const [isAdmin, setIsAdmin] = useState(null);
 
     useEffect(() => {
-        api.get("/me") //tretoutni user info
+        api.get("/auth/profile/")
             .then(res => {
                 if (res.data.role === "admin") {
                     setIsAdmin(true);
@@ -26,7 +26,11 @@ function AdminRoute({ children }) {
     }
 
     if (isAdmin === true) {
-        return children;
+        return (
+            <ProtectedRoute>
+                {children}
+            </ProtectedRoute>
+        );
     } else {
         return <Navigate to="/login" />;
     }
