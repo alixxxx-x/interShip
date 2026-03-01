@@ -21,33 +21,15 @@ function Register() {
     };
 
     return (
-        <form onSubmit={handleSubmit}>
-            <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Username"
-                required
-            />
-            <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email"
-                required
-            />
-            <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
-                required
-            />
-            <button type="submit">Register</button>
-            <p>
-                Already have an account? <Link to="/login">Login here</Link>
-            </p>
-        </form>
+        <div className="flex h-screen overflow-hidden font-['Inter',system-ui,sans-serif]">
+
+            <div className="relative flex-1 basis-1/2 min-w-0 overflow-hidden">
+            </div>
+        </div>
+
+
+
+
     );
 }
 
