@@ -5,6 +5,7 @@ import { useNavigate, Link } from "react-router-dom";
 import illustrationImg from "../assets/login-illustration.png";
 import logoGif from "../assets/logo.gif";
 import bgTexture from "../assets/backgroundLogin.jpg";
+import ForgotPasswordModal from "./ForgotPassword";
 
 /* ─── Eye Icon ─── */
 const EyeIcon = ({ open }) =>
@@ -36,10 +37,23 @@ function Login() {
     const [password, setPassword] = useState("");
     const [showPw, setShowPw] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [errors, setErrors] = useState({});
+    const [showForgotModal, setShowForgotModal] = useState(false);
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        let EmptyErrors = {};
+        if (!username.trim()) EmptyErrors.username = "Please fill out this field.";
+        if (!password) EmptyErrors.password = "Please fill out this field.";
+
+        if (Object.keys(EmptyErrors).length > 0) {
+            setErrors(EmptyErrors);
+            return;
+        }
+
+        setErrors({});
         setLoading(true);
         try {
             const res = await api.post("/auth/login/", { username, password });
@@ -57,7 +71,7 @@ function Login() {
         <div className="flex h-screen overflow-hidden font-['Inter',system-ui,sans-serif]">
 
             {/* ════════════ LEFT PANEL ════════════ */}
-            <div className="relative flex-1 basis-1/2 min-w-0 overflow-hidden">
+            <div className="relative flex-1 basis-1/2 min-w-0 overflow-hidden ">
 
                 {/*  Base gradient */}
                 <div
@@ -176,7 +190,7 @@ function Login() {
                     </h2>
 
                     {/* Form */}
-                    <form onSubmit={handleSubmit} className="flex flex-col gap-4" id="login-form">
+                    <form onSubmit={handleSubmit} className="flex flex-col gap-4" id="login-form" noValidate>
 
                         {/* Email */}
                         <div className="flex flex-col gap-1">
@@ -187,12 +201,12 @@ function Login() {
                                 id="login-email"
                                 type="email"
                                 value={username}
-                                onChange={(e) => setUsername(e.target.value)}
+                                onChange={(e) => { setUsername(e.target.value); setErrors(prev => ({ ...prev, username: null })) }}
                                 placeholder="Email"
-                                required
                                 autoComplete="email"
-                                className="w-full px-3.5 py-2.5 border-[1.5px] border-indigo-100 rounded-xl text-sm font-[inherit] text-indigo-950 bg-indigo-50/30 outline-none transition-all placeholder:text-indigo-300 focus:border-purple-600 focus:ring-[3px] focus:ring-purple-600/10 focus:bg-white"
+                                className={`w-full px-3.5 py-2.5 border-[1.5px] rounded-xl text-sm font-[inherit] text-indigo-950 bg-indigo-50/30 outline-none transition-all placeholder:text-indigo-300 focus:ring-[3px] focus:bg-white ${errors.username ? 'border-red-400 focus:border-red-500 focus:ring-red-400/20' : 'border-indigo-100 focus:border-purple-600 focus:ring-purple-600/10'}`}
                             />
+                            {errors.username && <span className="text-red-500 text-xs mt-0.5 ml-1 flex items-center gap-1"><svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg> {errors.username}</span>}
                         </div>
 
                         {/* Password */}
@@ -205,11 +219,10 @@ function Login() {
                                     id="login-password"
                                     type={showPw ? "text" : "password"}
                                     value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
+                                    onChange={(e) => { setPassword(e.target.value); setErrors(prev => ({ ...prev, password: null })) }}
                                     placeholder="Password"
-                                    required
                                     autoComplete="current-password"
-                                    className="w-full px-3.5 py-2.5 pr-10 border-[1.5px] border-indigo-100 rounded-xl text-sm font-[inherit] text-indigo-950 bg-indigo-50/30 outline-none transition-all placeholder:text-indigo-300 focus:border-purple-600 focus:ring-[3px] focus:ring-purple-600/10 focus:bg-white"
+                                    className={`w-full px-3.5 py-2.5 pr-10 border-[1.5px] rounded-xl text-sm font-[inherit] text-indigo-950 bg-indigo-50/30 outline-none transition-all placeholder:text-indigo-300 focus:ring-[3px] focus:bg-white ${errors.password ? 'border-red-400 focus:border-red-500 focus:ring-red-400/20' : 'border-indigo-100 focus:border-purple-600 focus:ring-purple-600/10'}`}
                                 />
                                 <button
                                     type="button"
@@ -221,13 +234,15 @@ function Login() {
                                     <EyeIcon open={showPw} />
                                 </button>
                             </div>
+                            {errors.password && <span className="text-red-500 text-xs mt-0.5 ml-1 flex items-center gap-1"><svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg> {errors.password}</span>}
                             <div className="text-right mt-0.5">
-                                <Link
-                                    to="/forgot-password"
-                                    className="text-xs font-medium text-purple-600 no-underline hover:text-purple-800 hover:underline"
+                                <button
+                                    type="button"
+                                    onClick={() => setShowForgotModal(true)}
+                                    className="text-xs font-medium text-purple-600 bg-transparent border-none cursor-pointer p-0 hover:text-purple-800 hover:underline"
                                 >
                                     Forgot Password?
-                                </Link>
+                                </button>
                             </div>
                         </div>
 
@@ -253,7 +268,7 @@ function Login() {
                             <div className="flex-1 h-px bg-gray-200" />
                         </div>
 
-                        {/* OAuth Buttons ( gogle and gitub ) */}
+                        {/* OAuth Buttons ( google and github ) */}
                         <div className="flex gap-3">
                             <button
                                 type="button"
@@ -289,6 +304,9 @@ function Login() {
                     </form>
                 </div>
             </div>
+
+            {/* Forgot Password Modal */}
+            <ForgotPasswordModal isOpen={showForgotModal} onClose={() => setShowForgotModal(false)} />
 
             {/* Keyframes */}
             <style>{`
