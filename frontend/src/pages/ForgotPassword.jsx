@@ -58,10 +58,10 @@ const StepDots = ({ current, total = 3 }) => (
             <div
                 key={i}
                 className={`rounded-full transition-all duration-400 ${i === current
-                        ? "w-6 h-2 bg-gradient-to-r from-purple-600 to-pink-500"
-                        : i < current
-                            ? "w-2 h-2 bg-purple-400"
-                            : "w-2 h-2 bg-indigo-200"
+                    ? "w-6 h-2 bg-gradient-to-r from-purple-600 to-pink-500"
+                    : i < current
+                        ? "w-2 h-2 bg-purple-400"
+                        : "w-2 h-2 bg-indigo-200"
                     }`}
             />
         ))}
@@ -237,8 +237,8 @@ function ForgotPasswordModal({ isOpen, onClose }) {
                 {/* ─── Modal Card ─── */}
                 <div
                     className={`relative z-10 w-full max-w-[420px] bg-white rounded-3xl shadow-[0_25px_60px_rgba(124,58,237,0.18),0_8px_24px_rgba(0,0,0,0.08)] overflow-hidden transition-all duration-300 ${closing
-                            ? "opacity-0 scale-95 translate-y-4"
-                            : "opacity-100 scale-100 translate-y-0 animate-[modalIn_0.35s_cubic-bezier(0.22,1,0.36,1)_forwards]"
+                        ? "opacity-0 scale-95 translate-y-4"
+                        : "opacity-100 scale-100 translate-y-0 animate-[modalIn_0.35s_cubic-bezier(0.22,1,0.36,1)_forwards]"
                         }`}
                     onClick={(e) => e.stopPropagation()}
                 >
@@ -334,10 +334,10 @@ function ForgotPasswordModal({ isOpen, onClose }) {
                                                 onKeyDown={(e) => handleOtpKeyDown(i, e)}
                                                 autoFocus={i === 0}
                                                 className={`w-10 h-11 text-center text-lg font-bold rounded-xl border-[1.5px] outline-none transition-all bg-indigo-50/30 text-indigo-950 focus:ring-[3px] focus:bg-white ${errors.otp
-                                                        ? "border-red-400 focus:border-red-500 focus:ring-red-400/20 animate-[shake_0.4s_ease-in-out]"
-                                                        : digit
-                                                            ? "border-purple-400 focus:border-purple-600 focus:ring-purple-600/10"
-                                                            : "border-indigo-100 focus:border-purple-600 focus:ring-purple-600/10"
+                                                    ? "border-red-400 focus:border-red-500 focus:ring-red-400/20 animate-[shake_0.4s_ease-in-out]"
+                                                    : digit
+                                                        ? "border-purple-400 focus:border-purple-600 focus:ring-purple-600/10"
+                                                        : "border-indigo-100 focus:border-purple-600 focus:ring-purple-600/10"
                                                     }`}
                                             />
                                         ))}
@@ -430,10 +430,10 @@ function ForgotPasswordModal({ isOpen, onClose }) {
                                     <div className="flex-1 flex gap-1">
                                         {[...Array(4)].map((_, i) => (
                                             <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-300 ${newPassword.length === 0 ? "bg-gray-200"
-                                                    : newPassword.length < 4 ? (i === 0 ? "bg-red-400" : "bg-gray-200")
-                                                        : newPassword.length < 8 ? (i < 2 ? "bg-yellow-400" : "bg-gray-200")
-                                                            : newPassword.length < 12 ? (i < 3 ? "bg-purple-400" : "bg-gray-200")
-                                                                : "bg-green-400"
+                                                : newPassword.length < 4 ? (i === 0 ? "bg-red-400" : "bg-gray-200")
+                                                    : newPassword.length < 8 ? (i < 2 ? "bg-yellow-400" : "bg-gray-200")
+                                                        : newPassword.length < 12 ? (i < 3 ? "bg-purple-400" : "bg-gray-200")
+                                                            : "bg-green-400"
                                                 }`} />
                                         ))}
                                     </div>

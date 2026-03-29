@@ -315,6 +315,7 @@ function Login() {
           to   { opacity: 1; transform: translateY(0); }
         }
       `}</style>
+            <ForgotPasswordModal isOpen={showForgotModal} onClose={() => setShowForgotModal(false)} />
         </div>
     );
 }
