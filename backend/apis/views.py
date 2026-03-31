@@ -33,8 +33,7 @@ class UserListView(generics.ListAPIView):
     permission_classes = [IsAdmin]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['username', 'email']
-    ordering_fields = ['created_at', 'username']
-
+    ordering_fields = ['id', 'username']
 
 class ChangePasswordView(generics.UpdateAPIView):
     serializer_class = ChangePasswordSerializer
@@ -48,11 +47,9 @@ class ChangePasswordView(generics.UpdateAPIView):
         serializer = self.get_serializer(data=request.data)
 
         if serializer.is_valid():
-            # Check old password
             if not self.object.check_password(serializer.data.get("old_password")):
                 return Response({"old_password": ["Wrong password."]}, status=status.HTTP_400_BAD_REQUEST)
             
-            # set_password also hashes the password that the user will get
             self.object.set_password(serializer.data.get("new_password"))
             self.object.save()
             return Response({"status": "success", "message": "Password updated successfully"}, status=status.HTTP_200_OK)
