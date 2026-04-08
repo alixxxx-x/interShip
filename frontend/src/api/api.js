@@ -1,7 +1,7 @@
 // Axios instance + our 2 interceptors (request + response)
 
 import axios from "axios";
-import { ACCESS_TOKEN, REFRESH_TOKEN } from "../constants";
+import { ACCESS_TOKEN, REFRESH_TOKEN } from "@/constants";
 
 const api = axios.create({
     baseURL: import.meta.env.VITE_API_URL, // bch mndirouch koul mara [axios.get('http://localhost:8000/users')] nwilw direct [api.get('/users')] 
