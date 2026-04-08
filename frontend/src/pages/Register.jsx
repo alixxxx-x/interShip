@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import api from "../services/api";
+import api from "@/api/api";
 import { useNavigate, Link } from "react-router-dom";
-import signUpImg from "../assets/signUp.png";
-import illustrationImg from "../assets/login-illustration.png";
-import logoGif from "../assets/logo.gif";
+import signUpImg from "@/assets/signUp.png";
+import illustrationImg from "@/assets/login-illustration.png";
+import logoGif from "@/assets/logo.gif";
 
 /* ─── Carousel slides data ─── */
 const slides = [

@@ -5,3 +5,5 @@ tailwindcss
 postcss
 autoprefixer
 @tailwindcss/postcss
+lucide-react
+tailwindcss-animate

@@ -1,7 +1,7 @@
 import { Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import api from "../services/api";
-import ProtectedRoute from "./ProtectedRoute";
+import api from "@/api/api";
+import ProtectedRoute from "@/routes/ProtectedRoute";
 
 function AdminRoute({ children }) {
     const [isAdmin, setIsAdmin] = useState(null);
