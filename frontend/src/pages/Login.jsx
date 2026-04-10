@@ -1,5 +1,5 @@
 import { useState } from "react";
-import api from "../services/api";
+import api from "@/api/api";
 import { ACCESS_TOKEN, REFRESH_TOKEN } from "../constants";
 import { useNavigate, Link } from "react-router-dom";
 import illustrationImg from "../assets/login-illustration.png";
