@@ -1,5 +1,5 @@
 import { useState } from "react";
-import api from "../services/api";
+import api from "../api/api";
 import { ACCESS_TOKEN, REFRESH_TOKEN } from "../constants";
 import { useNavigate, Link } from "react-router-dom";
 import illustrationImg from "../assets/login-illustration.png";
@@ -7,7 +7,7 @@ import logoGif from "../assets/logo.gif";
 import bgTexture from "../assets/backgroundLogin.jpg";
 import ForgotPasswordModal from "./ForgotPassword";
 
-/* ─── Eye Icon ─── */
+/*  Eye Icon  */
 const EyeIcon = ({ open }) =>
     open ? (
         <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
@@ -21,7 +21,7 @@ const EyeIcon = ({ open }) =>
         </svg>
     );
 
-/* ─── Stars ─── */
+/* Stars  */
 const Stars = () => (
     <div className="flex gap-0.5">
         {[...Array(5)].map((_, i) => (
@@ -70,7 +70,7 @@ function Login() {
     return (
         <div className="flex h-screen overflow-hidden font-['Inter',system-ui,sans-serif]">
 
-            {/* ════════════ LEFT PANEL ════════════ */}
+            {/* == LEFT PANEL ==   */}
             <div className="relative flex-1 basis-1/2 min-w-0 overflow-hidden ">
 
                 {/*  Base gradient */}
@@ -171,7 +171,7 @@ function Login() {
                 </div>
             </div>
 
-            {/* ════════════ RIGHT PANEL ════════════ */}
+            {/* ====== RIGHT PANEL ======  */}
             <div className="flex-none basis-1/2 flex items-center justify-center bg-[#edecf6] p-8">
 
                 <div className="bg-white rounded-3xl px-9 py-9 w-full  h-[600px] max-w-[450px] shadow-[0_4px_30px_rgba(124,58,237,0.07),0_1px_3px_rgba(0,0,0,0.04)] animate-[slideUp_0.5s_cubic-bezier(0.22,1,0.36,1)_forwards]">
