@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from .models import *
 
+# user serializers
+
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True)
 
@@ -44,3 +46,26 @@ class ChangePasswordSerializer(serializers.Serializer):
         if not user.check_password(value):
             raise serializers.ValidationError("Old password is not correct")
         return value
+
+# internship serializers
+
+class InternshipSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Internship
+        fields = ['id', 'title', 'description', 'company', 'start_date', 'end_date', 'number_of_places', 'location', 'status', 'duration']
+        read_only_fields = ['id', 'duration']
+
+        def create(self, validated_data):
+            return Internship.objects.create(**validated_data)
+
+        def update(self, instance, validated_data):
+            instance.title = validated_data.get('title', instance.title)
+            instance.description = validated_data.get('description', instance.description)
+            instance.company = validated_data.get('company', instance.company)
+            instance.start_date = validated_data.get('start_date', instance.start_date)
+            instance.end_date = validated_data.get('end_date', instance.end_date)
+            instance.number_of_places = validated_data.get('number_of_places', instance.number_of_places)
+            instance.location = validated_data.get('location', instance.location)
+            instance.status = validated_data.get('status', instance.status)
+            instance.save()
+            return instance

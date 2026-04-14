@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
+# user model
+
 class User(AbstractUser):
     class Role(models.TextChoices):
         STUDENT = 'STUDENT', 'Student'
@@ -36,4 +38,46 @@ class Administrator(User):
 
     class Meta:
         verbose_name_plural = "Administrators"
+
+# internship model
+
+class Internship(models.Model):
+
+    class Status(models.TextChoices):
+        DRAFT = 'DRAFT', 'Draft'
+        PUBLISHED = 'PUBLISHED', 'Published'
+        CLOSED = 'CLOSED', 'Closed'
+        CANCELLED = 'CANCELLED', 'Cancelled'
+        ARCHIVED = 'ARCHIVED', 'Archived'
+        
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    company = models.ForeignKey(Company, on_delete=models.CASCADE)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    number_of_places = models.IntegerField()
+    location = models.CharField(max_length=255)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    duration = start_date - end_date
+
+    def __str__(self):
+        return f"{self.title} ({self.company})"
+
+# application model
+    
+class Application(models.Model):
+    class Status(models.TextChoises):
+        PENDING = 'PENDING', 'Pending'
+        ACCEPTED = 'ACCEPTED', 'Accepted'
+        REJECTED = 'REJECTED', 'Rejected'
+
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    internship = models.ForeignKey(Internship, on_delete=models.CASCADE)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    application_date = models.DateField(auto_now_add=True)
+    
+
+
+    
+
 
