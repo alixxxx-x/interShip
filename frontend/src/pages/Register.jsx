@@ -35,12 +35,39 @@ const EyeIcon = ({ open }) =>
         </svg>
     );
 
+/* ─── Student Icon ─── */
+const StudentIcon = ({ active }) => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={active ? "#7c3aed" : "#9ca3af"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+        <path d="M6 12v5c0 1.657 2.686 3 6 3s6-1.343 6-3v-5" />
+    </svg>
+);
+
+/* ─── Company Icon ─── */
+const CompanyIcon = ({ active }) => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={active ? "#7c3aed" : "#9ca3af"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="7" width="20" height="14" rx="2" />
+        <path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" />
+        <path d="M12 12h.01" />
+        <path d="M2 12h20" />
+    </svg>
+);
+
 function Register() {
-    const [username, setUsername] = useState("");
+    const [role, setRole] = useState("student");
+    /* Student fields */
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
+    /* Company fields */
+    const [companyName, setCompanyName] = useState("");
+    /* Common fields */
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
     const [showPw, setShowPw] = useState(false);
+    const [showConfirmPw, setShowConfirmPw] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [errors, setErrors] = useState({});
     const [activeSlide, setActiveSlide] = useState(0);
     const navigate = useNavigate();
 
@@ -52,11 +79,48 @@ function Register() {
         return () => clearInterval(timer);
     }, []);
 
+    /* Reset fields when role changes */
+    const handleRoleChange = (newRole) => {
+        setRole(newRole);
+        setFirstName("");
+        setLastName("");
+        setCompanyName("");
+        setEmail("");
+        setPassword("");
+        setConfirmPassword("");
+        setErrors({});
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+        let formErrors = {};
+
+        if (role === "student") {
+            if (!firstName.trim()) formErrors.firstName = "First name is required.";
+            if (!lastName.trim()) formErrors.lastName = "Last name is required.";
+        } else {
+            if (!companyName.trim()) formErrors.companyName = "Company name is required.";
+        }
+        if (!email.trim()) formErrors.email = "Email is required.";
+        if (!password) formErrors.password = "Password is required.";
+        if (!confirmPassword) formErrors.confirmPassword = "Please confirm your password.";
+        if (password && confirmPassword && password !== confirmPassword) {
+            formErrors.confirmPassword = "Passwords do not match.";
+        }
+
+        if (Object.keys(formErrors).length > 0) {
+            setErrors(formErrors);
+            return;
+        }
+
+        setErrors({});
         setLoading(true);
         try {
-            await api.post("/auth/register/", { username, email, password });
+            const payload = role === "student"
+                ? { first_name: firstName, last_name: lastName, email, password, role: "student" }
+                : { company_name: companyName, email, password, role: "company" };
+
+            await api.post("/auth/register/", payload);
             alert("Registration successful! Please login.");
             navigate("/login");
         } catch (error) {
@@ -66,14 +130,27 @@ function Register() {
         }
     };
 
+    const inputClass = (field) =>
+        `w-full px-5 py-3.5 border-[1.5px] rounded-xl text-sm text-indigo-950 bg-indigo-50/30 outline-none transition-all placeholder:text-indigo-300 focus:border-purple-600 focus:ring-[3px] focus:ring-purple-600/10 focus:bg-white ${errors[field] ? 'border-red-400 focus:border-red-500 focus:ring-red-400/20' : 'border-indigo-100'}`;
+
+    const errorMsg = (field) =>
+        errors[field] ? (
+            <span className="text-red-500 text-xs mt-1 ml-1 flex items-center gap-1">
+                <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                {errors[field]}
+            </span>
+        ) : null;
+
     return (
         <div className="flex h-screen overflow-hidden bg-white font-['Inter',system-ui,sans-serif]">
 
-            {/* ════════════ LEFT PANEL — Form ════════════ */}
-            <div className="flex-1 basis-1/2 flex flex-col justify-center px-16 lg:px-24 py-12 max-w-[680px]">
+            {/* ====== LEFT PANEL — Form ======= */}
+            <div className="flex-1 basis-1/2 flex flex-col justify-center px-16 lg:px-24 py-12 max-w-[680px] overflow-y-auto">
 
                 {/* Logo */}
-                <div className="flex items-center gap-2.5 mb-6">
+                <div className="flex items-center gap-2.5 mb-4 shrink-0">
                     <img src={logoGif} alt="Inter.Ship" className="w-[77px] h-[77px] rounded-lg" />
                     <span className="text-[30px] font-semibold tracking-tight text-gray-900 font-['Poppins',sans-serif]">
                         Inter<span className="text-purple-500">.Ship</span>
@@ -81,65 +158,160 @@ function Register() {
                 </div>
 
                 {/* Title */}
-                <h1 className="text-[2.4rem] font-extrabold text-gray-900 leading-tight tracking-tight mb-2">
+                <h1 className="text-[2.4rem] font-extrabold text-gray-900 leading-tight tracking-tight mb-1 shrink-0">
                     Create Account!
                 </h1>
-                <p className="text-[0.95rem] text-gray-400 mb-8 leading-relaxed">
+                <p className="text-[0.95rem] text-gray-400 mb-5 leading-relaxed shrink-0">
                     Join <strong className="text-gray-600">Inter.Ship</strong> and start your internship journey. Get started for free.
                 </p>
 
+                {/* ─── Role Tabs ─── */}
+                <div className="flex mb-6 shrink-0 border-b border-gray-200">
+                    <button
+                        type="button"
+                        onClick={() => handleRoleChange("student")}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-semibold cursor-pointer bg-transparent border-none transition-all duration-300 relative ${role === "student"
+                                ? "text-gray-900"
+                                : "text-gray-400 hover:text-gray-600"
+                            }`}
+                        id="role-student-btn"
+                    >
+                        Student
+                        {role === "student" && (
+                            <span className="absolute bottom-0 left-[20%] right-[20%] h-[2.5px] rounded-full" style={{ background: "linear-gradient(90deg, #7c3aed, #ec4899)" }} />
+                        )}
+                    </button>
+                    <div className="w-px bg-gray-200 my-2" />
+                    <button
+                        type="button"
+                        onClick={() => handleRoleChange("company")}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-semibold cursor-pointer bg-transparent border-none transition-all duration-300 relative ${role === "company"
+                                ? "text-gray-900"
+                                : "text-gray-400 hover:text-gray-600"
+                            }`}
+                        id="role-company-btn"
+                    >
+                        Company
+                        {role === "company" && (
+                            <span className="absolute bottom-0 left-[20%] right-[20%] h-[2.5px] rounded-full" style={{ background: "linear-gradient(90deg, #7c3aed, #ec4899)" }} />
+                        )}
+                    </button>
+                </div>
+
                 {/* Form */}
-                <form onSubmit={handleSubmit} className="flex flex-col gap-5" id="register-form">
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4" id="register-form" noValidate>
 
-                    {/* Username */}
-                    <div>
-                        <input
-                            id="register-username"
-                            type="text"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            placeholder="Username"
-                            required
-                            autoComplete="username"
-                            className="w-full px-5 py-3.5 border-[1.5px] border-indigo-100 rounded-xl text-sm text-indigo-950 bg-indigo-50/30 outline-none transition-all placeholder:text-indigo-300 focus:border-purple-600 focus:ring-[3px] focus:ring-purple-600/10 focus:bg-white"
-                        />
-                    </div>
+                    {/* --- Student Fields ---  */}
+                    {role === "student" && (
+                        <>
+                            {/* First Name & Last Name side by side */}
+                            <div className="flex gap-3">
+                                <div className="flex-1">
+                                    <input
+                                        id="register-firstname"
+                                        type="text"
+                                        value={firstName}
+                                        onChange={(e) => { setFirstName(e.target.value); setErrors(prev => ({ ...prev, firstName: null })); }}
+                                        placeholder="First Name"
+                                        autoComplete="given-name"
+                                        className={inputClass("firstName")}
+                                    />
+                                    {errorMsg("firstName")}
+                                </div>
+                                <div className="flex-1">
+                                    <input
+                                        id="register-lastname"
+                                        type="text"
+                                        value={lastName}
+                                        onChange={(e) => { setLastName(e.target.value); setErrors(prev => ({ ...prev, lastName: null })); }}
+                                        placeholder="Last Name"
+                                        autoComplete="family-name"
+                                        className={inputClass("lastName")}
+                                    />
+                                    {errorMsg("lastName")}
+                                </div>
+                            </div>
+                        </>
+                    )}
 
-                    {/* Email */}
+                    {/* --- Company Fields --- */}
+                    {role === "company" && (
+                        <div>
+                            <input
+                                id="register-companyname"
+                                type="text"
+                                value={companyName}
+                                onChange={(e) => { setCompanyName(e.target.value); setErrors(prev => ({ ...prev, companyName: null })); }}
+                                placeholder="Name of Company"
+                                autoComplete="organization"
+                                className={inputClass("companyName")}
+                            />
+                            {errorMsg("companyName")}
+                        </div>
+                    )}
+
+                    {/* Email (common) */}
                     <div>
                         <input
                             id="register-email"
                             type="email"
                             value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            onChange={(e) => { setEmail(e.target.value); setErrors(prev => ({ ...prev, email: null })); }}
                             placeholder="Email"
-                            required
                             autoComplete="email"
-                            className="w-full px-5 py-3.5 border-[1.5px] border-indigo-100 rounded-xl text-sm text-indigo-950 bg-indigo-50/30 outline-none transition-all placeholder:text-indigo-300 focus:border-purple-600 focus:ring-[3px] focus:ring-purple-600/10 focus:bg-white"
+                            className={inputClass("email")}
                         />
+                        {errorMsg("email")}
                     </div>
 
-                    {/* Password */}
-                    <div className="relative">
-                        <input
-                            id="register-password"
-                            type={showPw ? "text" : "password"}
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            placeholder="Password"
-                            required
-                            autoComplete="new-password"
-                            className="w-full px-5 py-3.5 pr-12 border-[1.5px] border-indigo-100 rounded-xl text-sm text-indigo-950 bg-indigo-50/30 outline-none transition-all placeholder:text-indigo-300 focus:border-purple-600 focus:ring-[3px] focus:ring-purple-600/10 focus:bg-white"
-                        />
-                        <button
-                            type="button"
-                            onClick={() => setShowPw(!showPw)}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-indigo-300 hover:text-purple-600 transition-colors p-0 flex items-center"
-                            aria-label="Toggle password visibility"
-                            tabIndex={-1}
-                        >
-                            <EyeIcon open={showPw} />
-                        </button>
+                    {/* Password (common) */}
+                    <div>
+                        <div className="relative">
+                            <input
+                                id="register-password"
+                                type={showPw ? "text" : "password"}
+                                value={password}
+                                onChange={(e) => { setPassword(e.target.value); setErrors(prev => ({ ...prev, password: null })); }}
+                                placeholder="Password"
+                                autoComplete="new-password"
+                                className={`${inputClass("password")} pr-12`}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPw(!showPw)}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-indigo-300 hover:text-purple-600 transition-colors p-0 flex items-center"
+                                aria-label="Toggle password visibility"
+                                tabIndex={-1}
+                            >
+                                <EyeIcon open={showPw} />
+                            </button>
+                        </div>
+                        {errorMsg("password")}
+                    </div>
+
+                    {/* Confirm Password (common) */}
+                    <div>
+                        <div className="relative">
+                            <input
+                                id="register-confirm-password"
+                                type={showConfirmPw ? "text" : "password"}
+                                value={confirmPassword}
+                                onChange={(e) => { setConfirmPassword(e.target.value); setErrors(prev => ({ ...prev, confirmPassword: null })); }}
+                                placeholder="Confirm Password"
+                                autoComplete="new-password"
+                                className={`${inputClass("confirmPassword")} pr-12`}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowConfirmPw(!showConfirmPw)}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-indigo-300 hover:text-purple-600 transition-colors p-0 flex items-center"
+                                aria-label="Toggle confirm password visibility"
+                                tabIndex={-1}
+                            >
+                                <EyeIcon open={showConfirmPw} />
+                            </button>
+                        </div>
+                        {errorMsg("confirmPassword")}
                     </div>
 
                     {/* Submit */}
@@ -158,38 +330,43 @@ function Register() {
                     </button>
                 </form>
 
-                {/* Divider */}
-                <div className="flex items-center gap-4 my-6">
-                    <div className="flex-1 h-px bg-gray-200" />
-                    <span className="text-xs text-gray-400 whitespace-nowrap tracking-wide">or continue with</span>
-                    <div className="flex-1 h-px bg-gray-200" />
-                </div>
+                {/* --- Social Login — Only for Company --- */}
+                {role === "company" && (
+                    <>
+                        {/* Divider */}
+                        <div className="flex items-center gap-4 my-5">
+                            <div className="flex-1 h-px bg-gray-200" />
+                            <span className="text-xs text-gray-400 whitespace-nowrap tracking-wide">or continue with</span>
+                            <div className="flex-1 h-px bg-gray-200" />
+                        </div>
 
-                {/* Social Buttons */}
-                <div className="flex gap-3">
-                    <button
-                        type="button"
-                        id="register-google-btn"
-                        onClick={() => window.location.href = '/auth/google/'}
-                        className="flex-1 flex items-center justify-center gap-2 py-2.5 border-[1.5px] border-gray-200 rounded-xl bg-white text-sm font-medium text-gray-700 cursor-pointer transition-all hover:border-purple-300 hover:bg-purple-50/40 hover:shadow-sm active:scale-[0.98]"
-                    >
-                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-[18px] h-[18px]" />
-                        Google
-                    </button>
+                        {/* Social Buttons */}
+                        <div className="flex gap-3">
+                            <button
+                                type="button"
+                                id="register-google-btn"
+                                onClick={() => window.location.href = '/auth/google/'}
+                                className="flex-1 flex items-center justify-center gap-2 py-2.5 border-[1.5px] border-gray-200 rounded-xl bg-white text-sm font-medium text-gray-700 cursor-pointer transition-all hover:border-purple-300 hover:bg-purple-50/40 hover:shadow-sm active:scale-[0.98]"
+                            >
+                                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-[18px] h-[18px]" />
+                                Google
+                            </button>
 
-                    <button
-                        type="button"
-                        id="register-github-btn"
-                        onClick={() => window.location.href = '/auth/github/'}
-                        className="flex-1 flex items-center justify-center gap-2 py-2.5 border-[1.5px] border-gray-200 rounded-xl bg-white text-sm font-medium text-gray-700 cursor-pointer transition-all hover:border-purple-300 hover:bg-purple-50/40 hover:shadow-sm active:scale-[0.98]"
-                    >
-                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/github/github-original.svg" alt="GitHub" className="w-[18px] h-[18px]" />
-                        GitHub
-                    </button>
-                </div>
+                            <button
+                                type="button"
+                                id="register-github-btn"
+                                onClick={() => window.location.href = '/auth/github/'}
+                                className="flex-1 flex items-center justify-center gap-2 py-2.5 border-[1.5px] border-gray-200 rounded-xl bg-white text-sm font-medium text-gray-700 cursor-pointer transition-all hover:border-purple-300 hover:bg-purple-50/40 hover:shadow-sm active:scale-[0.98]"
+                            >
+                                <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/github/github-original.svg" alt="GitHub" className="w-[18px] h-[18px]" />
+                                GitHub
+                            </button>
+                        </div>
+                    </>
+                )}
 
                 {/* Login link */}
-                <p className="text-center text-sm text-gray-500 mt-8">
+                <p className="text-center text-sm text-gray-500 mt-6 shrink-0">
                     Already have an account?{" "}
                     <Link
                         to="/login"
@@ -200,7 +377,7 @@ function Register() {
                 </p>
             </div>
 
-            {/* ════════════ RIGHT PANEL — Carousel ════════════ */}
+            {/* ====== RIGHT PANEL — Carousel ====== */}
             <div className="hidden md:flex flex-1 basis-1/2 items-center justify-center bg-[#FDF7FF] relative overflow-hidden p-10">
 
                 {/* Subtle decorative circles */}
