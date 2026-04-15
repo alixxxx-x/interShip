@@ -149,14 +149,6 @@ function Register() {
             {/* ====== LEFT PANEL — Form ======= */}
             <div className="flex-1 basis-1/2 flex flex-col justify-center px-16 lg:px-24 py-12 max-w-[680px] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
 
-                {/* Logo */}
-                <div className="flex items-center gap-2.5 mb-4 shrink-0">
-                    <img src={logoGif} alt="Inter.Ship" className="w-[77px] h-[77px] rounded-lg" />
-                    <span className="text-[30px] font-semibold tracking-tight text-gray-900 font-['Poppins',sans-serif]">
-                        Inter<span className="text-purple-500">.Ship</span>
-                    </span>
-                </div>
-
                 {/* Title */}
                 <h1 className="text-[2.4rem] font-extrabold text-gray-900 leading-tight tracking-tight mb-1 shrink-0">
                     Create Account!
