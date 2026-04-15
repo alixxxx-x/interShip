@@ -3,20 +3,21 @@ import api from "@/api/api";
 import { useNavigate, Link } from "react-router-dom";
 import signUpImg from "@/assets/signUp.png";
 import illustrationImg from "@/assets/login-illustration.png";
+import headerImg from "@/assets/HEADER.png";
 import logoGif from "@/assets/logo.gif";
 
 /* ─── Carousel slides data ─── */
 const slides = [
-    {
-        image: signUpImg,
-        text: <>Find the right internship and build<br />your career with <strong className="text-gray-900">Inter.Ship</strong></>,
-    },
     {
         image: illustrationImg,
         text: <>Connect with top companies and<br />unlock your <strong className="text-gray-900">potential</strong></>,
     },
     {
         image: signUpImg,
+        text: <>Find the right internship and build<br />your career with <strong className="text-gray-900">Inter.Ship</strong></>,
+    },
+    {
+        image: headerImg,
         text: <>One platform for students, companies,<br />and <strong className="text-gray-900">universities</strong></>,
     },
 ];

@@ -71,7 +71,7 @@ function Login() {
         <div className="flex h-screen overflow-hidden font-['Inter',system-ui,sans-serif]">
 
             {/* == LEFT PANEL ==   */}
-            <div className="relative flex-1 basis-1/2 min-w-0 overflow-hidden ">
+            <div className="relative flex-1 basis-1/2 min-w-0 overflow-hidden">
 
                 {/*  Base gradient */}
                 <div
@@ -112,8 +112,6 @@ function Login() {
 
                 {/* Content */}
                 <div className="relative z-[3] flex flex-col h-full px-10 py-8 text-white">
-
-                   
 
                     {/* Headline */}
                     <div className="mt-4 shrink-0">
@@ -166,9 +164,9 @@ function Login() {
             </div>
 
             {/* ====== RIGHT PANEL ======  */}
-            <div className="flex-none basis-1/2 flex items-center justify-center bg-[#edecf6] p-8">
+            <div className="flex-none basis-1/2 flex items-center justify-center bg-white p-8">
 
-                <div className="bg-white rounded-3xl px-9 py-9 w-full  h-[600px] max-w-[450px] shadow-[0_4px_30px_rgba(124,58,237,0.07),0_1px_3px_rgba(0,0,0,0.04)] animate-[slideUp_0.5s_cubic-bezier(0.22,1,0.36,1)_forwards]">
+                <div className="px-9 py-9 w-full  h-[600px] max-w-[450px] animate-[slideUp_0.5s_cubic-bezier(0.22,1,0.36,1)_forwards]">
 
                     {/* Logo */}
                     <div className="flex items-center justify-center gap-2 mb-4">
@@ -198,7 +196,7 @@ function Login() {
                                 onChange={(e) => { setUsername(e.target.value); setErrors(prev => ({ ...prev, username: null })) }}
                                 placeholder="Email"
                                 autoComplete="email"
-                                className={`w-full px-3.5 py-2.5 border-[1.5px] rounded-xl text-sm font-[inherit] text-indigo-950 bg-indigo-50/30 outline-none transition-all placeholder:text-indigo-300 focus:ring-[3px] focus:bg-white ${errors.username ? 'border-red-400 focus:border-red-500 focus:ring-red-400/20' : 'border-indigo-100 focus:border-purple-600 focus:ring-purple-600/10'}`}
+                                className={`w-full px-3.5 py-2.5 border-[1.5px] rounded-xl text-sm font-[inherit] text-indigo-950 bg-indigo-50/30 outline-none transition-all placeholder:text-indigo-300 focus:ring-[3px] ${errors.username ? 'border-red-400 focus:border-red-500 focus:ring-red-400/20' : 'border-indigo-100 focus:border-purple-600 focus:ring-purple-600/10'}`}
                             />
                             {errors.username && <span className="text-red-500 text-xs mt-0.5 ml-1 flex items-center gap-1"><svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg> {errors.username}</span>}
                         </div>
@@ -216,12 +214,12 @@ function Login() {
                                     onChange={(e) => { setPassword(e.target.value); setErrors(prev => ({ ...prev, password: null })) }}
                                     placeholder="Password"
                                     autoComplete="current-password"
-                                    className={`w-full px-3.5 py-2.5 pr-10 border-[1.5px] rounded-xl text-sm font-[inherit] text-indigo-950 bg-indigo-50/30 outline-none transition-all placeholder:text-indigo-300 focus:ring-[3px] focus:bg-white ${errors.password ? 'border-red-400 focus:border-red-500 focus:ring-red-400/20' : 'border-indigo-100 focus:border-purple-600 focus:ring-purple-600/10'}`}
+                                    className={`w-full px-3.5 py-2.5 pr-10 border-[1.5px] rounded-xl text-sm font-[inherit] text-indigo-950 bg-indigo-50/30 outline-none transition-all placeholder:text-indigo-300 focus:ring-[3px] ${errors.password ? 'border-red-400 focus:border-red-500 focus:ring-red-400/20' : 'border-indigo-100 focus:border-purple-600 focus:ring-purple-600/10'}`}
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowPw(!showPw)}
-                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-indigo-300 hover:text-purple-600 transition-colors p-0 flex items-center"
+                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-indigo-300 p-0 flex items-center"
                                     aria-label="Toggle password visibility"
                                     tabIndex={-1}
                                 >
