@@ -147,7 +147,7 @@ function Register() {
         <div className="flex h-screen overflow-hidden bg-white font-['Inter',system-ui,sans-serif]">
 
             {/* ====== LEFT PANEL — Form ======= */}
-            <div className="flex-1 basis-1/2 flex flex-col justify-center px-16 lg:px-24 py-12 max-w-[680px] overflow-y-auto">
+            <div className="flex-1 basis-1/2 flex flex-col justify-center px-16 lg:px-24 py-12 max-w-[680px] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
 
                 {/* Logo */}
                 <div className="flex items-center gap-2.5 mb-4 shrink-0">
@@ -171,8 +171,8 @@ function Register() {
                         type="button"
                         onClick={() => handleRoleChange("student")}
                         className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-semibold cursor-pointer bg-transparent border-none transition-all duration-300 relative ${role === "student"
-                                ? "text-gray-900"
-                                : "text-gray-400 hover:text-gray-600"
+                            ? "text-gray-900"
+                            : "text-gray-400 hover:text-gray-600"
                             }`}
                         id="role-student-btn"
                     >
@@ -186,8 +186,8 @@ function Register() {
                         type="button"
                         onClick={() => handleRoleChange("company")}
                         className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-semibold cursor-pointer bg-transparent border-none transition-all duration-300 relative ${role === "company"
-                                ? "text-gray-900"
-                                : "text-gray-400 hover:text-gray-600"
+                            ? "text-gray-900"
+                            : "text-gray-400 hover:text-gray-600"
                             }`}
                         id="role-company-btn"
                     >
