@@ -1,10 +1,10 @@
 import { useState } from "react";
-import api from "../api/api";
-import { ACCESS_TOKEN, REFRESH_TOKEN } from "../constants";
+import api from "@/api/api";
+import { ACCESS_TOKEN, REFRESH_TOKEN } from "@/constants";
 import { useNavigate, Link } from "react-router-dom";
-import illustrationImg from "../assets/login-illustration.png";
-import logoGif from "../assets/logo.gif";
-import bgTexture from "../assets/backgroundLogin.jpg";
+import illustrationImg from "@/assets/login-illustration.png";
+import logoGif from "@/assets/logo.gif";
+import bgTexture from "@/assets/backgroundLogin.jpg";
 import ForgotPasswordModal from "./ForgotPassword";
 
 /*  Eye Icon  */

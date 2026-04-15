@@ -8,3 +8,17 @@ class IsAdmin(permissions.BasePermission):
             request.user.is_authenticated and 
             request.user.role == User.Role.ADMIN
         )
+class IsCompany(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return (
+            request.user and 
+            request.user.is_authenticated and 
+            request.user.role == User.Role.COMPANY
+        )
+class IsStudent(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return (
+            request.user and 
+            request.user.is_authenticated and 
+            request.user.role == User.Role.STUDENT
+        )
