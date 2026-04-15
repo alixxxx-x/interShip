@@ -113,13 +113,7 @@ function Login() {
                 {/* Content */}
                 <div className="relative z-[3] flex flex-col h-full px-10 py-8 text-white">
 
-                    {/* Logo */}
-                    <div className="flex items-center gap-2 shrink-0">
-                        <img src={logoGif} alt="stage.io" className="w-[77px] h-[77px] rounded-lg" />
-                        <span className="text-[30px] font-semibold tracking-tight text-[#F1F1F1] font-['Poppins',sans-serif]">
-                            Inter<span className="text-purple-300">.Ship</span>
-                        </span>
-                    </div>
+                   
 
                     {/* Headline */}
                     <div className="mt-4 shrink-0">

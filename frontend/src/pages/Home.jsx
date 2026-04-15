@@ -13,6 +13,8 @@ import {
     BarChart3,
 } from "lucide-react";
 
+
+
 function Home() {
     return (
         <div className="flex flex-col w-full">
