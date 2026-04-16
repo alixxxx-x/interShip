@@ -1,4 +1,4 @@
-from backend.apis.serializers import InternshipSerializer
+from django.shortcuts import get_object_or_404
 from rest_framework import generics, status, filters
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
@@ -69,7 +69,7 @@ class InternshipCreateView(generics.CreateAPIView):
         serializer.save(company=self.request.user) # hadi t7ot l company (li hiya already logged in User) automatically fl field t3 company
     
 
-class InternshipUpdateDestroyView(generics.UpdateDestroyAPIView):
+class InternshipUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = InternshipOffer.objects.all()
     serializer_class = InternshipSerializer
     permission_classes = [IsCompany, IsAuthenticated]
@@ -117,3 +117,67 @@ class InternshipListView(generics.ListAPIView):
             else:
                 queryset = queryset.filter(status not in [InternshipOffer.Status.DRAFT, InternshipOffer.Status.ARCHIVED])
         return queryset
+
+
+# application views
+
+class ApplicationCreateView(generics.CreateAPIView):
+    queryset = Application.objects.all()
+    serializer_class = ApplicationSerializer
+    permission_classes = [IsAuthenticated, IsStudent]
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['internship'] = get_object_or_404(InternshipOffer, pk=self.kwargs['pk'])
+        return context
+
+    def perform_create(self, serializer):
+        internship = serializer.context['internship']
+        serializer.save(student=self.request.user.student, internship=internship)
+
+class ApplicationUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Application.objects.all()
+    serializer_class = ApplicationSerializer
+    permission_classes = [IsAuthenticated, IsCompany]
+
+    def get_object(self):
+        obj = super().get_object()
+        if obj.internship.company != self.request.user:
+            raise PermissionDenied("You do not have permission to update this application.")
+        return obj
+
+    def perform_update(self, serializer):
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        instance.status = Application.Status.REJECTED
+        instance.save()
+
+class ApplicationRetrieveView(generics.RetrieveAPIView):
+    queryset = Application.objects.all()
+    serializer_class = ApplicationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        obj = super().get_object()
+        if obj.internship.company != self.request.user and obj.student != self.request.user:
+            raise PermissionDenied("You do not have permission to view this application.")
+        return obj
+
+class ApplicationListView(generics.ListAPIView):
+    queryset = Application.objects.all()
+    serializer_class = ApplicationSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['student','internship','status']
+    ordering_fields = ['id', 'application_date']
+    
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if self.request.user.role not in [User.Role.ADMIN]:
+            if self.request.user.role == User.Role.COMPANY:
+                queryset = queryset.filter(internship__company=self.request.user)
+            else:
+                queryset = queryset.filter(student=self.request.user.student)
+        return queryset
+

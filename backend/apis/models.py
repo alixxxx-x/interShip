@@ -84,7 +84,7 @@ class InternshipOffer(models.Model):
 # application model
     
 class Application(models.Model):
-    class Status(models.TextChoises):
+    class Status(models.TextChoices):
         PENDING = 'PENDING', 'Pending'
         ACCEPTED = 'ACCEPTED', 'Accepted'
         REJECTED = 'REJECTED', 'Rejected'
