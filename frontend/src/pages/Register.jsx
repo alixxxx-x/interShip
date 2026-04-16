@@ -118,8 +118,8 @@ function Register() {
         setLoading(true);
         try {
             const payload = role === "student"
-                ? { first_name: firstName, last_name: lastName, email, password, role: "student" }
-                : { company_name: companyName, email, password, role: "company" };
+                ? { first_name: firstName, last_name: lastName, email, password, role: "STUDENT" }
+                : { name: companyName, email, password, role: "COMPANY" };
 
             await api.post("/auth/register/", payload);
             alert("Registration successful! Please login.");

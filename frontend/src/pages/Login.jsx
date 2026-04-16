@@ -56,7 +56,7 @@ function Login() {
         setErrors({});
         setLoading(true);
         try {
-            const res = await api.post("/auth/login/", { username, password });
+            const res = await api.post("/auth/login/", { email: username, password });
             localStorage.setItem(ACCESS_TOKEN, res.data.access);
             localStorage.setItem(REFRESH_TOKEN, res.data.refresh);
             navigate("/");
