@@ -10,11 +10,16 @@ class User(AbstractUser):
         COMPANY = 'COMPANY', 'Company'
         ADMIN = 'ADMIN', 'Admin'
 
+    email = models.EmailField(unique=True)
+    username = models.CharField(max_length=150, unique=True, null=True, blank=True)
     role = models.CharField(max_length=10, choices=Role.choices, default=Role.STUDENT)
     profile_picture = models.ImageField(upload_to='profiles/', blank=True, null=True)
 
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username']
+
     def __str__(self):
-        return f"{self.username} ({self.role})"
+        return f"{self.email} ({self.role})"
 
 class Student(User):
     university_id = models.CharField(max_length=50)
