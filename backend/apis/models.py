@@ -76,7 +76,7 @@ class InternshipOffer(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField()
     company = models.ForeignKey(Company, on_delete=models.CASCADE)
-    interbship_location = models.CharField(choices=InternshipLocation.choices, default=InternshipLocation.ONSITE)
+    internship_location = models.CharField(choices=InternshipLocation.choices, default=InternshipLocation.ONSITE)
     status = models.CharField(choices=Status.choices, default=Status.DRAFT)
     internship_type = models.CharField(choices=InternshipType.choices, default=InternshipType.FULL_TIME)
     internship_structure = models.CharField(choices=InternshipStructure.choices, default=InternshipStructure.FOR_CREDIT)
