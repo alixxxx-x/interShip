@@ -1,4 +1,3 @@
-from backend.apis.serializers import ApplicationSerializer
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status, filters
 from rest_framework.response import Response
@@ -70,7 +69,7 @@ class InternshipCreateView(generics.CreateAPIView):
         serializer.save(company=self.request.user) # hadi t7ot l company (li hiya already logged in User) automatically fl field t3 company
     
 
-class InternshipUpdateDestroyView(generics.UpdateDestroyAPIView):
+class InternshipUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = InternshipOffer.objects.all()
     serializer_class = InternshipSerializer
     permission_classes = [IsCompany, IsAuthenticated]
@@ -136,9 +135,9 @@ class ApplicationCreateView(generics.CreateAPIView):
         internship = serializer.context['internship']
         serializer.save(student=self.request.user.student, internship=internship)
 
-class ApplicationUpdateDestroyView(generics.UpdateDestroyAPIView):
+class ApplicationUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Application.objects.all()
-    seializer_class = ApplicationSerializer
+    serializer_class = ApplicationSerializer
     permission_classes = [IsAuthenticated, IsCompany]
 
     def get_object(self):
@@ -177,7 +176,7 @@ class ApplicationListView(generics.ListAPIView):
         queryset = super().get_queryset()
         if self.request.user.role not in [User.Role.ADMIN]:
             if self.request.user.role == User.Role.COMPANY:
-                queryset = queryset.filter(company=self.request.user)
+                queryset = queryset.filter(internship__company=self.request.user)
             else:
                 queryset = queryset.filter(student=self.request.user.student)
         return queryset
