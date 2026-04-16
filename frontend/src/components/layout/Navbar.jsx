@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import logoGif from "@/assets/logo.gif";
+
 import {
     Menu, X, User, Settings, LogOut,
     ChevronDown, LayoutDashboard, Bell, Sun, Moon
@@ -67,9 +69,11 @@ export default function Navbar() {
     return (
         <nav className="fixed top-0 left-0 right-0 z-[100] bg-white border-b border-slate-100 shadow-sm">
             <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-                <Link to="/" className="flex items-center gap-0.5 hover:opacity-80 transition-opacity">
-                    <span className="text-2xl font-black tracking-tighter text-slate-900 uppercase">Inter.Ship</span>
-                    <span className="text-primary text-3xl leading-none -mt-1">.</span>
+                <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                    <img src={logoGif} alt="Inter.Ship" className="w-8 h-8 rounded-md" />
+                    <span className="text-xl font-bold tracking-tight text-purple-600 font-['Poppins',sans-serif]">
+                        Inter<span className="text-purple-400">.Ship</span>
+                    </span>
                 </Link>
 
                 {/* Desktop Menu */}
