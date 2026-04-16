@@ -24,7 +24,7 @@ class UserSerializer(serializers.ModelSerializer):
             'first_name', 'last_name', 'university_id', 'wilaya', 'phone',
             'name', 'logo', 'description', 'location', 'website', 'department'
         ]
-        read_only_fields = ['id']
+        read_only_fields = ['id', 'username']
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -42,7 +42,15 @@ class UserSerializer(serializers.ModelSerializer):
             profile = getattr(instance, related_name, None)
             if profile:
                 for field in fields:
-                    data[field] = getattr(profile, field, None)
+                    val = getattr(profile, field, None)
+                    
+                    # Safely handle ImageField/FileField serialization
+                    # In Django, boolean check on a FieldFile returns False if no file is present
+                    from django.db.models.fields.files import FieldFile
+                    if isinstance(val, FieldFile):
+                        data[field] = val.url if val else None
+                    else:
+                        data[field] = val
                     
         return data
 
@@ -58,17 +66,20 @@ class UserSerializer(serializers.ModelSerializer):
         else:
             username = validated_data.get('email')
         
-        if role == User.Role.STUDENT:
-            user = Student.objects.create_user(username=username, role=role, **validated_data)
-        elif role == User.Role.COMPANY:
-            user = Company.objects.create_user(username=username, role=role, **validated_data)
-        elif role == User.Role.ADMIN:
-            user = Administrator.objects.create_user(username=username, role=role, **validated_data)
-        else:
-            user = User.objects.create_user(username=username, role=role, **validated_data)
-            
-        user.set_password(password)
-        user.save()
+        # Create user instance using the correct model
+        models_map = {
+            User.Role.STUDENT: Student,
+            User.Role.COMPANY: Company,
+            User.Role.ADMIN: Administrator,
+        }
+        
+        model_class = models_map.get(role, User)
+        user = model_class.objects.create_user(
+            username=username,
+            password=password,
+            role=role,
+            **validated_data
+        )
         return user
 
 class ChangePasswordSerializer(serializers.Serializer):
