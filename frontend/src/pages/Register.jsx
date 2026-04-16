@@ -132,7 +132,7 @@ function Register() {
     };
 
     const inputClass = (field) =>
-        `w-full px-5 py-3.5 border-[1.5px] rounded-xl text-sm text-indigo-950 bg-indigo-50/30 outline-none transition-all placeholder:text-indigo-300 focus:border-purple-600 focus:ring-[3px] focus:ring-purple-600/10 focus:bg-white ${errors[field] ? 'border-red-400 focus:border-red-500 focus:ring-red-400/20' : 'border-indigo-100'}`;
+        `w-full px-5 py-3.5 border-[1.5px] rounded-xl text-sm text-indigo-950 bg-indigo-50/30 outline-none transition-all placeholder:text-indigo-300 focus:border-purple-600 focus:ring-[3px] focus:ring-purple-600/10 ${errors[field] ? 'border-red-400 focus:border-red-500 focus:ring-red-400/20' : 'border-indigo-100'}`;
 
     const errorMsg = (field) =>
         errors[field] ? (
@@ -272,7 +272,7 @@ function Register() {
                             <button
                                 type="button"
                                 onClick={() => setShowPw(!showPw)}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-indigo-300 hover:text-purple-600 transition-colors p-0 flex items-center"
+                                className="absolute right-4 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-indigo-300 flex items-center"
                                 aria-label="Toggle password visibility"
                                 tabIndex={-1}
                             >
@@ -297,7 +297,7 @@ function Register() {
                             <button
                                 type="button"
                                 onClick={() => setShowConfirmPw(!showConfirmPw)}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-indigo-300 hover:text-purple-600 transition-colors p-0 flex items-center"
+                                className="absolute right-4 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-indigo-300 flex items-center"
                                 aria-label="Toggle confirm password visibility"
                                 tabIndex={-1}
                             >
