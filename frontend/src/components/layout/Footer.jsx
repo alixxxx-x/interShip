@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import logoGif from "@/assets/logo.gif";
 
 export default function Footer() {
     return (
@@ -6,22 +7,35 @@ export default function Footer() {
             <div className="max-w-7xl mx-auto px-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 text-sm">
                     <div className="space-y-4">
-                        <Link to="/" className="flex items-center gap-1">
-                            <span className="text-xl font-bold uppercase text-foreground">Inter.Ship</span>
-                            <span className="text-primary text-2xl">.</span>
+                        <Link to="/" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                            <img src={logoGif} alt="Inter.Ship" className="w-8 h-8 rounded-md" />
+                            <span className="text-xl font-bold tracking-tight text-purple-600 font-['Poppins',sans-serif]">
+                                Inter<span className="text-purple-400">.Ship</span>
+                            </span>
                         </Link>
                         <p className="leading-relaxed text-muted-foreground">
                             Connecting students with top companies for smarter internships. We streamline the matching and validation process for everyone.
                         </p>
                     </div>
-
                     <div>
-                        <h3 className="font-semibold uppercase tracking-wider mb-6 text-xs text-foreground">Explore</h3>
-                        <ul className="space-y-3 text-muted-foreground">
-                            <li><Link to="/internships" className="hover:text-primary transition-colors">Browse Internships</Link></li>
-                            <li><Link to="/companies" className="hover:text-primary transition-colors">Companies</Link></li>
-                            <li><Link to="/how-it-works" className="hover:text-primary transition-colors">How it Works</Link></li>
-                            <li><Link to="/register" className="hover:text-primary transition-colors">Join Now</Link></li>
+                        <h3 className="text-white font-semibold uppercase tracking-wider mb-6 text-xs">Explore</h3>
+                        <ul className="space-y-3 text-gray-400">
+                            <li><Link to="/internships" className="hover:text-cyan-400 transition-colors">Browse Internships</Link></li>
+                            <li><Link to="/companies" className="hover:text-cyan-400 transition-colors">Companies</Link></li>
+                            <li>
+                                <Link to="/#how-it-works"
+                                    onClick={(e) => {
+                                        if (window.location.pathname === '/') {
+                                            e.preventDefault();
+                                            document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
+                                        }
+                                    }}
+                                    className="hover:text-cyan-400 transition-colors"
+                                >
+                                    How it Works
+                                </Link>
+                            </li>
+                            <li><Link to="/register" className="hover:text-cyan-400 transition-colors">Join Now</Link></li>
                         </ul>
                     </div>
 
