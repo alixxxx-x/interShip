@@ -8,7 +8,6 @@ import {
   TrendingUp, 
   Plus,
 } from "lucide-react";
-
 import {
   Table,
   TableBody,
