@@ -70,7 +70,9 @@ const StepDots = ({ current, total = 3 }) => (
 
 /* ════════════════════════════════════════════
    ForgotPasswordModal Component
-   ════════════════════════════════════════════ */
+   ════════════════════════════════════════════ 
+*/
+
 function ForgotPasswordModal({ isOpen, onClose }) {
     const [step, setStep] = useState(0);
     const [email, setEmail] = useState("");

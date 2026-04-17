@@ -3,20 +3,21 @@ import api from "@/api/api";
 import { useNavigate, Link } from "react-router-dom";
 import signUpImg from "@/assets/signUp.png";
 import illustrationImg from "@/assets/login-illustration.png";
+import headerImg from "@/assets/HEADER.png";
 import logoGif from "@/assets/logo.gif";
 
 /* ─── Carousel slides data ─── */
 const slides = [
-    {
-        image: signUpImg,
-        text: <>Find the right internship and build<br />your career with <strong className="text-gray-900">Inter.Ship</strong></>,
-    },
     {
         image: illustrationImg,
         text: <>Connect with top companies and<br />unlock your <strong className="text-gray-900">potential</strong></>,
     },
     {
         image: signUpImg,
+        text: <>Find the right internship and build<br />your career with <strong className="text-gray-900">Inter.Ship</strong></>,
+    },
+    {
+        image: headerImg,
         text: <>One platform for students, companies,<br />and <strong className="text-gray-900">universities</strong></>,
     },
 ];
@@ -131,7 +132,7 @@ function Register() {
     };
 
     const inputClass = (field) =>
-        `w-full px-5 py-3.5 border-[1.5px] rounded-xl text-sm text-indigo-950 bg-indigo-50/30 outline-none transition-all placeholder:text-indigo-300 focus:border-purple-600 focus:ring-[3px] focus:ring-purple-600/10 focus:bg-white ${errors[field] ? 'border-red-400 focus:border-red-500 focus:ring-red-400/20' : 'border-indigo-100'}`;
+        `w-full px-5 py-3.5 border-[1.5px] rounded-xl text-sm text-indigo-950 bg-indigo-50/30 outline-none transition-all placeholder:text-indigo-300 focus:border-purple-600 focus:ring-[3px] focus:ring-purple-600/10 ${errors[field] ? 'border-red-400 focus:border-red-500 focus:ring-red-400/20' : 'border-indigo-100'}`;
 
     const errorMsg = (field) =>
         errors[field] ? (
@@ -148,14 +149,6 @@ function Register() {
 
             {/* ====== LEFT PANEL — Form ======= */}
             <div className="flex-1 basis-1/2 flex flex-col justify-center px-16 lg:px-24 py-12 max-w-[680px] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-
-                {/* Logo */}
-                <div className="flex items-center gap-2.5 mb-4 shrink-0">
-                    <img src={logoGif} alt="Inter.Ship" className="w-[77px] h-[77px] rounded-lg" />
-                    <span className="text-[30px] font-semibold tracking-tight text-gray-900 font-['Poppins',sans-serif]">
-                        Inter<span className="text-purple-500">.Ship</span>
-                    </span>
-                </div>
 
                 {/* Title */}
                 <h1 className="text-[2.4rem] font-extrabold text-gray-900 leading-tight tracking-tight mb-1 shrink-0">
@@ -279,7 +272,7 @@ function Register() {
                             <button
                                 type="button"
                                 onClick={() => setShowPw(!showPw)}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-indigo-300 hover:text-purple-600 transition-colors p-0 flex items-center"
+                                className="absolute right-4 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-indigo-300 flex items-center"
                                 aria-label="Toggle password visibility"
                                 tabIndex={-1}
                             >
@@ -304,7 +297,7 @@ function Register() {
                             <button
                                 type="button"
                                 onClick={() => setShowConfirmPw(!showConfirmPw)}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-indigo-300 hover:text-purple-600 transition-colors p-0 flex items-center"
+                                className="absolute right-4 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-indigo-300 flex items-center"
                                 aria-label="Toggle confirm password visibility"
                                 tabIndex={-1}
                             >

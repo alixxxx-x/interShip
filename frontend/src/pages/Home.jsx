@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import {
     ArrowRight,
     CheckCircle,
@@ -78,6 +79,20 @@ export function HowItWorksSection() {
 }
 
 function Home() {
+    const location = useLocation();
+
+    useEffect(() => {
+        if (location.hash === '#how-it-works') {
+            // for scroll how it work kima ykoun fi footer
+            setTimeout(() => {
+                const el = document.getElementById('how-it-works');
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth' });
+                }
+            }, 100);
+        }
+    }, [location]);
+
     return (
         <div className="flex flex-col w-full">
             {/* Hero Section */}
@@ -87,9 +102,9 @@ function Home() {
                         <span className="w-2.5 h-2.5 rounded-full bg-purple-500 animate-pulse inline-block shrink-0" />
                         New: AI-Powered Matching Now Available
                     </div>
-                    <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight text-foreground mb-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                    <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-foreground mb-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
                         Connecting Talent with <br />
-                        <span className="text-primary italic">Opportunity.</span>
+                        <span className="text-primary ">Opportunity.</span>
                     </h1>
                     <p className="max-w-2xl mx-auto text-lg text-muted-foreground mb-10 animate-in fade-in slide-in-from-bottom-5 duration-1000">
                         Inter.Ship is the premier platform for students to find meaningful internships and companies to discover the next generation of industry leaders.
@@ -100,11 +115,14 @@ function Home() {
                                 Browse Internships <ArrowRight className="ml-2 h-4 w-4" />
                             </Button>
                         </Link>
-                        <Link to="/about">
+                        <a href="#how-it-works" onClick={(e) => {
+                            e.preventDefault();
+                            document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
+                        }}>
                             <Button size="lg" variant="outline" className="rounded-full px-8 h-12 font-bold bg-background">
                                 How it Works
                             </Button>
-                        </Link>
+                        </a>
                     </div>
                 </div>
 
