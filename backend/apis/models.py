@@ -10,16 +10,21 @@ class User(AbstractUser):
         COMPANY = 'COMPANY', 'Company'
         ADMIN = 'ADMIN', 'Admin'
 
+    email = models.EmailField(unique=True)
+    username = models.CharField(max_length=150, null=True, blank=True)
     role = models.CharField(max_length=10, choices=Role.choices, default=Role.STUDENT)
     profile_picture = models.ImageField(upload_to='profiles/', blank=True, null=True)
 
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username']
+
     def __str__(self):
-        return f"{self.username} ({self.role})"
+        return f"{self.email} ({self.role})"
 
 class Student(User):
-    university_id = models.CharField(max_length=50)
-    wilaya = models.CharField(max_length=100)
-    phone = models.CharField(max_length=20)
+    university_id = models.CharField(max_length=50, blank=True, null=True)
+    wilaya = models.CharField(max_length=100, blank=True, null=True)
+    phone = models.CharField(max_length=20, blank=True, null=True)
 
     class Meta:
         verbose_name_plural = "Students"
@@ -27,18 +32,19 @@ class Student(User):
 class Company(User):
     name = models.CharField(max_length=255)
     logo = models.ImageField(upload_to='logos/', blank=True, null=True)
-    description = models.TextField()
-    location = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    location = models.CharField(max_length=255, blank=True, null=True)
     website = models.URLField(blank=True, null=True)
 
     class Meta:
         verbose_name_plural = "Companies"
 
 class Administrator(User):
-    department = models.CharField(max_length=100)
+    department = models.CharField(max_length=100, blank=True, null=True)
 
     class Meta:
         verbose_name_plural = "Administrators"
+
 
 # internship model
 

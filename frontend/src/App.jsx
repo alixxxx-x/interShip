@@ -1,26 +1,25 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme-provider";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
+import MainLayout from "@/components/layout/MainLayout";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import ProtectedRoute from "@/routes/ProtectedRoute";
 import AdminRoute from "@/routes/AdminRoute";
+import CompanyRoute from "@/routes/CompanyRoute";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import Home from "@/pages/Home";
 import AdminPanel from "@/pages/AdminPanel";
 import AboutUs from "@/pages/AboutUs";
 import Profile from "@/pages/Profile";
+import CompanyDashboard from "@/features/dashboards/companyDashboard";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 
 function App() {
   return (
     <ThemeProvider defaultTheme="light" storageKey="intership-theme">
-      <div className="flex flex-col min-h-screen bg-background text-foreground tracking-tight">
-        <Navbar />
-        {/* Spacer for fixed navbar */}
-        <div className="h-16"></div>
-        
-        <main className="flex-1">
-          <Routes>
+      <TooltipProvider>
+        <Routes>
+          <Route element={<MainLayout />}>
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<AboutUs />} />
             <Route
@@ -31,6 +30,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route
@@ -43,11 +43,12 @@ function App() {
             />
             <Route path="/logout" element={<Logout />} />
             <Route path="*" element={<Navigate to="/" />} />
-          </Routes>
-        </main>
-
-        <Footer />
-      </div>
+          </Route>
+          <Route element={<CompanyRoute><DashboardLayout /></CompanyRoute>}>
+            <Route path="/companydashboard" element={<CompanyDashboard />} />
+          </Route>
+        </Routes>
+      </TooltipProvider>
     </ThemeProvider>
   );
 }

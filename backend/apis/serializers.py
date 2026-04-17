@@ -5,33 +5,82 @@ from .models import *
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True)
+    
+    # Registration fields (not on base User model)
+    university_id = serializers.CharField(required=False, write_only=True)
+    wilaya = serializers.CharField(required=False, write_only=True)
+    phone = serializers.CharField(required=False, write_only=True)
+    name = serializers.CharField(required=False, write_only=True)
+    logo = serializers.ImageField(required=False, write_only=True)
+    description = serializers.CharField(required=False, write_only=True)
+    location = serializers.CharField(required=False, write_only=True)
+    website = serializers.URLField(required=False, write_only=True)
+    department = serializers.CharField(required=False, write_only=True)
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'role', 'profile_picture', 'password']
-        read_only_fields = ['id', 'role']
+        fields = [
+            'id', 'username', 'email', 'role', 'profile_picture', 'password',
+            'first_name', 'last_name', 'university_id', 'wilaya', 'phone',
+            'name', 'logo', 'description', 'location', 'website', 'department'
+        ]
+        read_only_fields = ['id', 'username']
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
         
-        # Compact role-specific field mapping
-        role_fields = {
-            User.Role.STUDENT: ['university_id', 'wilaya', 'phone'],
-            User.Role.COMPANY: ['name', 'logo', 'description', 'location', 'website'],
-            User.Role.ADMIN: ['department'],
+        # Add role-specific profile fields to the output
+        profile_map = {
+            User.Role.STUDENT: ('student', ['university_id', 'wilaya', 'phone']),
+            User.Role.COMPANY: ('company', ['name', 'logo', 'description', 'location', 'website']),
+            User.Role.ADMIN: ('administrator', ['department']),
         }
         
-        related_name = instance.role.lower() if instance.role != User.Role.ADMIN else 'administrator'
-        profile = getattr(instance, related_name, None)
-        
-        if profile and instance.role in role_fields:
-            for field in role_fields[instance.role]:
-                data[field] = getattr(profile, field, None)
-                
+        config = profile_map.get(instance.role)
+        if config:
+            related_name, fields = config
+            profile = getattr(instance, related_name, None)
+            if profile:
+                for field in fields:
+                    val = getattr(profile, field, None)
+                    
+                    # Safely handle ImageField/FileField serialization
+                    # In Django, boolean check on a FieldFile returns False if no file is present
+                    from django.db.models.fields.files import FieldFile
+                    if isinstance(val, FieldFile):
+                        data[field] = val.url if val else None
+                    else:
+                        data[field] = val
+                    
         return data
 
     def create(self, validated_data):
-        return User.objects.create_user(**validated_data) #drna b create_user() ou mach .create() to hash the password 
+        role = validated_data.pop('role', User.Role.STUDENT)
+        password = validated_data.pop('password')
+        
+        # Auto-generate username based on role
+        if role == User.Role.STUDENT:
+            username = f"{validated_data.get('first_name', '')} {validated_data.get('last_name', '')}".strip()
+        elif role == User.Role.COMPANY:
+            username = validated_data.get('name', validated_data.get('email'))
+        else:
+            username = validated_data.get('email')
+        
+        # Create user instance using the correct model
+        models_map = {
+            User.Role.STUDENT: Student,
+            User.Role.COMPANY: Company,
+            User.Role.ADMIN: Administrator,
+        }
+        
+        model_class = models_map.get(role, User)
+        user = model_class.objects.create_user(
+            username=username,
+            password=password,
+            role=role,
+            **validated_data
+        )
+        return user
 
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(required=True)
