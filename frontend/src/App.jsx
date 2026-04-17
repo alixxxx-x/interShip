@@ -11,7 +11,7 @@ import Home from "@/pages/Home";
 import AdminPanel from "@/pages/AdminPanel";
 import AboutUs from "@/pages/AboutUs";
 import Profile from "@/pages/Profile";
-import CompanyDashboard from "@/features/dashboards/companyDashboard";
+import CompanyDashboard from "@/features/dashboards/CompanyDashboard";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 
 function App() {
