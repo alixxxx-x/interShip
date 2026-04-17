@@ -163,9 +163,9 @@ export default function CompanyDashboard() {
 
   const getStatusBadge = (status) => {
     const variants = {
-      "In Progress": "in progress",
-      "Accepted": "accepted",
-      "Rejected": "rejected"
+      "In Review": "secondary",
+      "Accepted": "success",
+      "Rejected": "destructive"
     };
     return variants[status] || "default";
   };
