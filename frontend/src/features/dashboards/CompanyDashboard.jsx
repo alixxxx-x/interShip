@@ -6,21 +6,9 @@ import {
   Briefcase, 
   Users, 
   TrendingUp, 
-  Clock, 
   Plus,
-  ArrowUpRight,
-  ArrowDownRight,
-  MoreHorizontal
 } from "lucide-react";
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer 
-} from "recharts";
+
 import {
   Table,
   TableBody,
@@ -35,7 +23,6 @@ import { useNavigate } from "react-router-dom";
 export default function CompanyDashboard() {
   const [stats, setStats] = useState(null);
   const [applications, setApplications] = useState([]);
-  const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 

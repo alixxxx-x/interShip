@@ -1,4 +1,14 @@
-{/* Chart Section */}
+import { 
+  AreaChart, 
+  Area, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer 
+} from "recharts";{/* Chart Section */}
+
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
