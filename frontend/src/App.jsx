@@ -1,4 +1,5 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import { ThemeProvider } from "@/components/theme-provider";
 import MainLayout from "@/components/layout/MainLayout";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,14 +12,26 @@ import Home from "@/pages/Home";
 import AdminPanel from "@/pages/AdminPanel";
 import AboutUs from "@/pages/AboutUs";
 import Profile from "@/pages/Profile";
-import CompanyDashboard from "@/features/dashboards/companyDashboard";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import CompanyDashboard from "@/features/dashboards/CompanyDashboard";
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [pathname]);
+
+  return null;
+}
 
 function App() {
   return (
     <ThemeProvider defaultTheme="light" storageKey="intership-theme">
       <TooltipProvider>
+        <ScrollToTop />
         <Routes>
+          {/* Main Layout Pages */}
           <Route element={<MainLayout />}>
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<AboutUs />} />
@@ -30,20 +43,23 @@ function App() {
                 </ProtectedRoute>
               }
             />
-
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route
-              path="/admin"
-              element={
-                <AdminRoute>
-                  <AdminPanel />
-                </AdminRoute>
-              }
-            />
-            <Route path="/logout" element={<Logout />} />
-            <Route path="*" element={<Navigate to="/" />} />
           </Route>
+
+          {/* Auth & Standalone Pages */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <AdminPanel />
+              </AdminRoute>
+            }
+          />
+          <Route path="/logout" element={<Logout />} />
+          <Route path="*" element={<Navigate to="/" />} />
+
+          {/* Company Dashboard Layout */}
           <Route element={<CompanyRoute><DashboardLayout /></CompanyRoute>}>
             <Route path="/companydashboard" element={<CompanyDashboard />} />
           </Route>
