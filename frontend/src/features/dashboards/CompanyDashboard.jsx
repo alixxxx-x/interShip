@@ -129,11 +129,11 @@ export default function CompanyDashboard() {
 
   const getStatusBadge = (status) => {
     const variants = {
-      "In Review": "secondary",
+      "In progress": "purple",
       "Accepted": "success",
       "Rejected": "destructive"
     };
-    return variants[status] || "default";
+    return variants[status] || "outline";
   };
 
   return (
