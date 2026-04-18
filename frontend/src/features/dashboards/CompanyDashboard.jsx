@@ -6,21 +6,8 @@ import {
   Briefcase, 
   Users, 
   TrendingUp, 
-  Clock, 
   Plus,
-  ArrowUpRight,
-  ArrowDownRight,
-  MoreHorizontal
 } from "lucide-react";
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer 
-} from "recharts";
 import {
   Table,
   TableBody,
@@ -30,12 +17,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useNavigate } from "react-router-dom";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import CreateOfferModal from "./CreateOfferModal";
 
 
 export default function CompanyDashboard() {
   const [stats, setStats] = useState(null);
   const [applications, setApplications] = useState([]);
-  const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -158,10 +147,7 @@ export default function CompanyDashboard() {
             Welcome back! Here's what's happening with your internships.
           </p>
         </div>
-        <Button onClick={() => navigate("/companydashboard/post-internship")}>
-          <Plus className="mr-2 h-4 w-4" />
-          Quick Add
-        </Button>
+        <CreateOfferModal />
       </div>
 
       {/* Stats Grid */}
