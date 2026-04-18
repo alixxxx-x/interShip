@@ -17,6 +17,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useNavigate } from "react-router-dom";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import CreateOfferModal from "./CreateOfferModal";
 
 
 export default function CompanyDashboard() {
@@ -144,10 +147,7 @@ export default function CompanyDashboard() {
             Welcome back! Here's what's happening with your internships.
           </p>
         </div>
-        <Button onClick={() => navigate("/companydashboard/post-internship")}>
-          <Plus className="mr-2 h-4 w-4" />
-          Quick Add
-        </Button>
+        <CreateOfferModal />
       </div>
 
       {/* Stats Grid */}
