@@ -20,6 +20,7 @@ import { useNavigate } from "react-router-dom";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import CreateOfferModal from "./CreateOfferModal";
+import { useSearchParams } from "react-router-dom";
 
 
 export default function CompanyDashboard() {
@@ -27,6 +28,11 @@ export default function CompanyDashboard() {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const isModalOpen = searchParams.get("newOffer") === "true";
+  const openModal = () => setSearchParams({ newOffer: "true" });
+  const closeModal = () => setSearchParams({});
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -139,16 +145,31 @@ export default function CompanyDashboard() {
   return (
     <div className="space-y-6 p-6">
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Welcome back! Here's what's happening with your internships.
-          </p>
-        </div>
-        <CreateOfferModal />
+    {/* Header */}
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <p className="text-muted-foreground">
+          Welcome back! Here's what's happening with your internships.
+        </p>
       </div>
+      
+      {/* Quick Add Button - now uses openModal */}
+      <Button onClick={openModal}>
+        <Plus className="mr-2 h-4 w-4" />
+        Quick Add
+      </Button>
+      
+      {/* Modal - controlled mode */}
+      <CreateOfferModal 
+        open={isModalOpen} 
+        onOpenChange={closeModal}
+        onOfferCreated={() => {
+          // Optional: refresh data after creating offer
+          // fetchDashboardData(); 
+        }} 
+      />
+    </div>
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-3">

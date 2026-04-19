@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import api from "@/api/api";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import signUpImg from "@/assets/signUp.png";
 import illustrationImg from "@/assets/login-illustration.png";
 import headerImg from "@/assets/HEADER.png";
@@ -55,7 +55,9 @@ const CompanyIcon = ({ active }) => (
 );
 
 function Register() {
-    const [role, setRole] = useState("student");
+    const [searchParams] = useSearchParams();
+    const initialRole = searchParams.get("type") === "company" ? "company" : "student";
+    const [role, setRole] = useState(initialRole);
     /* Student fields */
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
