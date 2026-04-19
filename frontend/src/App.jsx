@@ -14,6 +14,7 @@ import AboutUs from "@/pages/AboutUs";
 import Profile from "@/pages/Profile";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import CompanyDashboard from "@/features/dashboards/CompanyDashboard";
+import AllApplications from "@/pages/AllApplications";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -62,6 +63,7 @@ function App() {
           {/* Company Dashboard Layout */}
           <Route element={<CompanyRoute><DashboardLayout /></CompanyRoute>}>
             <Route path="/companydashboard" element={<CompanyDashboard />} />
+            <Route path="/companydashboard/applications" element={<AllApplications />} />
           </Route>
         </Routes>
       </TooltipProvider>
