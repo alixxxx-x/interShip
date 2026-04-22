@@ -247,6 +247,7 @@ function Home() {
                     </div>
                 </div>
             </section>
+
             {/* How It Works Section */}
             <HowItWorksSection />
 
@@ -330,7 +331,7 @@ function Home() {
                             </div>
 
                             <div className="mt-auto">
-                                <Link to="/register" className="block w-full">
+                                <Link to="/register?type=company" className="block w-full">
                                     <Button size="lg" className="w-full h-12 rounded-xl text-[15px] font-semibold bg-primary text-primary-foreground hover:bg-primary/80">
                                         Partner With Us
                                     </Button>

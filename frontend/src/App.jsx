@@ -11,9 +11,11 @@ import Register from "@/pages/Register";
 import Home from "@/pages/Home";
 import AdminPanel from "@/pages/AdminPanel";
 import AboutUs from "@/pages/AboutUs";
+import Internships from "@/pages/Internships";
 import Profile from "@/pages/Profile";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import CompanyDashboard from "@/features/dashboards/CompanyDashboard";
+import AllApplications from "@/pages/AllApplications";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -35,6 +37,7 @@ function App() {
           <Route element={<MainLayout />}>
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<AboutUs />} />
+            <Route path="/internships" element={<Internships />} />
             <Route
               path="/profile"
               element={
@@ -62,6 +65,7 @@ function App() {
           {/* Company Dashboard Layout */}
           <Route element={<CompanyRoute><DashboardLayout /></CompanyRoute>}>
             <Route path="/companydashboard" element={<CompanyDashboard />} />
+            <Route path="/companydashboard/applications" element={<AllApplications />} />
           </Route>
         </Routes>
       </TooltipProvider>

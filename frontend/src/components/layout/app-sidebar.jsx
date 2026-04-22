@@ -80,7 +80,7 @@ const data = {
         },
         {
           title: "New Posting",
-          url: "/companydashboard/new-internship",
+          url: "/companydashboard?newOffer=true",
         },
       ],
     },

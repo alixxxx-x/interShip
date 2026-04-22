@@ -20,6 +20,7 @@ import { useNavigate } from "react-router-dom";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import CreateOfferModal from "./CreateOfferModal";
+import { useSearchParams } from "react-router-dom";
 
 
 export default function CompanyDashboard() {
@@ -27,6 +28,11 @@ export default function CompanyDashboard() {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const isModalOpen = searchParams.get("newOffer") === "true";
+  const openModal = () => setSearchParams({ newOffer: "true" });
+  const closeModal = () => setSearchParams({});
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -47,35 +53,40 @@ export default function CompanyDashboard() {
             candidate: "Sarah Johnson",
             status: "Rejected",
             appliedDate: "2026-04-15",
-            email: "sarah.j@email.com"
+            email: "sarah.j@email.com",
+            cv: "path/to/cv.pdf"
           },
           {
             id: 2,
             candidate: "Michael Chen",
             status: "In progress",
             appliedDate: "2026-04-14",
-            email: "m.chen@email.com"
+            email: "m.chen@email.com",
+            cv: "path/to/cv.pdf"
           },
           {
             id: 3,
             candidate: "Emma Williams",
             status: "Accepted",
             appliedDate: "2026-04-14",
-            email: "emma.w@email.com"
+            email: "emma.w@email.com",
+            cv: "path/to/cv.pdf"
           },
           {
             id: 4,
             candidate: "James Brown",
             status: "Accepted",
             appliedDate: "2026-04-12",
-            email: "james.b@email.com"
+            email: "james.b@email.com",
+            cv: "path/to/cv.pdf"
           },
           {
             id: 5,
             candidate: "Lisa Anderson",
             status: "In progress",
             appliedDate: "2026-04-11",
-            email: "lisa.a@email.com"
+            email: "lisa.a@email.com",
+            cv: "path/to/cv.pdf"
           }
         ];
         setStats(mockStats);
@@ -139,16 +150,31 @@ export default function CompanyDashboard() {
   return (
     <div className="space-y-6 p-6">
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Welcome back! Here's what's happening with your internships.
-          </p>
-        </div>
-        <CreateOfferModal />
+    {/* Header */}
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <p className="text-muted-foreground">
+          Welcome back! Here's what's happening with your internships.
+        </p>
       </div>
+      
+      {/* Quick Add Button - now uses openModal */}
+      <Button onClick={openModal}>
+        <Plus className="mr-2 h-4 w-4" />
+        Quick Add
+      </Button>
+      
+      {/* Modal - controlled mode */}
+      <CreateOfferModal 
+        open={isModalOpen} 
+        onOpenChange={closeModal}
+        onOfferCreated={() => {
+          // Optional: refresh data after creating offer
+          // fetchDashboardData(); 
+        }} 
+      />
+    </div>
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-3">
@@ -197,22 +223,25 @@ export default function CompanyDashboard() {
                 <TableHead>Candidate</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Applied Date</TableHead>
-                <TableHead className="hidden md:table-cell">Email</TableHead>
-                <TableHead className="w-10"></TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>CV</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {applications.map((app) => (
-                <TableRow key={app.id}>
-                  <TableCell className="font-medium">{app.candidate}</TableCell>
+              {applications.map((application) => (
+                <TableRow key={application.id}>
+                  <TableCell className="font-medium">{application.candidate}</TableCell>
                   <TableCell>
-                    <Badge variant={getStatusBadge(app.status)}>
-                      {app.status}
+                    <Badge variant={getStatusBadge(application.status)}>
+                      {application.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>{new Date(app.appliedDate).toLocaleDateString()}</TableCell>
-                  <TableCell className="hidden md:table-cell text-muted-foreground">
-                    {app.email}
+                  <TableCell>{application.appliedDate}</TableCell>
+                  <TableCell>{application.email}</TableCell>
+                  <TableCell>
+                    <Button variant="outline" size="sm" onClick={() => alert(`Downloading CV for ${application.candidate}`)}>
+                      Download
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
