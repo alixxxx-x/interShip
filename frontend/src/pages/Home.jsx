@@ -14,6 +14,7 @@ import {
     Search,
     BarChart3,
 } from "lucide-react";
+import heroImage from "@/assets/hero-background.jpg";
 
 
 export function HowItWorksSection() {
@@ -96,15 +97,22 @@ function Home() {
     return (
         <div className="flex flex-col w-full">
             {/* Hero Section */}
-            <section className="relative py-20 lg:py-32 overflow-hidden bg-background">
+            {/* background pic */}
+            <section
+                className="relative py-20 lg:py-32 overflow-hidden bg-cover bg-center"
+                style={{ backgroundImage: `url(${heroImage})` }}
+            >
+                {/* Styling of bg pic */}
+                <div className="absolute inset-0 bg-black/68 z-0"></div>
+
                 <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
                     <div className="mb-6 inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full border border-border bg-background shadow-sm text-sm font-medium text-foreground animate-in fade-in slide-in-from-bottom-3 duration-500">
                         <span className="w-2.5 h-2.5 rounded-full bg-purple-500 animate-pulse inline-block shrink-0" />
                         New: AI-Powered Matching Now Available
                     </div>
-                    <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-foreground mb-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                    <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-gray-200 mb-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
                         Connecting Talent with <br />
-                        <span className="text-primary ">Opportunity.</span>
+                        <span className="text-primary">Opportunity.</span>
                     </h1>
                     <p className="max-w-2xl mx-auto text-lg text-muted-foreground mb-10 animate-in fade-in slide-in-from-bottom-5 duration-1000">
                         Inter.Ship is the premier platform for students to find meaningful internships and companies to discover the next generation of industry leaders.

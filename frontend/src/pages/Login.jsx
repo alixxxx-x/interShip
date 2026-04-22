@@ -71,7 +71,7 @@ function Login() {
         <div className="flex h-screen overflow-hidden font-['Inter',system-ui,sans-serif]">
 
             {/* == LEFT PANEL ==   */}
-            <div className="relative flex-1 basis-1/2 min-w-0 overflow-hidden">
+            <div className="relative flex-1 basis-1/2 min-w-0 overflow-hidden hidden md:block">
 
                 {/*  Base gradient */}
                 <div
@@ -164,20 +164,20 @@ function Login() {
             </div>
 
             {/* ====== RIGHT PANEL ======  */}
-            <div className="flex-none basis-1/2 flex items-center justify-center bg-white p-8">
+            <div className="flex-1 md:flex-none md:basis-1/2 flex items-center justify-center bg-white dark:bg-gray-900 p-8">
 
-                <div className="px-9 py-9 w-full  h-[600px] max-w-[450px] animate-[slideUp_0.5s_cubic-bezier(0.22,1,0.36,1)_forwards]">
+                <div className="px-9 py-9 w-full h-auto max-w-[450px] animate-[slideUp_0.5s_cubic-bezier(0.22,1,0.36,1)_forwards]">
 
                     {/* Logo */}
                     <div className="flex items-center justify-center gap-2 mb-4">
                         <img src={logoGif} alt="stage.io" className="w-8 h-8 rounded-md" />
-                        <span className="text-lg font-bold tracking-tight text-purple-600">
-                            Inter<span className="text-purple-400">.Ship</span>
+                        <span className="text-lg font-bold tracking-tight text-purple-600 dark:text-purple-400">
+                            Inter<span className="text-purple-400 dark:text-purple-300">.Ship</span>
                         </span>
                     </div>
 
                     {/* Title */}
-                    <h2 className="text-center text-xl font-bold text-indigo-950 mb-6 ">
+                    <h2 className="text-center text-xl font-bold text-indigo-950 dark:text-gray-100 mb-6 ">
                         Welcome Back!
                     </h2>
 
@@ -186,7 +186,7 @@ function Login() {
 
                         {/* Email */}
                         <div className="flex flex-col gap-1">
-                            <label htmlFor="login-email" className="text-xs font-semibold text-indigo-900">
+                            <label htmlFor="login-email" className="text-xs font-semibold text-indigo-900 dark:text-gray-300">
                                 Email
                             </label>
                             <input
@@ -196,14 +196,14 @@ function Login() {
                                 onChange={(e) => { setUsername(e.target.value); setErrors(prev => ({ ...prev, username: null })) }}
                                 placeholder="Email"
                                 autoComplete="email"
-                                className={`w-full px-3.5 py-2.5 border-[1.5px] rounded-xl text-sm font-[inherit] text-indigo-950 bg-indigo-50/30 outline-none transition-all placeholder:text-indigo-300 focus:ring-[3px] ${errors.username ? 'border-red-400 focus:border-red-500 focus:ring-red-400/20' : 'border-indigo-100 focus:border-purple-600 focus:ring-purple-600/10'}`}
+                                className={`w-full px-3.5 py-2.5 border-[1.5px] rounded-xl text-sm font-[inherit] text-indigo-950 dark:text-gray-100 bg-indigo-50/30 dark:bg-gray-800/50 outline-none transition-all placeholder:text-indigo-300 dark:placeholder:text-gray-500 focus:ring-[3px] ${errors.username ? 'border-red-400 focus:border-red-500 focus:ring-red-400/20' : 'border-indigo-100 dark:border-gray-700 focus:border-purple-600 dark:focus:border-purple-500 focus:ring-purple-600/10'}`}
                             />
                             {errors.username && <span className="text-red-500 text-xs mt-0.5 ml-1 flex items-center gap-1"><svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg> {errors.username}</span>}
                         </div>
 
                         {/* Password */}
                         <div className="flex flex-col gap-1">
-                            <label htmlFor="login-password" className="text-xs font-semibold text-indigo-900">
+                            <label htmlFor="login-password" className="text-xs font-semibold text-indigo-900 dark:text-gray-300">
                                 Password
                             </label>
                             <div className="relative">
@@ -214,12 +214,12 @@ function Login() {
                                     onChange={(e) => { setPassword(e.target.value); setErrors(prev => ({ ...prev, password: null })) }}
                                     placeholder="Password"
                                     autoComplete="current-password"
-                                    className={`w-full px-3.5 py-2.5 pr-10 border-[1.5px] rounded-xl text-sm font-[inherit] text-indigo-950 bg-indigo-50/30 outline-none transition-all placeholder:text-indigo-300 focus:ring-[3px] ${errors.password ? 'border-red-400 focus:border-red-500 focus:ring-red-400/20' : 'border-indigo-100 focus:border-purple-600 focus:ring-purple-600/10'}`}
+                                    className={`w-full px-3.5 py-2.5 pr-10 border-[1.5px] rounded-xl text-sm font-[inherit] text-indigo-950 dark:text-gray-100 bg-indigo-50/30 dark:bg-gray-800/50 outline-none transition-all placeholder:text-indigo-300 dark:placeholder:text-gray-500 focus:ring-[3px] ${errors.password ? 'border-red-400 focus:border-red-500 focus:ring-red-400/20' : 'border-indigo-100 dark:border-gray-700 focus:border-purple-600 dark:focus:border-purple-500 focus:ring-purple-600/10'}`}
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowPw(!showPw)}
-                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-indigo-300 p-0 flex items-center"
+                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-indigo-300 dark:text-gray-500 p-0 flex items-center"
                                     aria-label="Toggle password visibility"
                                     tabIndex={-1}
                                 >
@@ -231,7 +231,7 @@ function Login() {
                                 <button
                                     type="button"
                                     onClick={() => setShowForgotModal(true)}
-                                    className="text-xs font-medium text-purple-600 bg-transparent border-none cursor-pointer p-0 hover:text-purple-800 hover:underline"
+                                    className="text-xs font-medium text-purple-600 dark:text-purple-400 bg-transparent border-none cursor-pointer p-0 hover:text-purple-800 dark:hover:text-purple-300 hover:underline"
                                 >
                                     Forgot Password?
                                 </button>
@@ -255,9 +255,9 @@ function Login() {
 
                         {/* Divider */}
                         <div className="flex items-center gap-3 my-1">
-                            <div className="flex-1 h-px bg-gray-200" />
-                            <span className="text-xs text-gray-400 whitespace-nowrap">or continue with</span>
-                            <div className="flex-1 h-px bg-gray-200" />
+                            <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+                            <span className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">or continue with</span>
+                            <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
                         </div>
 
                         {/* OAuth Buttons ( google and github ) */}
@@ -265,7 +265,7 @@ function Login() {
                             <button
                                 type="button"
                                 id="login-google-btn"
-                                className="flex-1 flex items-center justify-center gap-2 py-2.5 border-[1.5px] border-gray-200 rounded-xl bg-white text-sm font-medium text-gray-700 cursor-pointer transition-all hover:border-purple-300 hover:bg-purple-50/40 hover:shadow-sm active:scale-[0.98]"
+                                className="flex-1 flex items-center justify-center gap-2 py-2.5 border-[1.5px] border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer transition-all hover:border-purple-300 dark:hover:border-purple-500 hover:bg-purple-50/40 dark:hover:bg-purple-500/10 hover:shadow-sm active:scale-[0.98]"
                                 onClick={() => window.location.href = '/auth/google/'}
                             >
                                 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-[18px] h-[18px]" />
@@ -275,20 +275,20 @@ function Login() {
                             <button
                                 type="button"
                                 id="login-github-btn"
-                                className="flex-1 flex items-center justify-center gap-2 py-2.5 border-[1.5px] border-gray-200 rounded-xl bg-white text-sm font-medium text-gray-700 cursor-pointer transition-all hover:border-purple-300 hover:bg-purple-50/40 hover:shadow-sm active:scale-[0.98]"
+                                className="flex-1 flex items-center justify-center gap-2 py-2.5 border-[1.5px] border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer transition-all hover:border-purple-300 dark:hover:border-purple-500 hover:bg-purple-50/40 dark:hover:bg-purple-500/10 hover:shadow-sm active:scale-[0.98]"
                                 onClick={() => window.location.href = '/auth/github/'}
                             >
-                                <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/github/github-original.svg" alt="GitHub" className="w-[18px] h-[18px]" />
+                                <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/github/github-original.svg" alt="GitHub" className="w-[18px] h-[18px] dark:invert" />
                                 GitHub
                             </button>
                         </div>
 
                         {/* signup link */}
-                        <p className="text-center text-sm text-gray-500 mt-2">
+                        <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-2">
                             Don't have an account?{" "}
                             <Link
                                 to="/register"
-                                className="text-indigo-950 font-bold no-underline hover:text-purple-600 hover:underline"
+                                className="text-indigo-950 dark:text-purple-400 font-bold no-underline hover:text-purple-600 dark:hover:text-purple-300 hover:underline"
                             >
                                 Sign up
                             </Link>
