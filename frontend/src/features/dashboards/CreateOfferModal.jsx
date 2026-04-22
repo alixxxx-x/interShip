@@ -12,18 +12,27 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, Plus } from "lucide-react";
+import {
+  Calendar as CalendarIcon,
+  Plus,
+  Briefcase,
+  FileText,
+  MapPin,
+  Clock,
+  GraduationCap,
+  Users
+} from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 
-export default function CreateOfferModal({ 
-  open, 
-  onOpenChange, 
-  triggerButton, 
-  onOfferCreated 
+export default function CreateOfferModal({
+  open,
+  onOpenChange,
+  triggerButton,
+  onOfferCreated
 }) {
   const [formData, setFormData] = useState({
     title: "",
@@ -44,7 +53,7 @@ export default function CreateOfferModal({
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log("Submitting Offer:", formData);
-  
+
     setFormData({
       title: "",
       description: "",
@@ -55,12 +64,12 @@ export default function CreateOfferModal({
       internship_structure: "FOR_CREDIT",
       number_of_places: 1,
     });
-    
+
     if (onOfferCreated) onOfferCreated();
     if (onOpenChange) onOpenChange(false);
   };
 
-  const DialogBody = () => (
+  const dialogContent = (
     <DialogContent className="overflow-y-auto max-h-[90vh] sm:max-w-[700px]">
       <DialogHeader>
         <DialogTitle>Create Internship Offer</DialogTitle>
@@ -68,11 +77,21 @@ export default function CreateOfferModal({
           Fill out the details below to post a new internship opportunity.
         </DialogDescription>
       </DialogHeader>
-      
+
       <form onSubmit={handleSubmit}>
-        <div className="grid gap-5 py-4">
+        <div className="grid gap-5 py-2">
+
+          <div className="flex items-center text-xs uppercase text-muted-foreground font-semibold mt-2 mb-1">
+            <div className="flex-1 border-t"></div>
+            <span className="px-3">Basic Information</span>
+            <div className="flex-1 border-t"></div>
+          </div>
+
           <div className="grid gap-2">
-            <Label htmlFor="title">Title</Label>
+            <Label htmlFor="title" className="flex items-center gap-2">
+              <Briefcase className="h-4 w-4 text-muted-foreground" />
+              Title
+            </Label>
             <Input
               id="title"
               value={formData.title}
@@ -83,21 +102,33 @@ export default function CreateOfferModal({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description" className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-muted-foreground" />
+              Description
+            </Label>
             <textarea
               id="description"
               rows={4}
               value={formData.description}
               onChange={handleChange}
               className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-              placeholder="Describe the responsibilities and requirements..."
+              placeholder="Describe the responsibilities, requirements, and what the intern will learn..."
               required
             />
           </div>
 
+          <div className="flex items-center text-xs uppercase text-muted-foreground font-semibold mt-4 mb-1">
+            <div className="flex-1 border-t"></div>
+            <span className="px-3">Schedule</span>
+            <div className="flex-1 border-t"></div>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2 flex flex-col">
-              <Label>Start Date</Label>
+              <Label className="flex items-center gap-2">
+                <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                Start Date
+              </Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -111,7 +142,7 @@ export default function CreateOfferModal({
                     {formData.offer_start_date ? format(formData.offer_start_date, "PP") : <span>Pick a date</span>}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 z-50 pt-2" align="start" side="bottom" avoidCollisions={false}>
+                <PopoverContent className="w-auto p-0 z-50 pt-2" align="start">
                   <Calendar
                     mode="single"
                     selected={formData.offer_start_date}
@@ -130,7 +161,10 @@ export default function CreateOfferModal({
               </Popover>
             </div>
             <div className="grid gap-2 flex flex-col">
-              <Label>End Date</Label>
+              <Label className="flex items-center gap-2">
+                <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                End Date
+              </Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -144,7 +178,7 @@ export default function CreateOfferModal({
                     {formData.offer_end_date ? format(formData.offer_end_date, "PP") : <span>Pick a date</span>}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 z-50 pt-2" align="start" side="bottom" avoidCollisions={false}>
+                <PopoverContent className="w-auto p-0 z-50 pt-2" align="start">
                   <Calendar
                     mode="single"
                     selected={formData.offer_end_date}
@@ -158,9 +192,18 @@ export default function CreateOfferModal({
             </div>
           </div>
 
+          <div className="flex items-center text-xs uppercase text-muted-foreground font-semibold mt-4 mb-1">
+            <div className="flex-1 border-t"></div>
+            <span className="px-3">Details</span>
+            <div className="flex-1 border-t"></div>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="internship_location">Location Type</Label>
+              <Label htmlFor="internship_location" className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-muted-foreground" />
+                Location Type
+              </Label>
               <select
                 id="internship_location"
                 value={formData.internship_location}
@@ -173,7 +216,10 @@ export default function CreateOfferModal({
               </select>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="internship_type">Internship Type</Label>
+              <Label htmlFor="internship_type" className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+                Internship Type
+              </Label>
               <select
                 id="internship_type"
                 value={formData.internship_type}
@@ -188,7 +234,10 @@ export default function CreateOfferModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="internship_structure">Structure</Label>
+              <Label htmlFor="internship_structure" className="flex items-center gap-2">
+                <GraduationCap className="h-4 w-4 text-muted-foreground" />
+                Structure
+              </Label>
               <select
                 id="internship_structure"
                 value={formData.internship_structure}
@@ -201,7 +250,10 @@ export default function CreateOfferModal({
               </select>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="number_of_places">No. of Positions</Label>
+              <Label htmlFor="number_of_places" className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-muted-foreground" />
+                No. of Positions
+              </Label>
               <Input type="number" id="number_of_places" value={formData.number_of_places} onChange={handleChange} placeholder="1" min="1" required />
             </div>
           </div>
@@ -216,11 +268,11 @@ export default function CreateOfferModal({
     </DialogContent>
   );
 
-  
+
   if (open !== undefined && onOpenChange) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogBody />
+        {dialogContent}
       </Dialog>
     );
   }
@@ -235,7 +287,7 @@ export default function CreateOfferModal({
           </Button>
         )}
       </DialogTrigger>
-      <DialogBody />
+      {dialogContent}
     </Dialog>
   );
 }
