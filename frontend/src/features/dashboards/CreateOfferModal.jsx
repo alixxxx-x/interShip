@@ -20,13 +20,26 @@ import {
   MapPin,
   Clock,
   GraduationCap,
-  Users
+  Users,
+  Wand2,
+  ImagePlus,
+  X,
+  Download
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
 
+const SUGGESTED_SKILLS = [
+  "React", "Node.js", "Python", "UI/UX Design", "Marketing",
+  "Data Science", "Java", "C++", "SQL", "Graphic Design",
+  "Project Management", "Social Media", "SEO", "Excel"
+];
+
+
+import api from "@/api/api";
 
 export default function CreateOfferModal({
   open,
@@ -43,30 +56,112 @@ export default function CreateOfferModal({
     internship_type: "FULL_TIME",
     internship_structure: "FOR_CREDIT",
     number_of_places: 1,
+    skills: [],
+    image: null,
   });
+
+  const [currentSkill, setCurrentSkill] = useState("");
+  const [imagePreview, setImagePreview] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value }));
   };
 
+  const handleAddSkill = (e) => {
+    e.preventDefault();
+    if (currentSkill.trim() && !formData.skills.includes(currentSkill.trim())) {
+      setFormData((prev) => ({
+        ...prev,
+        skills: [...prev.skills, currentSkill.trim()],
+      }));
+      setCurrentSkill("");
+    }
+  };
+
+  const removeSkill = (skillToRemove) => {
+    setFormData((prev) => ({
+      ...prev,
+      skills: prev.skills.filter((s) => s !== skillToRemove),
+    }));
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFormData((prev) => ({ ...prev, image: file }));
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setFormData((prev) => ({ ...prev, image: null }));
+    setImagePreview(null);
+    // Reset file input value so same file can be re-selected
+    const fileInput = document.getElementById("image-upload");
+    if (fileInput) fileInput.value = "";
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Submitting Offer:", formData);
+    setIsSubmitting(true);
 
-    setFormData({
-      title: "",
-      description: "",
-      offer_start_date: null,
-      offer_end_date: null,
-      internship_location: "ONSITE",
-      internship_type: "FULL_TIME",
-      internship_structure: "FOR_CREDIT",
-      number_of_places: 1,
-    });
+    try {
+      const data = new FormData();
+      data.append("title", formData.title);
+      data.append("description", formData.description);
+      data.append("offer_start_date", format(formData.offer_start_date, "yyyy-MM-dd"));
+      data.append("offer_end_date", format(formData.offer_end_date, "yyyy-MM-dd"));
+      data.append("internship_location", formData.internship_location);
+      data.append("internship_type", formData.internship_type);
+      data.append("internship_structure", formData.internship_structure);
+      data.append("number_of_places", formData.number_of_places);
 
-    if (onOfferCreated) onOfferCreated();
-    if (onOpenChange) onOpenChange(false);
+      // Send skills as JSON string
+      data.append("required_skills", JSON.stringify(formData.skills));
+
+      if (formData.image) {
+        data.append("banner_image", formData.image);
+      }
+
+      const response = await api.post("/internships/create/", data, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      console.log("Offer created successfully:", response.data);
+
+      // Reset form
+      setFormData({
+        title: "",
+        description: "",
+        offer_start_date: null,
+        offer_end_date: null,
+        internship_location: "ONSITE",
+        internship_type: "FULL_TIME",
+        internship_structure: "FOR_CREDIT",
+        number_of_places: 1,
+        skills: [],
+        image: null,
+      });
+      setImagePreview(null);
+
+      if (onOfferCreated) onOfferCreated();
+      if (onOpenChange) onOpenChange(false);
+    } catch (err) {
+      console.error("Error creating offer:", err);
+      alert("Failed to create offer. Please check the fields and try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const dialogContent = (
@@ -257,12 +352,149 @@ export default function CreateOfferModal({
               <Input type="number" id="number_of_places" value={formData.number_of_places} onChange={handleChange} placeholder="1" min="1" required />
             </div>
           </div>
+
+          <div className="flex items-center text-xs uppercase text-muted-foreground font-semibold mt-4 mb-1">
+            <div className="flex-1 border-t"></div>
+            <span className="px-3">Requirements & Media</span>
+            <div className="flex-1 border-t"></div>
+          </div>
+
+          <div className="grid gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="skills" className="flex items-center gap-2">
+                <Wand2 className="h-4 w-4 text-muted-foreground" />
+                Required Skills
+              </Label>
+              <div className="flex flex-wrap items-center gap-2 p-2 rounded-md border border-input bg-transparent shadow-sm focus-within:ring-1 focus-within:ring-ring transition-all">
+                {formData.skills.map((skill) => (
+                  <Badge key={skill} variant="secondary" className="pl-2 pr-1 py-1 flex items-center gap-1 bg-primary/10 hover:bg-primary/20 text-primary border-none animate-in fade-in zoom-in duration-200">
+                    {skill}
+                    <button
+                      type="button"
+                      onClick={() => removeSkill(skill)}
+                      className="rounded-full hover:bg-primary/20 p-0.5"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+                <input
+                  id="skills"
+                  value={currentSkill}
+                  onChange={(e) => setCurrentSkill(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAddSkill(e);
+                    } else if (e.key === "Backspace" && !currentSkill && formData.skills.length > 0) {
+                      // Remove last skill on backspace if input is empty
+                      removeSkill(formData.skills[formData.skills.length - 1]);
+                    }
+                  }}
+                  placeholder={formData.skills.length === 0 ? "e.g. React, Python..." : ""}
+                  className="flex-1 bg-transparent border-none outline-none text-sm min-w-[120px] h-7"
+                />
+              </div>
+
+              {/* Suggested Skills */}
+              <div className="mt-2">
+                <p className="text-[10px] font-medium text-muted-foreground uppercase mb-2 tracking-wider">Suggested Skills</p>
+                <div className="flex flex-wrap gap-2">
+                  {SUGGESTED_SKILLS.filter(s => !formData.skills.includes(s)).slice(0, 10).map((skill) => (
+                    <button
+                      key={skill}
+                      type="button"
+                      onClick={() => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          skills: [...prev.skills, skill],
+                        }));
+                      }}
+                      className="inline-flex items-center rounded-full border border-dashed border-primary/30 px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground bg-primary/5 hover:bg-primary/10 hover:text-primary hover:border-primary/50 transition-all duration-200"
+                    >
+                      + {skill}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-2">
+              <Label className="flex items-center gap-2">
+                <ImagePlus className="h-4 w-4 text-muted-foreground" />
+                Cover Image
+              </Label>
+              <div className="flex items-center justify-center w-full">
+                <label
+                  htmlFor="image-upload"
+                  className={cn(
+                    "relative flex flex-col items-center justify-center w-full rounded-xl cursor-pointer transition-all duration-300 group overflow-hidden border-2 border-dashed",
+                    imagePreview
+                      ? "border-primary/40 bg-background"
+                      : "border-muted-foreground/20 bg-muted/20 hover:bg-muted/40 hover:border-primary/30 h-52"
+                  )}
+                >
+                  {imagePreview ? (
+                    <div className="relative w-full aspect-video group">
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                      />
+                      {/* Overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4 pointer-events-none">
+                        <div className="flex items-center gap-2 text-white">
+                          <Download className="h-4 w-4" />
+                          <span className="text-xs font-medium">Click anywhere to change image</span>
+                        </div>
+                      </div>
+
+                      {/* Remove Button */}
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-3 right-3 h-8 w-8 rounded-full shadow-lg transform translate-y-[-10px] opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 z-10"
+                        onClick={handleRemoveImage}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
+                      <div className="p-3 rounded-full bg-primary/10 text-primary mb-3 group-hover:scale-110 transition-transform duration-300">
+                        <Download className="w-6 h-6" />
+                      </div>
+                      <p className="text-sm font-semibold text-foreground mb-1">
+                        Upload a image for this offer
+                      </p>
+                      <p className="text-xs text-muted-foreground max-w-[200px]">
+                        Make your offer stand out with a high-quality cover photo
+                      </p>
+                      <p className="mt-4 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                        PNG, JPG or JPEG
+                      </p>
+                    </div>
+                  )}
+                  <input
+                    id="image-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageChange}
+                  />
+                </label>
+              </div>
+            </div>
+          </div>
         </div>
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline">Cancel</Button>
           </DialogClose>
-          <Button type="submit">Create Offer</Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Creating..." : "Create Offer"}
+          </Button>
         </DialogFooter>
       </form>
     </DialogContent>
