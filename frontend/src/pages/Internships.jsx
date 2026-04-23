@@ -22,7 +22,30 @@ export default function Internships() {
     try {
       setLoading(true);
       const res = await api.get('/internships/');
-      setInternships(res.data);
+      
+      const rawData = res.data.results || res.data;
+      const mappedData = (Array.isArray(rawData) ? rawData : []).map(item => {
+        let skills = [];
+        if (item.internship_skills) {
+          try {
+            skills = JSON.parse(item.internship_skills);
+            if (!Array.isArray(skills)) skills = [skills];
+          } catch (e) {
+            skills = [item.internship_skills];
+          }
+        }
+        return {
+          ...item,
+          company_name: item.company_name || `Company #${item.company}`,
+          wilaya: item.wilaya || item.internship_location,
+          required_skills: skills,
+          tech: skills,
+          banner_image: item.internship_image || null,
+          type: item.internship_type || "N/A"
+        };
+      });
+      
+      setInternships(mappedData);
     } catch (err) {
       console.error("Error fetching internships:", err);
     } finally {

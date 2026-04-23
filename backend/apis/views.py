@@ -1,3 +1,4 @@
+from .permissions import IsAdmin
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status, filters
 from rest_framework.response import Response
@@ -66,7 +67,7 @@ class InternshipCreateView(generics.CreateAPIView):
     permission_classes = [IsCompany, IsAuthenticated]
 
     def perform_create(self, serializer):
-        serializer.save(company=self.request.user) # hadi t7ot l company (li hiya already logged in User) automatically fl field t3 company
+        serializer.save(company=self.request.user.company) # Access the Company profile from the User
     
 
 class InternshipUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
@@ -76,7 +77,7 @@ class InternshipUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_object(self): # hada ychouf ida l company li dayer login howa l company li dayer l internship
         obj = super().get_object()
-        if obj.company != self.request.user:
+        if obj.company_id != self.request.user.id:
             raise PermissionDenied("You do not have permission to edit this internship.")
         return obj
 
@@ -110,12 +111,18 @@ class InternshipListView(generics.ListAPIView):
     
     def get_queryset(self):
         queryset = super().get_queryset()
-        if self.request.user.role not in [User.Role.ADMIN]:
+        if not self.request.user.is_authenticated:
+            return queryset.exclude(status__in=[InternshipOffer.Status.DRAFT, InternshipOffer.Status.ARCHIVED])
+            
+        if self.request.user.role != User.Role.ADMIN:
             if self.request.user.role == User.Role.COMPANY:
-                queryset= queryset.filter(company=self.request.user or status not in [InternshipOffer.Status.DRAFT, InternshipOffer.Status.ARCHIVED]
-                )
+                # Get the company's own offers (including drafts) and other companies' open offers
+                own_offers = queryset.filter(company_id=self.request.user.id)
+                other_offers = queryset.exclude(company_id=self.request.user.id).exclude(status__in=[InternshipOffer.Status.DRAFT, InternshipOffer.Status.ARCHIVED])
+                return own_offers | other_offers
             else:
-                queryset = queryset.filter(status not in [InternshipOffer.Status.DRAFT, InternshipOffer.Status.ARCHIVED])
+                # Students see only active offers
+                queryset = queryset.exclude(status__in=[InternshipOffer.Status.DRAFT, InternshipOffer.Status.ARCHIVED])
         return queryset
 
 
@@ -181,3 +188,64 @@ class ApplicationListView(generics.ListAPIView):
                 queryset = queryset.filter(student=self.request.user.student)
         return queryset
 
+# skills views
+
+class SkillsCreateView(generics.CreateAPIView):
+    queryset = Skills.objects.all()
+    serializer_class = SkillsSerializer
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['internship'] = get_object_or_404(InternshipOffer, pk=self.kwargs['pk'])
+        return context
+
+    def perform_create(self, serializer):
+        internship = serializer.context['internship']
+        # If it's an admin, we don't set a student profile
+        serializer.save(internship=internship)
+
+class SkillsUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Skills.objects.all()
+    serializer_class = SkillsSerializer
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get_object(self):
+        obj = super().get_object()
+        if obj.internship.company != self.request.user and obj.student != self.request.user:
+            raise PermissionDenied("You do not have permission to update this skill.")
+        return obj
+
+    def perform_update(self, serializer):
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        instance.delete()
+
+class SkillsRetrieveView(generics.RetrieveAPIView):
+    queryset = Skills.objects.all()
+    serializer_class = SkillsSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        obj = super().get_object()
+        if obj.internship.company != self.request.user and obj.student != self.request.user:
+            raise PermissionDenied("You do not have permission to view this skill.")
+        return obj
+
+class SkillsListView(generics.ListAPIView):
+    queryset = Skills.objects.all()
+    serializer_class = SkillsSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['name','skill_level','internship']
+    ordering_fields = ['id', 'name']
+    
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if self.request.user.role not in [User.Role.ADMIN]:
+            if self.request.user.role == User.Role.COMPANY:
+                queryset = queryset.filter(internship__company=self.request.user)
+            else:
+                queryset = queryset.filter(student=self.request.user.student)
+        return queryset
