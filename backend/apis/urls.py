@@ -24,5 +24,12 @@ urlpatterns = [
     path('applications/', ApplicationListView.as_view(), name='application-list'),
     path('applications/<int:pk>/', ApplicationRetrieveView.as_view(), name='application-retrieve'),
     path('applications/<int:pk>/update/', ApplicationUpdateDestroyView.as_view(), name='application-update'),
+
+    # Skills
+    path('skills/create/', SkillsCreateView.as_view(), name='create'),
+    path('skills/', SkillsListView.as_view(), name='skill-list'),
+    path('skills/<int:pk>/', SkillsRetrieveView.as_view(), name='skill-retrieve'),
+    path('skills/<int:pk>/update/', SkillsUpdateDestroyView.as_view(), name='skill-update'),
+    path('skills/<int:pk>/delete/', SkillsUpdateDestroyView.as_view(), name='skill-delete'),
 ]
    
