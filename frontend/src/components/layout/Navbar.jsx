@@ -85,7 +85,7 @@ export default function Navbar({ children }) {
 
     return (
         <div className="flex flex-col min-h-screen bg-background text-foreground font-sans antialiased tracking-tight">
-            <nav className={`fixed top-0 left-0 right-0 z-[100] bg-white border-b border-slate-100 duration-300 ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}>
+            <nav className={`fixed top-0 left-0 right-0 z-[100] bg-background border-b border-border duration-300 ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}>
                 <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
                     <Link to="/" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                         <img src={logoGif} alt="Inter.Ship" className="w-8 h-8 rounded-md" />
@@ -107,23 +107,23 @@ export default function Navbar({ children }) {
                                         </Link>
                                     ))}
 
-                                    <div className="h-4 w-px bg-slate-200 mx-1"></div>
+                                    <div className="h-4 w-px bg-border mx-1"></div>
                                     <Button
                                         variant="ghost"
                                         size="icon"
                                         onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                                        className="rounded-full w-9 h-9 text-slate-500 hover:text-primary hover:bg-slate-50 transition-all shadow-none"
+                                        className="rounded-full w-9 h-9 text-muted-foreground hover:text-primary hover:bg-accent transition-all shadow-none"
                                     >
                                         {theme === "dark" ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
                                         <span className="sr-only">Toggle theme</span>
                                     </Button>
 
-                                    <div className="h-4 w-px bg-slate-200 mx-1"></div>
+                                    <div className="h-4 w-px bg-border mx-1"></div>
 
                                     {userInfo ? (
                                         <DropdownMenu>
-                                            <DropdownMenuTrigger className="relative h-10 w-auto flex items-center gap-2.5 pl-1 pr-3.5 hover:bg-slate-50 rounded-full group transition-all duration-200 outline-hidden border border-transparent hover:border-slate-100 bg-transparent">
-                                                <Avatar className="h-8 w-8 border border-white shadow-sm ring-1 ring-slate-100 group-hover:ring-primary/20 transition-all">
+                                            <DropdownMenuTrigger className="relative h-10 w-auto flex items-center gap-2.5 pl-1 pr-3.5 hover:bg-accent rounded-full group transition-all duration-200 outline-none border border-transparent hover:border-border bg-transparent">
+                                                <Avatar className="h-8 w-8 border border-border shadow-sm ring-1 ring-border group-hover:ring-primary/20 transition-all">
                                                     {userInfo.profile_picture && (
                                                         <img src={userInfo.profile_picture} alt={userInfo.username} className="h-full w-full object-cover" />
                                                     )}
@@ -139,28 +139,28 @@ export default function Navbar({ children }) {
                                                 </div>
                                                 <ChevronDown className="h-3 w-3 text-slate-400 group-hover:text-primary transition-colors" />
                                             </DropdownMenuTrigger>
-                                            <DropdownMenuContent className="w-56 mt-2 rounded-2xl p-2 shadow-2xl border-slate-100 bg-white" align="end">
+                                            <DropdownMenuContent className="w-56 mt-2 rounded-2xl p-2 shadow-2xl border border-border bg-popover text-popover-foreground" align="end">
                                                 <div className="font-normal px-3 py-3">
                                                     <div className="flex flex-col space-y-1">
-                                                        <p className="text-sm font-bold text-slate-900 leading-none">{userInfo.username}</p>
-                                                        <p className="text-xs text-slate-500 truncate">{userInfo.email}</p>
+                                                        <p className="text-sm font-bold text-foreground leading-none">{userInfo.username}</p>
+                                                        <p className="text-xs text-muted-foreground truncate">{userInfo.email}</p>
                                                     </div>
                                                 </div>
-                                                <DropdownMenuSeparator className="bg-slate-50" />
-                                                <DropdownMenuItem onClick={() => navigate('/companydashboard')} className="cursor-pointer font-medium text-sm text-slate-700 p-2.5 rounded-xl flex items-center hover:bg-slate-50 transition-colors w-full">
+                                                <DropdownMenuSeparator className="bg-border" />
+                                                <DropdownMenuItem onClick={() => navigate('/companydashboard')} className="cursor-pointer font-medium text-sm text-slate-700 dark:text-slate-200 p-2.5 rounded-xl flex items-center hover:bg-accent transition-colors w-full">
                                                     <LayoutDashboard className="mr-3 h-4 w-4 text-primary" />
                                                     Dashboard
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => navigate('/profile')} className="cursor-pointer font-medium text-sm text-slate-700 p-2.5 rounded-xl flex items-center hover:bg-slate-50 transition-colors w-full">
+                                                <DropdownMenuItem onClick={() => navigate('/profile')} className="cursor-pointer font-medium text-sm text-slate-700 dark:text-slate-200 p-2.5 rounded-xl flex items-center hover:bg-accent transition-colors w-full">
                                                     <User className="mr-3 h-4 w-4 text-primary" />
                                                     View Profile
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => navigate('/settings')} className="cursor-pointer font-medium text-sm text-slate-700 p-2.5 rounded-xl flex items-center hover:bg-slate-50 transition-colors w-full">
+                                                <DropdownMenuItem onClick={() => navigate('/settings')} className="cursor-pointer font-medium text-sm text-slate-700 dark:text-slate-200 p-2.5 rounded-xl flex items-center hover:bg-accent transition-colors w-full">
                                                     <Settings className="mr-3 h-4 w-4 text-primary" />
                                                     Settings
                                                 </DropdownMenuItem>
-                                                <DropdownMenuSeparator className="bg-slate-50" />
-                                                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer font-semibold text-sm text-red-600 p-2.5 rounded-xl flex items-center hover:bg-red-50 focus:bg-red-50 transition-colors w-full">
+                                                <DropdownMenuSeparator className="bg-border" />
+                                                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer font-semibold text-sm text-red-600 dark:text-red-400 p-2.5 rounded-xl flex items-center hover:bg-red-50 dark:hover:bg-red-500/10 focus:bg-red-50 dark:focus:bg-red-500/10 transition-colors w-full">
                                                     <LogOut className="mr-3 h-4 w-4" />
                                                     Logout
                                                 </DropdownMenuItem>
