@@ -260,12 +260,12 @@ export default function Internships() {
       </div>
       {/* Internships List - Normal View */}
       <div
-        className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 transition-all duration-500 mt-6 ${isSearchActive ? 'opacity-0 translate-y-8 blur-sm pointer-events-none' : 'opacity-100 translate-y-0 blur-none'
+        className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mt-6 ${isSearchActive ? 'opacity-0 pointer-events-none' : 'opacity-100'
           }`}
       >
         {loading ? (
           Array(6).fill(0).map((_, i) => (
-            <div key={i} className="h-[350px] w-full rounded-2xl bg-muted animate-pulse" />
+            <div key={i} className="h-[350px] w-full rounded-2xl bg-muted" />
           ))
         ) : filteredInternships.length > 0 ? (
           filteredInternships.map((internship) => (
@@ -314,7 +314,7 @@ export default function Internships() {
             </div>
           ))
         ) : (
-          <div className="col-span-full flex flex-col items-center justify-center py-24 text-center animate-in fade-in zoom-in duration-500">
+          <div className="col-span-full flex flex-col items-center justify-center py-24 text-center">
             <div className="h-16 w-16 bg-muted/50 rounded-full flex items-center justify-center mb-6">
               <Search className="h-8 w-8 text-muted-foreground/40" />
             </div>
