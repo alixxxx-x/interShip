@@ -477,7 +477,7 @@ export default function CreateCvModal({
         </div>
         
         <div className="grid grid-cols-2 gap-2 items-start">
-          {/* 
+        {/* 
           <div>
             <Label htmlFor="image-upload">Profile Image</Label>
             <div className="flex items-center gap-2">
