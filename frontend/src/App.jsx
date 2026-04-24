@@ -13,6 +13,7 @@ import AdminPanel from "@/pages/AdminPanel";
 import AboutUs from "@/pages/AboutUs";
 import Internships from "@/pages/Internships";
 import Profile from "@/pages/Profile";
+import InternshipDetails from "@/pages/InternshipDetails";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import CompanyDashboard from "@/features/dashboards/CompanyDashboard";
 import CompanyListings from "@/features/dashboards/CompanyListings";
@@ -42,6 +43,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<AboutUs />} />
             <Route path="/internships" element={<Internships />} />
+            <Route path="/internships/:id" element={<InternshipDetails />} />
             <Route
               path="/profile"
               element={
