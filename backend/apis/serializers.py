@@ -95,6 +95,9 @@ class ChangePasswordSerializer(serializers.Serializer):
 # internship serializers
 
 class InternshipSerializer(serializers.ModelSerializer):
+    required_skills = serializers.CharField(write_only=True, required=False)
+    banner_image = serializers.ImageField(write_only=True, required=False)
+
     class Meta:
         model = InternshipOffer
         fields = [
@@ -102,7 +105,7 @@ class InternshipSerializer(serializers.ModelSerializer):
             'title',
             'description',
             'company',
-            'interbship_location',
+            'internship_location',
             'status',
             'internship_type',
             'internship_structure',
@@ -110,13 +113,29 @@ class InternshipSerializer(serializers.ModelSerializer):
             'offer_end_date',
             'number_of_places',
             'internship_duration',
+            'internship_salary',
+            'internship_skills',
+            'internship_image',
+            'required_skills',
+            'banner_image',
         ]
         read_only_fields = ['id', 'internship_duration', 'company']
 
     def create(self, validated_data):
+        # Map frontend fields to backend fields
+        if 'required_skills' in validated_data:
+            validated_data['internship_skills'] = validated_data.pop('required_skills')
+        if 'banner_image' in validated_data:
+            validated_data['internship_image'] = validated_data.pop('banner_image')
         return InternshipOffer.objects.create(**validated_data)
 
     def update(self, instance, validated_data):
+        # Map frontend fields to backend fields
+        if 'required_skills' in validated_data:
+            instance.internship_skills = validated_data.pop('required_skills')
+        if 'banner_image' in validated_data:
+            instance.internship_image = validated_data.pop('banner_image')
+            
         instance.title = validated_data.get('title', instance.title)
         instance.description = validated_data.get('description', instance.description)
         instance.internship_location = validated_data.get('internship_location', instance.internship_location)
@@ -126,17 +145,26 @@ class InternshipSerializer(serializers.ModelSerializer):
         instance.offer_start_date = validated_data.get('offer_start_date', instance.offer_start_date)
         instance.offer_end_date = validated_data.get('offer_end_date', instance.offer_end_date)
         instance.number_of_places = validated_data.get('number_of_places', instance.number_of_places)
-        instance.internship_duration = validated_data.get('internship_duration', instance.internship_duration)
+        
+        # Recalculate duration if dates changed
+        if 'offer_start_date' in validated_data or 'offer_end_date' in validated_data:
+            instance.internship_duration = instance.offer_end_date - instance.offer_start_date
+            
+        instance.internship_salary = validated_data.get('internship_salary', instance.internship_salary)
         instance.save()
         return instance
 
     def validate(self, attrs):
-        if attrs['offer_start_date'] > attrs['offer_end_date']:
-            raise serializers.ValidationError("offer start date must be before the offer end date ")
-        if attrs['number_of_places'] <= 0:
+        if 'offer_start_date' in attrs and 'offer_end_date' in attrs:
+            if attrs['offer_start_date'] > attrs['offer_end_date']:
+                raise serializers.ValidationError("offer start date must be before the offer end date ")
+            
+            # Auto-calculate duration (even if it's read-only, we can set it here for create/update)
+            attrs['internship_duration'] = attrs['offer_end_date'] - attrs['offer_start_date']
+        
+        if 'number_of_places' in attrs and attrs['number_of_places'] <= 0:
             raise serializers.ValidationError("there has to be at least one intern")
-        if attrs['internship_duration'] <= timedelta(days=1):
-            raise serializers.ValidationError("the internship duration has to be at least one day")
+            
         return attrs
 
 # application serializers
@@ -162,5 +190,32 @@ class ApplicationSerializer(serializers.ModelSerializer):
         if request and internship:
             if Application.objects.filter(student=request.user, internship=internship).exists():
                 raise serializers.ValidationError("You have already applied for this internship")
+        
+        return attrs
+
+# skills serializers
+
+class SkillsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Skills
+        fields = ['id', 'name', 'skill_level', 'internship']
+
+    def create(self, validated_data):
+        return Skills.objects.create(**validated_data)
+
+    def update(self, instance, validated_data):
+        instance.name = validated_data.get('name', instance.name)
+        instance.skill_level = validated_data.get('skill_level', instance.skill_level)
+        instance.internship = validated_data.get('internship', instance.internship)
+        instance.save()
+        return instance
+
+    def validate(self, attrs):
+        request = self.context.get('request')
+        internship = self.context.get('internship')
+        
+        if request and internship and hasattr(request.user, 'student'):
+            if Skills.objects.filter(student=request.user.student, internship=internship, name=attrs.get('name')).exists():
+                raise serializers.ValidationError("You have already added this skill to this internship")
         
         return attrs

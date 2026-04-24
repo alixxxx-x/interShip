@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -43,20 +43,41 @@ export default function CreateOfferModal({
   open,
   onOpenChange,
   triggerButton,
-  onOfferCreated
+  onOfferCreated,
+  initialData = null // Added for edit mode
 }) {
   const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    offer_start_date: null,
-    offer_end_date: null,
-    internship_location: "ONSITE",
-    internship_type: "FULL_TIME",
-    internship_structure: "FOR_CREDIT",
-    number_of_places: 1,
-    skills: [],
+    title: initialData?.title || "",
+    description: initialData?.description || "",
+    offer_start_date: initialData?.offer_start_date || null,
+    offer_end_date: initialData?.offer_end_date || null,
+    internship_location: initialData?.internship_location || "ONSITE",
+    internship_type: initialData?.internship_type || "FULL_TIME",
+    internship_structure: initialData?.internship_structure || "FOR_CREDIT",
+    number_of_places: initialData?.number_of_places || 1,
+    skills: initialData?.tech || initialData?.required_skills || [],
     image: null,
   });
+
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        title: initialData.title || "",
+        description: initialData.description || "",
+        offer_start_date: initialData.offer_start_date || null,
+        offer_end_date: initialData.offer_end_date || null,
+        internship_location: initialData.internship_location || "ONSITE",
+        internship_type: initialData.internship_type || "FULL_TIME",
+        internship_structure: initialData.internship_structure || "FOR_CREDIT",
+        number_of_places: initialData.number_of_places || 1,
+        skills: initialData.tech || initialData.required_skills || [],
+        image: null,
+      });
+      if (initialData.internship_image) {
+        setImagePreview(initialData.internship_image);
+      }
+    }
+  }, [initialData, open]);
 
   const [currentSkill, setCurrentSkill] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
@@ -128,31 +149,34 @@ export default function CreateOfferModal({
         data.append("banner_image", formData.image);
       }
 
-      const response = await api.post("/internships/create/", data, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-
-      console.log("Offer created successfully:", response.data);
-
-      // Reset form
-      setFormData({
-        title: "",
-        description: "",
-        offer_start_date: null,
-        offer_end_date: null,
-        internship_location: "ONSITE",
-        internship_type: "FULL_TIME",
-        internship_structure: "FOR_CREDIT",
-        number_of_places: 1,
-        skills: [],
-        image: null,
-      });
-      setImagePreview(null);
+      if (initialData) {
+        await api.patch(`/internships/${initialData.id}/update/`, data, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+      } else {
+        await api.post("/internships/create/", data, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+      }
 
       if (onOfferCreated) onOfferCreated();
       if (onOpenChange) onOpenChange(false);
+      
+      if (!initialData) {
+        setFormData({
+          title: "",
+          description: "",
+          offer_start_date: null,
+          offer_end_date: null,
+          internship_location: "ONSITE",
+          internship_type: "FULL_TIME",
+          internship_structure: "FOR_CREDIT",
+          number_of_places: 1,
+          skills: [],
+          image: null,
+        });
+        setImagePreview(null);
+      }
     } catch (err) {
       console.error("Error creating offer:", err);
       alert("Failed to create offer. Please check the fields and try again.");
@@ -164,9 +188,11 @@ export default function CreateOfferModal({
   const dialogContent = (
     <DialogContent className="overflow-y-auto max-h-[90vh] sm:max-w-[700px]">
       <DialogHeader>
-        <DialogTitle>Create Internship Offer</DialogTitle>
+        <DialogTitle>{initialData ? "Edit Internship Offer" : "Create Internship Offer"}</DialogTitle>
         <DialogDescription>
-          Fill out the details below to post a new internship opportunity.
+          {initialData 
+            ? "Update the details of your internship opportunity." 
+            : "Fill out the details below to post a new internship opportunity."}
         </DialogDescription>
       </DialogHeader>
 
@@ -489,7 +515,9 @@ export default function CreateOfferModal({
             <Button type="button" variant="outline">Cancel</Button>
           </DialogClose>
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Creating..." : "Create Offer"}
+            {isSubmitting 
+              ? (initialData ? "Saving..." : "Creating...") 
+              : (initialData ? "Save Changes" : "Create Offer")}
           </Button>
         </DialogFooter>
       </form>

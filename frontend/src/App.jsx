@@ -15,6 +15,7 @@ import Internships from "@/pages/Internships";
 import Profile from "@/pages/Profile";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import CompanyDashboard from "@/features/dashboards/CompanyDashboard";
+import CompanyListings from "@/features/dashboards/CompanyListings";
 import AllApplications from "@/pages/AllApplications";
 import StudentDashboard from "@/features/dashboards/StudentDashboard";
 import StudentRoute from "@/routes/StudentRoute";
@@ -77,6 +78,7 @@ function App() {
           {/* Company Dashboard Layout */}
           <Route element={<CompanyRoute><DashboardLayout /></CompanyRoute>}>
             <Route path="/companydashboard" element={<CompanyDashboard />} />
+            <Route path="/companydashboard/listings" element={<CompanyListings />} />
             <Route path="/companydashboard/applications" element={<AllApplications />} />
           </Route>
 
