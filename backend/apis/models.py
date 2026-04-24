@@ -85,6 +85,9 @@ class InternshipOffer(models.Model):
     offer_end_date = models.DateField()
     number_of_places = models.IntegerField()
     internship_duration = models.DurationField(default=timedelta(days=0))
+    internship_salary = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    internship_skills = models.TextField(blank=True, null=True)
+    internship_image = models.ImageField(upload_to='internship_images/', blank=True, null=True)
 
 
 # application model
@@ -102,6 +105,18 @@ class Application(models.Model):
     
 
 
+ # skills model
+
+class Skills(models.Model):
+    class SkillLevel(models.TextChoices):
+        BEGINNER = 'BEGINNER', 'Beginner'
+        INTERMEDIATE = 'INTERMEDIATE', 'Intermediate'
+        ADVANCED = 'ADVANCED', 'Advanced'
+    name = models.CharField(max_length=100)
+    skill_level = models.CharField(max_length=20, choices=SkillLevel.choices, default=SkillLevel.BEGINNER)
+    internship = models.ForeignKey(InternshipOffer, on_delete=models.CASCADE, null=True, blank=True)
     
+    def __str__(self):
+        return self.name   
 
 
