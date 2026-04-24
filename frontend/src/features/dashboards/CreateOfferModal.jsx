@@ -31,15 +31,13 @@ import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
+import api from "@/api/api";
 
 const SUGGESTED_SKILLS = [
   "React", "Node.js", "Python", "UI/UX Design", "Marketing",
   "Data Science", "Java", "C++", "SQL", "Graphic Design",
   "Project Management", "Social Media", "SEO", "Excel"
 ];
-
-
-import api from "@/api/api";
 
 export default function CreateOfferModal({
   open,
@@ -123,7 +121,6 @@ export default function CreateOfferModal({
       data.append("internship_type", formData.internship_type);
       data.append("internship_structure", formData.internship_structure);
       data.append("number_of_places", formData.number_of_places);
-
       // Send skills as JSON string
       data.append("required_skills", JSON.stringify(formData.skills));
 
@@ -175,7 +172,6 @@ export default function CreateOfferModal({
 
       <form onSubmit={handleSubmit}>
         <div className="grid gap-5 py-2">
-
           <div className="flex items-center text-xs uppercase text-muted-foreground font-semibold mt-2 mb-1">
             <div className="flex-1 border-t"></div>
             <span className="px-3">Basic Information</span>

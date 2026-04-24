@@ -16,6 +16,9 @@ import Profile from "@/pages/Profile";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import CompanyDashboard from "@/features/dashboards/CompanyDashboard";
 import AllApplications from "@/pages/AllApplications";
+import StudentDashboard from "@/features/dashboards/StudentDashboard";
+import StudentRoute from "@/routes/StudentRoute";
+import DashboardRedirect from "@/routes/DashboardRedirect";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -59,6 +62,15 @@ function App() {
               </AdminRoute>
             }
           />
+
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <DashboardRedirect />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/logout" element={<Logout />} />
           <Route path="*" element={<Navigate to="/" />} />
 
@@ -66,6 +78,11 @@ function App() {
           <Route element={<CompanyRoute><DashboardLayout /></CompanyRoute>}>
             <Route path="/companydashboard" element={<CompanyDashboard />} />
             <Route path="/companydashboard/applications" element={<AllApplications />} />
+          </Route>
+
+          {/* Student Dashboard Layout */}
+          <Route element={<StudentRoute><DashboardLayout /></StudentRoute>}>
+            <Route path="/studentdashboard" element={<StudentDashboard />} />
           </Route>
         </Routes>
       </TooltipProvider>

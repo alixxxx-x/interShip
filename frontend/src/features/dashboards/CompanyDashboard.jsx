@@ -17,8 +17,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useNavigate } from "react-router-dom";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import CreateOfferModal from "./CreateOfferModal";
 import { useSearchParams } from "react-router-dom";
 
@@ -159,19 +157,19 @@ export default function CompanyDashboard() {
         </p>
       </div>
       
-      {/* Quick Add Button - now uses openModal */}
+      {/* Create Offer button */}
       <Button onClick={openModal}>
         <Plus className="mr-2 h-4 w-4" />
-        Quick Add
+        Create Offer
       </Button>
       
       {/* Modal - controlled mode */}
       <CreateOfferModal 
         open={isModalOpen} 
         onOpenChange={closeModal}
+        //refresh data after creating offer
         onOfferCreated={() => {
-          // Optional: refresh data after creating offer
-          // fetchDashboardData(); 
+          fetchDashboardData(); 
         }} 
       />
     </div>

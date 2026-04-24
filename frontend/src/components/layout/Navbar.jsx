@@ -147,7 +147,7 @@ export default function Navbar({ children }) {
                                                     </div>
                                                 </div>
                                                 <DropdownMenuSeparator className="bg-border" />
-                                                <DropdownMenuItem onClick={() => navigate('/companydashboard')} className="cursor-pointer font-medium text-sm text-slate-700 dark:text-slate-200 p-2.5 rounded-xl flex items-center hover:bg-accent transition-colors w-full">
+                                                <DropdownMenuItem onClick={() => navigate('/dashboard')} className="cursor-pointer font-medium text-sm text-slate-700 dark:text-slate-200 p-2.5 rounded-xl flex items-center hover:bg-accent transition-colors w-full">
                                                     <LayoutDashboard className="mr-3 h-4 w-4 text-primary" />
                                                     Dashboard
                                                 </DropdownMenuItem>
