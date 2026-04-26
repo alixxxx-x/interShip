@@ -9,7 +9,7 @@ function AdminRoute({ children }) {
     useEffect(() => {
         api.get("/auth/profile/")
             .then(res => {
-                if (res.data.role === "admin") {
+                if (res.data.role === "ADMIN") {
                     setIsAdmin(true);
                 } else {
                     setIsAdmin(false);

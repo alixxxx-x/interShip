@@ -61,27 +61,41 @@ export default function CompanyListings() {
   const fetchListings = async () => {
     try {
       setLoading(true);
-      const res = await api.get("/internships/");
       
+      // 1. Get current user profile to know the role and ID
       const profileRes = await api.get("/auth/profile/");
-      const companyId = profileRes.data.id;
+      const currentUser = profileRes.data;
+      const companyId = currentUser.id;
+      const isAdmin = currentUser.role === 'ADMIN';
       
-      console.log("Current Company ID:", companyId);
-      console.log("All Internship Data:", res.data);
+      console.log("Current User:", currentUser);
       
-      // Filter only this company's listings and map skills
-      // Temporarily show all listings to debug why the draft isn't showing
+      // 2. Use the correct endpoint:
+      // - Companies should use /internships/company/ to see drafts
+      // - Admins can use /internships/ to see everything
+      const endpoint = currentUser.role === 'COMPANY' ? "/internships/company/" : "/internships/";
+      const res = await api.get(endpoint);
+      
+      console.log("Fetched Data:", res.data);
+      
       const rawData = res.data.results || res.data;
-      const filtered = (Array.isArray(rawData) ? rawData : [])
+      const listingsData = Array.isArray(rawData) ? rawData : [];
+      
+      // 3. Filter and map
+      const filtered = listingsData
         .filter(item => {
-          // Use == for loose comparison and handle potential string/number mismatch
-          return item.company == companyId;
+          // If admin, show everything. If company, the backend already filtered but we double-check.
+          return isAdmin || item.company == companyId;
         })
         .map(item => {
+          // Map skills from JSON string or array
           let skills = [];
           if (item.internship_skills) {
             try {
-              skills = JSON.parse(item.internship_skills);
+              // Handle if it's already an array or a JSON string
+              skills = typeof item.internship_skills === 'string' 
+                ? JSON.parse(item.internship_skills) 
+                : item.internship_skills;
               if (!Array.isArray(skills)) skills = [skills];
             } catch (e) {
               skills = [item.internship_skills];
