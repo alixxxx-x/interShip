@@ -221,3 +221,42 @@ class SkillsSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("You have already added this skill to this internship")
         
         return attrs
+
+# digital cv serializers
+
+class DigitalCVSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(source='profile_picture', required=False)
+    pdfFile = serializers.FileField(source='cv_pdf', required=False)
+    any_experience = serializers.CharField(source='experience')
+
+    class Meta:
+        model = DigitalCV
+        fields = [
+            'id', 'student', 'first_name', 'last_name', 'image', 'phone_number',
+            'email', 'address', 'education', 'skills', 'profile_summary',
+            'any_experience', 'languages', 'pdfFile'
+        ]
+        read_only_fields = ['id', 'student']
+
+    def validate(self, attrs):
+        request = self.context.get('request')
+        if request and hasattr(request.user, 'student'):
+            if DigitalCV.objects.filter(student=request.user.student).exists():
+                raise serializers.ValidationError("You already have a digital CV")
+        return attrs
+
+    def update(self, instance, validated_data):
+        instance.first_name = validated_data.get('first_name', instance.first_name)
+        instance.last_name = validated_data.get('last_name', instance.last_name)
+        instance.phone_number = validated_data.get('phone_number', instance.phone_number)
+        instance.email = validated_data.get('email', instance.email)
+        instance.address = validated_data.get('address', instance.address)
+        instance.education = validated_data.get('education', instance.education)
+        instance.skills = validated_data.get('skills', instance.skills)
+        instance.profile_summary = validated_data.get('profile_summary', instance.profile_summary)
+        instance.experience = validated_data.get('experience', instance.experience)
+        instance.languages = validated_data.get('languages', instance.languages)
+        instance.save()
+        return instance
+    
+    

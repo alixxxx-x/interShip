@@ -32,70 +32,70 @@ export default function CompanyDashboard() {
   const openModal = () => setSearchParams({ newOffer: "true" });
   const closeModal = () => setSearchParams({});
 
+  const fetchDashboardData = async () => {
+    try {
+      //Replace with actual Django API calls
+      
+      //replace with real API responses
+      const mockStats = {
+        totalInternships: 12,
+        activeApplications: 48,
+        totalViews: 1234,
+        pendingReviews: 5,
+      };
+
+      const mockApplications = [
+        {
+          id: 1,
+          candidate: "Sarah Johnson",
+          status: "Rejected",
+          appliedDate: "2026-04-15",
+          email: "sarah.j@email.com",
+          cv: "path/to/cv.pdf"
+        },
+        {
+          id: 2,
+          candidate: "Michael Chen",
+          status: "In progress",
+          appliedDate: "2026-04-14",
+          email: "m.chen@email.com",
+          cv: "path/to/cv.pdf"
+        },
+        {
+          id: 3,
+          candidate: "Emma Williams",
+          status: "Accepted",
+          appliedDate: "2026-04-14",
+          email: "emma.w@email.com",
+          cv: "path/to/cv.pdf"
+        },
+        {
+          id: 4,
+          candidate: "James Brown",
+          status: "Accepted",
+          appliedDate: "2026-04-12",
+          email: "james.b@email.com",
+          cv: "path/to/cv.pdf"
+        },
+        {
+          id: 5,
+          candidate: "Lisa Anderson",
+          status: "In progress",
+          appliedDate: "2026-04-11",
+          email: "lisa.a@email.com",
+          cv: "path/to/cv.pdf"
+        }
+      ];
+      setStats(mockStats);
+      setApplications(mockApplications);
+    } catch (error) {
+      console.error("Failed to load dashboard:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        //Replace with actual Django API calls
-        
-        //replace with real API responses
-        const mockStats = {
-          totalInternships: 12,
-          activeApplications: 48,
-          totalViews: 1234,
-          pendingReviews: 5,
-        };
-
-        const mockApplications = [
-          {
-            id: 1,
-            candidate: "Sarah Johnson",
-            status: "Rejected",
-            appliedDate: "2026-04-15",
-            email: "sarah.j@email.com",
-            cv: "path/to/cv.pdf"
-          },
-          {
-            id: 2,
-            candidate: "Michael Chen",
-            status: "In progress",
-            appliedDate: "2026-04-14",
-            email: "m.chen@email.com",
-            cv: "path/to/cv.pdf"
-          },
-          {
-            id: 3,
-            candidate: "Emma Williams",
-            status: "Accepted",
-            appliedDate: "2026-04-14",
-            email: "emma.w@email.com",
-            cv: "path/to/cv.pdf"
-          },
-          {
-            id: 4,
-            candidate: "James Brown",
-            status: "Accepted",
-            appliedDate: "2026-04-12",
-            email: "james.b@email.com",
-            cv: "path/to/cv.pdf"
-          },
-          {
-            id: 5,
-            candidate: "Lisa Anderson",
-            status: "In progress",
-            appliedDate: "2026-04-11",
-            email: "lisa.a@email.com",
-            cv: "path/to/cv.pdf"
-          }
-        ];
-        setStats(mockStats);
-        setApplications(mockApplications);
-      } catch (error) {
-        console.error("Failed to load dashboard:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchDashboardData();
   }, []);
 
