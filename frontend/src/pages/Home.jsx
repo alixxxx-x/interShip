@@ -1,7 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link, useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import api from "@/api/api";
+import { ACCESS_TOKEN } from "@/constants";
 import {
     ArrowRight,
     CheckCircle,
@@ -80,6 +82,22 @@ export function HowItWorksSection() {
 
 function Home() {
     const location = useLocation();
+    const [userInfo, setUserInfo] = useState(null);
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const token = localStorage.getItem(ACCESS_TOKEN);
+                if (token) {
+                    const res = await api.get('/auth/profile/');
+                    setUserInfo(res.data);
+                }
+            } catch (error) {
+                console.error("Failed to fetch profile in Home:", error);
+            }
+        };
+        fetchProfile();
+    }, []);
 
     useEffect(() => {
         if (location.hash === '#how-it-works') {
@@ -301,9 +319,20 @@ function Home() {
                             </div>
 
                             <div className="mt-auto">
-                                <Link to="/register" className="block w-full">
-                                    <Button size="lg" className="w-full h-12 rounded-xl text-[15px] font-semibold bg-primary text-primary-foreground hover:bg-primary/80">
-                                        Join as Student
+                                <Link 
+                                    to={userInfo ? "#" : "/register"} 
+                                    className="block w-full"
+                                    onClick={(e) => userInfo && e.preventDefault()}
+                                >
+                                    <Button 
+                                        size="lg" 
+                                        className={`w-full h-12 rounded-xl text-[15px] font-semibold transition-all duration-300 ${
+                                            userInfo 
+                                            ? "bg-gray-300 text-gray-500 cursor-not-allowed shadow-none" 
+                                            : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20"
+                                        }`}
+                                    >
+                                        {userInfo ? "Already Logged In" : "Join as Student"}
                                     </Button>
                                 </Link>
                             </div>
@@ -338,9 +367,20 @@ function Home() {
                             </div>
 
                             <div className="mt-auto">
-                                <Link to="/register?type=company" className="block w-full">
-                                    <Button size="lg" className="w-full h-12 rounded-xl text-[15px] font-semibold bg-primary text-primary-foreground hover:bg-primary/80">
-                                        Partner With Us
+                                <Link 
+                                    to={userInfo ? "#" : "/register?type=company"} 
+                                    className="block w-full"
+                                    onClick={(e) => userInfo && e.preventDefault()}
+                                >
+                                    <Button 
+                                        size="lg" 
+                                        className={`w-full h-12 rounded-xl text-[15px] font-semibold transition-all duration-300 ${
+                                            userInfo 
+                                            ? "bg-gray-300 text-gray-500 cursor-not-allowed shadow-none" 
+                                            : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20"
+                                        }`}
+                                    >
+                                        {userInfo ? "Already Logged In" : "Partner With Us"}
                                     </Button>
                                 </Link>
                             </div>
@@ -359,9 +399,19 @@ function Home() {
                         Join thousands of students and companies already using Inter.Ship to streamline their internship process.
                     </p>
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                        <Link to="/register">
-                            <Button size="lg" className="w-full sm:w-auto rounded-lg px-6 h-12 text-[15px] font-semibold bg-primary text-primary-foreground hover:bg-primary/90">
-                                Create an Account <ArrowRight className="w-4 h-4 ml-2 max-h-4 max-w-4" />
+                        <Link 
+                            to={userInfo ? "#" : "/register"} 
+                            onClick={(e) => userInfo && e.preventDefault()}
+                        >
+                            <Button 
+                                size="lg" 
+                                className={`w-full sm:w-auto rounded-lg px-6 h-12 text-[15px] font-semibold transition-all duration-300 ${
+                                    userInfo 
+                                    ? "bg-gray-300 text-gray-500 cursor-not-allowed" 
+                                    : "bg-primary text-primary-foreground hover:bg-primary/90"
+                                }`}
+                            >
+                                {userInfo ? "Account Active" : "Create an Account"} <ArrowRight className="w-4 h-4 ml-2 max-h-4 max-w-4" />
                             </Button>
                         </Link>
                         <Link to="/contact">

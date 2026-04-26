@@ -1,7 +1,27 @@
 import { Link } from "react-router-dom";
 import logoGif from "@/assets/logo.gif";
+import { useEffect, useState } from "react";
+import api from "@/api/api";
+import { ACCESS_TOKEN } from "@/constants";
 
 export default function Footer() {
+    const [userInfo, setUserInfo] = useState(null);
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const token = localStorage.getItem(ACCESS_TOKEN);
+                if (token) {
+                    const res = await api.get('/auth/profile/');
+                    setUserInfo(res.data);
+                }
+            } catch (error) {
+                console.error("Failed to fetch profile in Footer:", error);
+            }
+        };
+        fetchProfile();
+    }, []);
+
     return (
         <footer className="bg-background text-foreground py-12 md:py-16 border-t">
             <div className="max-w-7xl mx-auto px-6">
@@ -18,10 +38,10 @@ export default function Footer() {
                         </p>
                     </div>
                     <div>
-                        <h3 className="text-white font-semibold uppercase tracking-wider mb-6 text-xs">Explore</h3>
-                        <ul className="space-y-3 text-gray-400">
-                            <li><Link to="/internships" className="hover:text-cyan-400 transition-colors">Browse Internships</Link></li>
-                            <li><Link to="/companies" className="hover:text-cyan-400 transition-colors">Companies</Link></li>
+                        <h3 className="font-semibold uppercase tracking-wider mb-6 text-xs text-foreground">Explore</h3>
+                        <ul className="space-y-3 text-muted-foreground">
+                            <li><Link to="/internships" className="hover:text-primary transition-colors">Browse Internships</Link></li>
+                            <li><Link to="/companies" className="hover:text-primary transition-colors">Companies</Link></li>
                             <li>
                                 <Link to="/#how-it-works"
                                     onClick={(e) => {
@@ -30,12 +50,24 @@ export default function Footer() {
                                             document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
                                         }
                                     }}
-                                    className="hover:text-cyan-400 transition-colors"
+                                    className="hover:text-primary transition-colors"
                                 >
                                     How it Works
                                 </Link>
                             </li>
-                            <li><Link to="/register" className="hover:text-cyan-400 transition-colors">Join Now</Link></li>
+                            <li>
+                                <Link 
+                                    to={userInfo ? "#" : "/register"} 
+                                    onClick={(e) => userInfo && e.preventDefault()}
+                                    className={`transition-colors ${
+                                        userInfo 
+                                        ? "text-gray-500 cursor-not-allowed hover:text-gray-500" 
+                                        : "text-slate-500 hover:text-cyan-500 font-semibold"
+                                    }`}
+                                >
+                                    Join Now
+                                </Link>
+                            </li>
                         </ul>
                     </div>
 

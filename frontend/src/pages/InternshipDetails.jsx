@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Building2,
   MapPin,
@@ -22,6 +22,7 @@ import api from '@/api/api';
 export default function InternshipDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [internship, setInternship] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -121,7 +122,7 @@ export default function InternshipDetails() {
         </div>
         <h2 className="text-3xl font-bold mb-4 tracking-tight">Not Found</h2>
         <p className="text-muted-foreground mb-10 max-w-md mx-auto">{error}</p>
-        <Button onClick={() => navigate('/internships')} size="lg" className="rounded-2xl px-8">
+        <Button onClick={() => navigate('/internships', { state: location.state })} size="lg" className="rounded-2xl px-8">
           <ChevronLeft className="mr-2 h-4 w-4" /> Back to Search
         </Button>
       </div>
@@ -134,24 +135,24 @@ export default function InternshipDetails() {
       <div className="bg-white/80 dark:bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
         <div className="container mx-auto max-w-6xl h-16 flex items-center justify-between px-4 border-b border-slate-100 dark:border-slate-800/50">
           <button
-            onClick={() => navigate('/internships')}
+            onClick={() => navigate('/internships', { state: location.state })}
             className="flex items-center gap-1.5 text-sm font-bold text-slate-500 hover:text-primary transition-all group"
           >
             <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
             <span className="group-hover:underline underline-offset-4">Back to Internships</span>
           </button>
           <div className="flex gap-2">
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               className={`h-12 w-12 rounded-xl transition-all duration-300 hover:bg-transparent ${isLiked ? 'text-destructive' : 'hover:text-destructive'}`}
               onClick={() => setIsLiked(!isLiked)}
             >
               <Heart className={`h-6 w-6 ${isLiked ? 'fill-destructive text-destructive' : ''}`} />
             </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               className="h-12 w-12 rounded-xl hover:text-primary hover:bg-transparent transition-all duration-300"
             >
               <Share2 className="h-6 w-6" />
@@ -170,9 +171,9 @@ export default function InternshipDetails() {
             {/* Header Card */}
             <div className="bg-slate-50 dark:bg-slate-900/50 rounded-3xl overflow-hidden border">
               {/* Larger Banner */}
-              <div className="h-64 sm:h-96 w-full bg-slate-200 dark:bg-slate-800 relative">
+              <div className="h-64 sm:h-96 w-full relative bg-white dark:bg-slate-950 flex items-center justify-center border-b">
                 {internship.banner_image ? (
-                  <img src={internship.banner_image} className="w-full h-full object-cover" alt="Banner" />
+                  <img src={internship.banner_image} className="w-full h-full object-contain" alt="Banner" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center opacity-20">
                     <Briefcase className="h-20 w-20" />
@@ -196,11 +197,14 @@ export default function InternshipDetails() {
                     {internship.title}
                   </h1>
                   <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-slate-600 dark:text-slate-400 font-semibold">
-                    <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-lg bg-white dark:bg-slate-800 border flex items-center justify-center">
+                    <div
+                      className="flex items-center gap-2 cursor-pointer hover:text-primary transition-colors group/company"
+                      onClick={() => navigate(`/company/${internship.company}`)}
+                    >
+                      <div className="h-8 w-8 rounded-lg bg-white dark:bg-slate-800 border flex items-center justify-center group-hover/company:border-primary/30 transition-colors">
                         <Building2 className="h-4 w-4 text-primary" />
                       </div>
-                      {internship.company_name}
+                      <span className="group-hover/company:underline underline-offset-4">{internship.company_name}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="h-8 w-8 rounded-lg bg-white dark:bg-slate-800 border flex items-center justify-center">
@@ -267,6 +271,13 @@ export default function InternshipDetails() {
                     <CheckCircle2 className="h-10 w-10 text-green-500 mx-auto mb-3" />
                     <p className="font-bold text-green-800 dark:text-green-400 text-sm">Application Received</p>
                   </div>
+                ) : new Date(internship.offer_end_date) < new Date() ? (
+                  <Button
+                    className="w-full h-10 text-base font-bold rounded-xl cursor-not-allowed bg-red-300 dark:bg-red-900/40 text-white/90 shadow-none hover:bg-red-400 dark:hover:bg-red-900/60 disabled:pointer-events-auto"
+                    disabled
+                  >
+                    Closed
+                  </Button>
                 ) : (
                   <Button
                     className="w-full h-10 text-base font-bold rounded-xl shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98] group"

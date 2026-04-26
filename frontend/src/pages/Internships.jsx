@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Search, Building2, MapPin, Briefcase, X, Filter, Share2, Heart, Calendar, Users } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -7,15 +7,16 @@ import { Button } from '@/components/ui/button';
 import api from '@/api/api';
 
 export default function Internships() {
+  const location = useLocation();
   const [internships, setInternships] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isSearchActive, setIsSearchActive] = useState(false);
+  const [searchQuery, setSearchQuery] = useState(location.state?.searchQuery || "");
+  const [isSearchActive, setIsSearchActive] = useState(location.state?.isSearchActive || false);
 
   // Filter States
-  const [selectedWilaya, setSelectedWilaya] = useState("");
-  const [selectedType, setSelectedType] = useState("");
-  const [selectedTech, setSelectedTech] = useState("");
+  const [selectedWilaya, setSelectedWilaya] = useState(location.state?.selectedWilaya || "");
+  const [selectedType, setSelectedType] = useState(location.state?.selectedType || "");
+  const [selectedTech, setSelectedTech] = useState(location.state?.selectedTech || "");
   const navigate = useNavigate();
   const [likedItems, setLikedItems] = useState(new Set());
 
@@ -266,9 +267,18 @@ export default function Internships() {
                         key={internship.id}
                         className="group flex flex-col sm:flex-row sm:items-center gap-4 p-4 hover:bg-muted/60 rounded-2xl cursor-pointer transition-all border border-transparent hover:border-border/50"
                         style={{ animationDelay: `${index * 50}ms` }}
+                        onClick={() => navigate(`/internships/${internship.id}`, {
+                          state: { searchQuery, isSearchActive, selectedWilaya, selectedType, selectedTech }
+                        })}
                       >
-                        <div className="h-14 w-14 bg-primary/10 text-primary rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                          <Briefcase className="h-7 w-7" />
+                        <div className="h-14 w-14 rounded-xl shrink-0 group-hover:scale-105 transition-transform overflow-hidden">
+                          {internship.banner_image ? (
+                            <img src={internship.banner_image} alt={internship.title} className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="h-full w-full bg-primary/10 text-primary flex items-center justify-center">
+                              <Briefcase className="h-7 w-7" />
+                            </div>
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <h4 className="font-semibold text-lg truncate group-hover:text-primary transition-colors">{internship.title}</h4>
@@ -304,7 +314,7 @@ export default function Internships() {
 
               <div className="bg-muted px-6 py-4 border-t text-sm text-muted-foreground flex items-center justify-between shrink-0">
                 <span>Press <kbd className="bg-background px-2 py-1 rounded-md border text-xs font-semibold shadow-sm ml-1 hidden sm:inline-block">ESC</kbd> to close</span>
-                <span>Search results powered by advanced filtering</span>
+                <span>Search results by advanced filtering</span>
               </div>
             </div>
           </div>
@@ -363,7 +373,12 @@ export default function Internships() {
                   <Button
                     variant="outline"
                     className="flex-1 font-bold rounded-xl hover:bg-primary hover:text-white transition-all duration-300"
-                    onClick={() => navigate(`/internships/${internship.id}`)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/internships/${internship.id}`, {
+                        state: { searchQuery, isSearchActive, selectedWilaya, selectedType, selectedTech }
+                      });
+                    }}
                   >
                     View Details
                   </Button>
