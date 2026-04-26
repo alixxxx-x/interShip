@@ -32,53 +32,52 @@ export default function StudentDashboard() {
   const openModal = () => setSearchParams({ newOffer: "true" });
   const closeModal = () => setSearchParams({});
 
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      // Mock data for now
+      const mockStats = {
+        pendingAplications: 4,
+        acceptedApplications: 2,
+        totalApplications: 10,
+      };
+
+      const mockApplications = [
+        {
+          id: 1,
+          offer: "Developer Intern at TechCorp",
+          status: "Rejected",
+          appliedDate: "2026-04-15",
+        },
+        {
+          id: 2,
+          offer: "Software Engineer at InnovateX",
+          status: "In progress",
+          appliedDate: "2026-04-14",
+        },
+        {
+          id: 3,
+          offer: "Data Analyst at DataWorks",
+          status: "Accepted",
+          appliedDate: "2026-04-14",
+        },
+        {
+          id: 4,
+          offer: "Marketing Intern at BrandBoost",
+          status: "In progress",
+          appliedDate: "2026-04-11",
+        }
+      ];
+      setStats(mockStats);
+      setApplications(mockApplications);
+    } catch (error) {
+      console.error("Failed to load dashboard:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        //Replace with actual Django API calls
-        
-        //replace with real API responses
-        const mockStats = {
-          pendingAplications: 4,
-          acceptedApplications: 2,
-          totalApplications: 10,
-        };
-
-        const mockApplications = [
-          {
-            id: 1,
-            offer: "Developer Intern at TechCorp",
-            status: "Rejected",
-            appliedDate: "2026-04-15",
-          },
-          {
-            id: 2,
-            offer: "Software Engineer at InnovateX",
-            status: "In progress",
-            appliedDate: "2026-04-14",
-          },
-          {
-            id: 3,
-            offer: "Data Analyst at DataWorks",
-            status: "Accepted",
-            appliedDate: "2026-04-14",
-          },
-          {
-            id: 4,
-            offer: "Marketing Intern at BrandBoost",
-            status: "In progress",
-            appliedDate: "2026-04-11",
-          }
-        ];
-        setStats(mockStats);
-        setApplications(mockApplications);
-      } catch (error) {
-        console.error("Failed to load dashboard:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchDashboardData();
   }, []);
 
@@ -192,7 +191,7 @@ export default function StudentDashboard() {
                 You latest applications you applied for
               </p>
             </div>
-            <Button variant="outline" size="sm" onClick={() => navigate("/companydashboard/applications")}>
+            <Button variant="outline" size="sm" onClick={() => navigate("/studentdashboard")}>
               View All
             </Button>
           </div>

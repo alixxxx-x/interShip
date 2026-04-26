@@ -111,19 +111,32 @@ class InternshipListView(generics.ListAPIView):
     
     def get_queryset(self):
         queryset = super().get_queryset()
-        if not self.request.user.is_authenticated:
-            return queryset.exclude(status__in=[InternshipOffer.Status.DRAFT, InternshipOffer.Status.ARCHIVED])
+        # Admins see all offers
+        if self.request.user.is_authenticated and self.request.user.role == User.Role.ADMIN:
+            return queryset
             
-        if self.request.user.role != User.Role.ADMIN:
-            if self.request.user.role == User.Role.COMPANY:
-                # Get the company's own offers (including drafts) and other companies' open offers
-                own_offers = queryset.filter(company_id=self.request.user.id)
-                other_offers = queryset.exclude(company_id=self.request.user.id).exclude(status__in=[InternshipOffer.Status.DRAFT, InternshipOffer.Status.ARCHIVED])
-                return own_offers | other_offers
-            else:
-                # Students see only active offers
-                queryset = queryset.exclude(status__in=[InternshipOffer.Status.DRAFT, InternshipOffer.Status.ARCHIVED])
-        return queryset
+        # Everyone else (Students, unauthenticated users, and companies browsing the public feed)
+        # sees ONLY open offers.
+        return queryset.filter(
+            status__in=[
+                InternshipOffer.Status.OPEN_FOR_APPLICATION,
+                InternshipOffer.Status.CLOSED_FOR_APPLICATION,
+                InternshipOffer.Status.ONGOING,
+                InternshipOffer.Status.FINISHED,
+            ]
+        )
+
+class CompanyInternshipListView(generics.ListAPIView):
+    queryset = InternshipOffer.objects.all()
+    serializer_class = InternshipSerializer
+    permission_classes = [IsAuthenticated, IsCompany]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['title', 'description', 'status']
+    ordering_fields = ['id', 'title', 'offer_start_date', 'offer_end_date']
+    
+    def get_queryset(self):
+        # Allow the company to see ALL of their own offers (including drafts, finished, hidden)
+        return super().get_queryset().filter(company=self.request.user.company)
 
 
 # application views
@@ -249,3 +262,71 @@ class SkillsListView(generics.ListAPIView):
             else:
                 queryset = queryset.filter(student=self.request.user.student)
         return queryset
+
+# digital cv views
+
+class DigitalCVCreateView(generics.CreateAPIView):
+    queryset = DigitalCV.objects.all()
+    serializer_class = DigitalCVSerializer
+    permission_classes = [IsAuthenticated, IsStudent]
+
+    def perform_create(self, serializer):
+        serializer.save(student=self.request.user.student)
+
+class DigitalCVRetrieveUpdateView(generics.RetrieveUpdateAPIView):
+    queryset = DigitalCV.objects.all()
+    serializer_class = DigitalCVSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        if hasattr(self.request.user, 'student'):
+            return get_object_or_404(DigitalCV, student=self.request.user.student)
+        return super().get_object()
+
+class DigitalCVRetrieveView(generics.RetrieveAPIView):
+    queryset = DigitalCV.objects.all()
+    serializer_class = DigitalCVSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        if hasattr(self.request.user, 'student'):
+            return get_object_or_404(DigitalCV, student=self.request.user.student)
+        return super().get_object()
+
+class StudentDashboardView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated, IsStudent]
+
+    def get(self, request, *args, **kwargs):
+        student = request.user.student
+        applications = Application.objects.filter(student=student)
+        
+        stats = {
+            "pendingAplications": applications.filter(status=Application.Status.PENDING).count(),
+            "acceptedApplications": applications.filter(status=Application.Status.ACCEPTED).count(),
+            "totalApplications": applications.count(),
+        }
+        
+        # Recent applications (limit to 5)
+        recent_apps = applications.order_by('-application_date')[:5]
+        
+        # Mapping statuses to frontend expectations
+        status_map = {
+            Application.Status.PENDING: "In progress",
+            Application.Status.ACCEPTED: "Accepted",
+            Application.Status.REJECTED: "Rejected",
+        }
+        
+        recent_apps_data = [
+            {
+                "id": app.id,
+                "offer": app.internship.title,
+                "status": status_map.get(app.status, app.status),
+                "appliedDate": app.application_date.strftime("%Y-%m-%d"),
+            }
+            for app in recent_apps
+        ]
+        
+        return Response({
+            "stats": stats,
+            "applications": recent_apps_data
+        })

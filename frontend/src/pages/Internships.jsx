@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Building2, MapPin, Briefcase, X, Filter, Share2, Heart, Calendar, Users } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 import api from '@/api/api';
 
@@ -26,6 +27,16 @@ export default function Internships() {
       else next.add(id);
       return next;
     });
+  };
+
+  const getInternshipStatusBadge = (status) => {
+    switch (status) {
+      case 'OPEN_FOR_APPLICATION': return 'success';
+      case 'CLOSED_FOR_APPLICATION': return 'destructive';
+      case 'ONGOING': return 'purple';
+      case 'FINISHED': return 'info';
+      default: return 'outline';
+    }
   };
 
   const searchInputRef = useRef(null);
@@ -339,7 +350,12 @@ export default function Internships() {
 
               <div className="p-6 flex flex-col flex-1">
                 <div className="mb-4">
-                  <h3 className="font-bold text-xl leading-tight mb-2  line-clamp-2">{internship.title}</h3>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <h3 className="font-bold text-xl leading-tight line-clamp-2">{internship.title}</h3>
+                    <Badge variant={getInternshipStatusBadge(internship.status)} className="capitalize whitespace-nowrap mt-1">
+                      {internship.status ? internship.status.replace(/_/g, ' ').toLowerCase() : 'N/A'}
+                    </Badge>
+                  </div>
                   <div className="flex items-center text-sm font-semibold text-primary/80 gap-1.5 mb-3">
                     <Building2 className="h-4 w-4" />
                     {internship.company_name || "Company"} - {internship.wilaya || "N/A"}

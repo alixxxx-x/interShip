@@ -14,6 +14,7 @@ urlpatterns = [
     # Internships
     path('internships/create/', InternshipCreateView.as_view(), name='create'),
     path('internships/', InternshipListView.as_view(), name='internship-list'),
+    path('internships/company/', CompanyInternshipListView.as_view(), name='company-internship-list'),
     path('internships/<int:pk>/', InternshipRetrieveView.as_view(), name='internship-retrieve'),
     path('internships/<int:pk>/update/', InternshipUpdateDestroyView.as_view(), name='internship-update'),
     path('internships/<int:pk>/delete/', InternshipUpdateDestroyView.as_view(), name='internship-delete'),
@@ -31,5 +32,10 @@ urlpatterns = [
     path('skills/<int:pk>/', SkillsRetrieveView.as_view(), name='skill-retrieve'),
     path('skills/<int:pk>/update/', SkillsUpdateDestroyView.as_view(), name='skill-update'),
     path('skills/<int:pk>/delete/', SkillsUpdateDestroyView.as_view(), name='skill-delete'),
+
+    # CV
+    path('cv/create/', DigitalCVCreateView.as_view(), name='cv-create'),
+    path('cv/', DigitalCVRetrieveUpdateView.as_view(), name='cv-detail'),
+    path('student/dashboard/', StudentDashboardView.as_view(), name='student-dashboard'),
 ]
    
