@@ -26,20 +26,18 @@ import {
   X,
   Download
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
+import api from "@/api/api";
 
 const SUGGESTED_SKILLS = [
   "React", "Node.js", "Python", "UI/UX Design", "Marketing",
   "Data Science", "Java", "C++", "SQL", "Graphic Design",
   "Project Management", "Social Media", "SEO", "Excel"
 ];
-
-
-import api from "@/api/api";
 
 export default function CreateOfferModal({
   open,
@@ -66,8 +64,8 @@ export default function CreateOfferModal({
       setFormData({
         title: initialData.title || "",
         description: initialData.description || "",
-        offer_start_date: initialData.offer_start_date || null,
-        offer_end_date: initialData.offer_end_date || null,
+        offer_start_date: initialData.offer_start_date ? (typeof initialData.offer_start_date === 'string' ? parseISO(initialData.offer_start_date) : initialData.offer_start_date) : null,
+        offer_end_date: initialData.offer_end_date ? (typeof initialData.offer_end_date === 'string' ? parseISO(initialData.offer_end_date) : initialData.offer_end_date) : null,
         internship_location: initialData.internship_location || "ONSITE",
         internship_type: initialData.internship_type || "FULL_TIME",
         internship_structure: initialData.internship_structure || "FOR_CREDIT",
@@ -138,13 +136,16 @@ export default function CreateOfferModal({
       const data = new FormData();
       data.append("title", formData.title);
       data.append("description", formData.description);
-      data.append("offer_start_date", format(formData.offer_start_date, "yyyy-MM-dd"));
-      data.append("offer_end_date", format(formData.offer_end_date, "yyyy-MM-dd"));
+      if (formData.offer_start_date) {
+        data.append("offer_start_date", format(formData.offer_start_date, "yyyy-MM-dd"));
+      }
+      if (formData.offer_end_date) {
+        data.append("offer_end_date", format(formData.offer_end_date, "yyyy-MM-dd"));
+      }
       data.append("internship_location", formData.internship_location);
       data.append("internship_type", formData.internship_type);
       data.append("internship_structure", formData.internship_structure);
       data.append("number_of_places", formData.number_of_places);
-
       // Send skills as JSON string
       data.append("required_skills", JSON.stringify(formData.skills));
 
@@ -182,7 +183,10 @@ export default function CreateOfferModal({
       }
     } catch (err) {
       console.error("Error creating offer:", err);
-      alert("Failed to create offer. Please check the fields and try again.");
+      const errorMessage = err.response?.data 
+        ? Object.entries(err.response.data).map(([key, value]) => `${key}: ${value}`).join("\n")
+        : "Failed to create offer. Please check the fields and try again.";
+      alert(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -201,7 +205,6 @@ export default function CreateOfferModal({
 
       <form onSubmit={handleSubmit}>
         <div className="grid gap-5 py-2">
-
           <div className="flex items-center text-xs uppercase text-muted-foreground font-semibold mt-2 mb-1">
             <div className="flex-1 border-t"></div>
             <span className="px-3">Basic Information</span>

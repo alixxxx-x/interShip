@@ -3,9 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { 
-  Briefcase, 
-  Users, 
-  TrendingUp, 
+  Sigma, 
+  CheckCheck, 
+  ClockFading, 
   Plus,
 } from "lucide-react";
 import {
@@ -17,13 +17,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useNavigate } from "react-router-dom";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import CreateOfferModal from "./CreateOfferModal";
+import CreateCvModal from "./CreateCvModal";
 import { useSearchParams } from "react-router-dom";
 
 
-export default function CompanyDashboard() {
+export default function StudentDashboard() {
   const [stats, setStats] = useState(null);
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -41,52 +39,35 @@ export default function CompanyDashboard() {
         
         //replace with real API responses
         const mockStats = {
-          totalInternships: 12,
-          activeApplications: 48,
-          totalViews: 1234,
-          pendingReviews: 5,
+          pendingAplications: 4,
+          acceptedApplications: 2,
+          totalApplications: 10,
         };
 
         const mockApplications = [
           {
             id: 1,
-            candidate: "Sarah Johnson",
+            offer: "Developer Intern at TechCorp",
             status: "Rejected",
             appliedDate: "2026-04-15",
-            email: "sarah.j@email.com",
-            cv: "path/to/cv.pdf"
           },
           {
             id: 2,
-            candidate: "Michael Chen",
+            offer: "Software Engineer at InnovateX",
             status: "In progress",
             appliedDate: "2026-04-14",
-            email: "m.chen@email.com",
-            cv: "path/to/cv.pdf"
           },
           {
             id: 3,
-            candidate: "Emma Williams",
+            offer: "Data Analyst at DataWorks",
             status: "Accepted",
             appliedDate: "2026-04-14",
-            email: "emma.w@email.com",
-            cv: "path/to/cv.pdf"
           },
           {
             id: 4,
-            candidate: "James Brown",
-            status: "Accepted",
-            appliedDate: "2026-04-12",
-            email: "james.b@email.com",
-            cv: "path/to/cv.pdf"
-          },
-          {
-            id: 5,
-            candidate: "Lisa Anderson",
+            offer: "Marketing Intern at BrandBoost",
             status: "In progress",
             appliedDate: "2026-04-11",
-            email: "lisa.a@email.com",
-            cv: "path/to/cv.pdf"
           }
         ];
         setStats(mockStats);
@@ -116,23 +97,23 @@ export default function CompanyDashboard() {
 
   const statCards = [
     {
-      title: "Pending Applications",
-      value: stats?.activeApplications,
-      icon: Users,
+      title: "Pending Aplications",
+      value: stats?.pendingAplications,
+      icon: ClockFading,
       change: stats?.applicationsChange,
-      description: "New applications this week"
+      description: "Applications in progress"
     },
     {
       title: "Accepted Applications",
-      value: stats?.totalViews?.toLocaleString(),
-      icon: TrendingUp,
+      value: stats?.acceptedApplications?.toLocaleString(),
+      icon: CheckCheck,
       change: stats?.viewsChange,
       description: "Application accepted this week"
     },
     {
-      title: "Total Internships",
-      value: stats?.totalInternships,
-      icon: Briefcase,
+      title: "Total Applications",
+      value: stats?.totalApplications,
+      icon: Sigma,
       change: "+2",
       description: "Active positions"
     },
@@ -155,23 +136,23 @@ export default function CompanyDashboard() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground">
-          Welcome back! Here's what's happening with your internships.
+          Welcome back! Here's what's happening with your applications.
         </p>
       </div>
       
-      {/* Quick Add Button - now uses openModal */}
+      {/* Create cv button */}
       <Button onClick={openModal}>
         <Plus className="mr-2 h-4 w-4" />
-        Quick Add
+        Create CV
       </Button>
       
-      {/* Modal - controlled mode */}
-      <CreateOfferModal 
+      {/* Create CV Modal */}
+      <CreateCvModal 
         open={isModalOpen} 
         onOpenChange={closeModal}
-        onOfferCreated={() => {
-          // Optional: refresh data after creating offer
-          // fetchDashboardData(); 
+        //refresh data after creating CV
+        onCvCreated={() => {
+            fetchDashboardData(); 
         }} 
       />
     </div>
@@ -208,7 +189,7 @@ export default function CompanyDashboard() {
             <div>
               <CardTitle>Recent Applications</CardTitle>
               <p className="text-sm text-muted-foreground">
-                Latest candidates who applied to your internships
+                You latest applications you applied for
               </p>
             </div>
             <Button variant="outline" size="sm" onClick={() => navigate("/companydashboard/applications")}>
@@ -220,29 +201,24 @@ export default function CompanyDashboard() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Candidate</TableHead>
+                <TableHead>Offer</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Applied Date</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>CV</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {applications.map((application) => (
                 <TableRow key={application.id}>
-                  <TableCell className="font-medium">{application.candidate}</TableCell>
+                    {/* 1st column */}
+                  <TableCell className="font-medium">{application.offer}</TableCell>
+                  
                   <TableCell>
                     <Badge variant={getStatusBadge(application.status)}>
                       {application.status}
                     </Badge>
                   </TableCell>
+                  
                   <TableCell>{application.appliedDate}</TableCell>
-                  <TableCell>{application.email}</TableCell>
-                  <TableCell>
-                    <Button variant="outline" size="sm" onClick={() => alert(`Downloading CV for ${application.candidate}`)}>
-                      Download
-                    </Button>
-                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

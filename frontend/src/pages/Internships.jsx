@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Building2, MapPin, Briefcase, X, Filter } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Search, Building2, MapPin, Briefcase, X, Filter, Share2, Heart, Calendar, Users } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
@@ -15,6 +16,17 @@ export default function Internships() {
   const [selectedWilaya, setSelectedWilaya] = useState("");
   const [selectedType, setSelectedType] = useState("");
   const [selectedTech, setSelectedTech] = useState("");
+  const navigate = useNavigate();
+  const [likedItems, setLikedItems] = useState(new Set());
+
+  const toggleLike = (id) => {
+    setLikedItems(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const searchInputRef = useRef(null);
 
@@ -22,7 +34,7 @@ export default function Internships() {
     try {
       setLoading(true);
       const res = await api.get('/internships/');
-      
+
       const rawData = res.data.results || res.data;
       const mappedData = (Array.isArray(rawData) ? rawData : []).map(item => {
         let skills = [];
@@ -34,6 +46,22 @@ export default function Internships() {
             skills = [item.internship_skills];
           }
         }
+        const formatDuration = (durationStr) => {
+          if (!durationStr) return "Flexible";
+          const parts = durationStr.split(' ');
+          if (parts.length > 1) {
+            const days = parts[0];
+            return `${days} ${parseInt(days) === 1 ? 'day' : 'days'}`;
+          }
+          const timeParts = durationStr.split(':');
+          if (timeParts.length >= 2) {
+            const hours = parseInt(timeParts[0]);
+            if (hours > 0) return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+            return `${parseInt(timeParts[1])} mins`;
+          }
+          return durationStr;
+        };
+
         return {
           ...item,
           company_name: item.company_name || `Company #${item.company}`,
@@ -41,10 +69,11 @@ export default function Internships() {
           required_skills: skills,
           tech: skills,
           banner_image: item.internship_image || null,
-          type: item.internship_type || "N/A"
+          type: item.internship_type || "N/A",
+          internship_duration: formatDuration(item.internship_duration)
         };
       });
-      
+
       setInternships(mappedData);
     } catch (err) {
       console.error("Error fetching internships:", err);
@@ -80,7 +109,7 @@ export default function Internships() {
   const filteredInternships = safeInternships.filter((internship) => {
     const title = internship.title?.toLowerCase() || "";
     const company = internship.company_name?.toLowerCase() || "";
-    
+
     const matchesSearch = title.includes(searchQuery.toLowerCase()) || company.includes(searchQuery.toLowerCase());
     const matchesWilaya = selectedWilaya === "" || internship.wilaya === selectedWilaya;
     const matchesType = selectedType === "" || internship.internship_type === selectedType;
@@ -122,8 +151,8 @@ export default function Internships() {
       {/* Unified Search Section: Simple positioning */}
       <div
         className={`relative flex flex-col items-center w-full  ${isSearchActive
-            ? 'max-w-4xl fixed top-8 left-1/2 -translate-x-1/2 px-4 z-50 max-h-[85vh] overflow-hidden'
-            : 'max-w-lg mt-2 mx-auto z-10'
+          ? 'max-w-4xl fixed top-8 left-1/2 -translate-x-1/2 px-4 z-50 max-h-[85vh] overflow-hidden'
+          : 'max-w-lg mt-2 mx-auto z-10'
           }`}
       >
         {/* Search Input */}
@@ -133,8 +162,8 @@ export default function Internships() {
             ref={searchInputRef}
             placeholder="Search by title, company, or keywords..."
             className={`transition-all duration-500 ease-in-out w-full bg-background relative z-0 ${isSearchActive
-                ? 'pl-16 pr-14 h-16 text-lg lg:text-xl shadow-2xl rounded-2xl border-primary/30 focus-visible:border-primary focus-visible:ring-primary/20 hover:border-primary/50'
-                : 'pl-11 h-12 text-base rounded-full shadow-sm hover:shadow-md'
+              ? 'pl-16 pr-14 h-16 text-lg lg:text-xl shadow-2xl rounded-2xl border-primary/30 focus-visible:border-primary focus-visible:ring-primary/20 hover:border-primary/50'
+              : 'pl-11 h-12 text-base rounded-full shadow-sm hover:shadow-md'
               }`}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -283,12 +312,12 @@ export default function Internships() {
       </div>
       {/* Internships List - Normal View */}
       <div
-        className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 transition-all duration-500 mt-6 ${isSearchActive ? 'opacity-0 translate-y-8 blur-sm pointer-events-none' : 'opacity-100 translate-y-0 blur-none'
+        className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mt-6 ${isSearchActive ? 'opacity-0 pointer-events-none' : 'opacity-100'
           }`}
       >
         {loading ? (
           Array(6).fill(0).map((_, i) => (
-            <div key={i} className="h-[350px] w-full rounded-2xl bg-muted animate-pulse" />
+            <div key={i} className="h-[350px] w-full rounded-2xl bg-muted" />
           ))
         ) : filteredInternships.length > 0 ? (
           filteredInternships.map((internship) => (
@@ -297,20 +326,20 @@ export default function Internships() {
               className="border rounded-2xl bg-card text-card-foreground shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col group"
             >
               {/* Photo Placeholder / Banner */}
-              <div className="w-full h-32 bg-slate-100 dark:bg-slate-800 flex items-center justify-center border-b relative overflow-hidden">
+              <div className="w-full h-48 bg-slate-100 dark:bg-slate-800 flex items-center justify-center border-b relative overflow-hidden">
                 {internship.banner_image ? (
-                  <img src={internship.banner_image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Banner" />
+                  <img src={internship.banner_image} className="w-full h-full object-cover" alt="Banner" />
                 ) : (
                   <>
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-primary/5 group-hover:scale-105 transition-transform duration-500"></div>
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-primary/5"></div>
                     <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-black/20 dark:from-black/50 to-transparent"></div>
                   </>
                 )}
               </div>
 
-              <div className="p-5 flex flex-col flex-1">
+              <div className="p-6 flex flex-col flex-1">
                 <div className="mb-4">
-                  <h3 className="font-bold text-lg leading-tight mb-2 group-hover:text-primary transition-colors line-clamp-2">{internship.title}</h3>
+                  <h3 className="font-bold text-xl leading-tight mb-2  line-clamp-2">{internship.title}</h3>
                   <div className="flex items-center text-sm font-semibold text-primary/80 gap-1.5 mb-3">
                     <Building2 className="h-4 w-4" />
                     {internship.company_name || "Company"} - {internship.wilaya || "N/A"}
@@ -330,14 +359,38 @@ export default function Internships() {
                   </div>
                 </div>
 
-                <div className="mt-auto pt-4 flex gap-2 border-t">
-                  <Button className="w-full font-semibold rounded-xl">Apply Now</Button>
+                <div className="mt-auto pt-4 flex gap-2 border-t items-center">
+                  <Button
+                    variant="outline"
+                    className="flex-1 font-bold rounded-xl hover:bg-primary hover:text-white transition-all duration-300"
+                    onClick={() => navigate(`/internships/${internship.id}`)}
+                  >
+                    View Details
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={`h-12 w-12 rounded-xl transition-all duration-300 hover:bg-transparent ${likedItems.has(internship.id) ? 'text-destructive' : 'hover:text-destructive'}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleLike(internship.id);
+                    }}
+                  >
+                    <Heart className={`h-6 w-6 ${likedItems.has(internship.id) ? 'fill-destructive text-destructive' : ''}`} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-12 w-12 rounded-xl hover:text-primary hover:bg-transparent transition-all duration-300"
+                  >
+                    <Share2 className="h-6 w-6" />
+                  </Button>
                 </div>
               </div>
             </div>
           ))
         ) : (
-          <div className="col-span-full flex flex-col items-center justify-center py-24 text-center animate-in fade-in zoom-in duration-500">
+          <div className="col-span-full flex flex-col items-center justify-center py-24 text-center">
             <div className="h-16 w-16 bg-muted/50 rounded-full flex items-center justify-center mb-6">
               <Search className="h-8 w-8 text-muted-foreground/40" />
             </div>

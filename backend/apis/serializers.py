@@ -95,6 +95,7 @@ class ChangePasswordSerializer(serializers.Serializer):
 # internship serializers
 
 class InternshipSerializer(serializers.ModelSerializer):
+    company_name = serializers.CharField(source='company.name', read_only=True)
     required_skills = serializers.CharField(write_only=True, required=False)
     banner_image = serializers.ImageField(write_only=True, required=False)
 
@@ -105,6 +106,7 @@ class InternshipSerializer(serializers.ModelSerializer):
             'title',
             'description',
             'company',
+            'company_name',
             'internship_location',
             'status',
             'internship_type',

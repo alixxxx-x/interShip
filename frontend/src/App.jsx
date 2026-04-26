@@ -13,10 +13,14 @@ import AdminPanel from "@/pages/AdminPanel";
 import AboutUs from "@/pages/AboutUs";
 import Internships from "@/pages/Internships";
 import Profile from "@/pages/Profile";
+import InternshipDetails from "@/pages/InternshipDetails";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import CompanyDashboard from "@/features/dashboards/CompanyDashboard";
 import CompanyListings from "@/features/dashboards/CompanyListings";
 import AllApplications from "@/pages/AllApplications";
+import StudentDashboard from "@/features/dashboards/StudentDashboard";
+import StudentRoute from "@/routes/StudentRoute";
+import DashboardRedirect from "@/routes/DashboardRedirect";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -39,6 +43,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<AboutUs />} />
             <Route path="/internships" element={<Internships />} />
+            <Route path="/internships/:id" element={<InternshipDetails />} />
             <Route
               path="/profile"
               element={
@@ -60,6 +65,15 @@ function App() {
               </AdminRoute>
             }
           />
+
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <DashboardRedirect />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/logout" element={<Logout />} />
           <Route path="*" element={<Navigate to="/" />} />
 
@@ -68,6 +82,11 @@ function App() {
             <Route path="/companydashboard" element={<CompanyDashboard />} />
             <Route path="/companydashboard/listings" element={<CompanyListings />} />
             <Route path="/companydashboard/applications" element={<AllApplications />} />
+          </Route>
+
+          {/* Student Dashboard Layout */}
+          <Route element={<StudentRoute><DashboardLayout /></StudentRoute>}>
+            <Route path="/studentdashboard" element={<StudentDashboard />} />
           </Route>
         </Routes>
       </TooltipProvider>
