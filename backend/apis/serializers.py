@@ -227,7 +227,7 @@ class SkillsSerializer(serializers.ModelSerializer):
 class DigitalCVSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(source='profile_picture', required=False)
     pdfFile = serializers.FileField(source='cv_pdf', required=False)
-    any_experience = serializers.CharField(source='experience')
+    any_experience = serializers.CharField(source='experience', required=False, allow_blank=True)
 
     class Meta:
         model = DigitalCV

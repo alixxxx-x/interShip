@@ -78,7 +78,6 @@ export default function Navbar({ children }) {
         { name: "Home", path: "/" },
         { name: "Internships", path: "/internships" },
         { name: "Companies", path: "/companies" },
-        { name: "Applications", path: "/applications" },
         { name: "About Us", path: "/about" },
 
     ];

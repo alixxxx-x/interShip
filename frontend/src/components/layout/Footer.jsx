@@ -81,7 +81,7 @@ export default function Footer() {
                         </ul>
                     </div>
 
-                    <div>
+                    <div id="contact-us">
                         <h3 className="font-semibold uppercase tracking-wider mb-6 text-xs text-foreground">Contact Us</h3>
                         <ul className="space-y-3 text-muted-foreground">
                             <li>Email: <a href="mailto:support@intership.com" className="hover:text-primary transition-colors">support@intership.com</a></li>

@@ -19,8 +19,10 @@ import CompanyDashboard from "@/features/dashboards/CompanyDashboard";
 import CompanyListings from "@/features/dashboards/CompanyListings";
 import AllApplications from "@/pages/AllApplications";
 import StudentDashboard from "@/features/dashboards/StudentDashboard";
+import MyApplications from "@/features/dashboards/MyApplications";
 import StudentRoute from "@/routes/StudentRoute";
 import DashboardRedirect from "@/routes/DashboardRedirect";
+import MyCv from "@/features/dashboards/MyCv";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -87,6 +89,8 @@ function App() {
           {/* Student Dashboard Layout */}
           <Route element={<StudentRoute><DashboardLayout /></StudentRoute>}>
             <Route path="/studentdashboard" element={<StudentDashboard />} />
+            <Route path="/studentdashboard/cv" element={<MyCv />} />
+            <Route path="/studentdashboard/MyApplications" element={<MyApplications />} />
           </Route>
         </Routes>
       </TooltipProvider>

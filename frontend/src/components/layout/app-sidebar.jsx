@@ -1,21 +1,16 @@
 "use client"
 
 import * as React from "react"
-import { useNavigate } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 import {
-  BookOpen,
-  Bot,
-  Command,
-  Frame,
   GalleryVerticalEnd,
   LayoutDashboard,
-  Map,
-  PieChart,
   Settings2,
   SquareTerminal,
   Building2,
   Users,
   Search,
+  FileText,
 } from "lucide-react"
 
 import { NavMain } from "@/components/layout/nav-main"
@@ -120,6 +115,7 @@ const data = {
 export function AppSidebar({ ...props }) {
   const [userInfo, setUserInfo] = React.useState(null)
   const navigate = useNavigate()
+  const location = useLocation()
 
   React.useEffect(() => {
     const fetchProfile = async () => {
@@ -141,6 +137,62 @@ export function AppSidebar({ ...props }) {
     navigate("/login")
   }
 
+  const navItems = React.useMemo(() => {
+    if (!userInfo) return []
+
+    // Student sidebar: remove internships toggle/list and provide a "My CV" entry.
+    if (userInfo?.role === "STUDENT") {
+      return [
+        {
+          title: "Dashboard",
+          url: "/studentdashboard",
+          icon: LayoutDashboard,
+          isActive: location.pathname === "/studentdashboard",
+          items: [
+            {
+              title: "Overview",
+              url: "/studentdashboard",
+            },
+
+            {
+              title: "Analytics",
+              url: "/companydashboard/analytics",
+            },
+          ],
+        },
+        {
+          title: "My CV",
+          url: "/studentdashboard/cv",
+          icon: FileText,
+          isActive: location.pathname.startsWith("/studentdashboard/cv"),
+        },
+        {
+          title: "My applications",
+          url: "/studentdashboard/MyApplications",
+          icon: Users,
+          isActive: location.pathname.startsWith("/studentdashboard/MyApplications"),
+        },
+        {
+        title: "Platform",
+        url: "#",
+        icon: Settings2,
+        items: [
+          {
+            title: "Settings",
+            url: "/settings",
+          },
+          {
+            title: "Help Center",
+            url: "/help",
+          },
+        ],
+      },
+      ]
+    }
+
+    return data.navMain
+  }, [location.pathname, userInfo])
+
   return (
     <Sidebar variant="inset" collapsible="icon" {...props}>
       <SidebarHeader>
@@ -160,7 +212,7 @@ export function AppSidebar({ ...props }) {
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 select-none opacity-50" />
           </SidebarGroupContent>
         </SidebarGroup>
-        <NavMain items={data.navMain} />
+        <NavMain items={navItems} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={userInfo} handleLogout={handleLogout} />

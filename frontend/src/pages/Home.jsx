@@ -6,7 +6,6 @@ import api from "@/api/api";
 import { ACCESS_TOKEN } from "@/constants";
 import {
     ArrowRight,
-    CheckCircle,
     Check,
     GraduationCap,
     Building2,
@@ -100,15 +99,14 @@ function Home() {
     }, []);
 
     useEffect(() => {
-        if (location.hash === '#how-it-works') {
-            // for scroll how it work kima ykoun fi footer
-            setTimeout(() => {
-                const el = document.getElementById('how-it-works');
-                if (el) {
-                    el.scrollIntoView({ behavior: 'smooth' });
-                }
-            }, 100);
-        }
+        const id = location.hash?.replace('#', '');
+        if (!id) return;
+
+        // allow layout content (Footer) to mount before scrolling
+        setTimeout(() => {
+            const el = document.getElementById(id);
+            el?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
     }, [location]);
 
     return (
@@ -414,11 +412,14 @@ function Home() {
                                 {userInfo ? "Account Active" : "Create an Account"} <ArrowRight className="w-4 h-4 ml-2 max-h-4 max-w-4" />
                             </Button>
                         </Link>
-                        <Link to="/contact">
+                        <a href="#contact-us" onClick={(e) => {
+                            e.preventDefault();
+                            document.getElementById('contact-us')?.scrollIntoView({ behavior: 'smooth' });
+                        }}>
                             <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-lg px-6 h-12 text-[15px] font-semibold bg-white text-black hover:bg-gray-50 border border-gray-200 dark:bg-transparent dark:text-foreground dark:border-border dark:hover:bg-accent shadow-sm">
                                 Contact Us
                             </Button>
-                        </Link>
+                        </a>
                     </div>
                 </div>
             </section>

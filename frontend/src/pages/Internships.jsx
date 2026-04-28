@@ -11,13 +11,17 @@ export default function Internships() {
   const location = useLocation();
   const [internships, setInternships] = useState([]);
   const [loading, setLoading] = useState(true);
+  // `searchQuery` is what the user is currently typing.
+  // `submittedSearchQuery` is the query that is actually applied to filtering (set on Enter).
   const [searchQuery, setSearchQuery] = useState(location.state?.searchQuery || "");
+  const [submittedSearchQuery, setSubmittedSearchQuery] = useState(location.state?.searchQuery || "");
   const [isSearchActive, setIsSearchActive] = useState(location.state?.isSearchActive || false);
 
   // Filter States
   const [selectedWilaya, setSelectedWilaya] = useState(location.state?.selectedWilaya || "");
   const [selectedType, setSelectedType] = useState(location.state?.selectedType || "");
   const [selectedTech, setSelectedTech] = useState(location.state?.selectedTech || "");
+  const [selectedSkill, setSelectedSkill] = useState(location.state?.selectedSkill || "");
   const navigate = useNavigate();
   const [likedItems, setLikedItems] = useState(new Set());
 
@@ -105,6 +109,7 @@ export default function Internships() {
   const allWilayas = [...new Set(safeInternships.map(i => i.wilaya).filter(Boolean))];
   const allTypes = [...new Set(safeInternships.map(i => i.internship_type).filter(Boolean))];
   const allTechs = [...new Set(safeInternships.flatMap(i => i.required_skills || []).filter(Boolean))];
+  const allSkills = [...new Set(safeInternships.flatMap(i => i.required_skills || []).filter(Boolean))];
 
   // Close search on escape key
   useEffect(() => {
@@ -122,21 +127,24 @@ export default function Internships() {
     const title = internship.title?.toLowerCase() || "";
     const company = internship.company_name?.toLowerCase() || "";
 
-    const matchesSearch = title.includes(searchQuery.toLowerCase()) || company.includes(searchQuery.toLowerCase());
+    const q = (submittedSearchQuery || "").toLowerCase();
+    const matchesSearch = q === "" || title.includes(q) || company.includes(q);
     const matchesWilaya = selectedWilaya === "" || internship.wilaya === selectedWilaya;
     const matchesType = selectedType === "" || internship.internship_type === selectedType;
     const matchesTech = selectedTech === "" || (internship.required_skills && internship.required_skills.includes(selectedTech));
+    const matchesSkill = selectedSkill === "" || (internship.required_skills && internship.required_skills.includes(selectedSkill));
 
-    return matchesSearch && matchesWilaya && matchesType && matchesTech;
+    return matchesSearch && matchesWilaya && matchesType && matchesTech && matchesSkill;
   });
 
   const clearFilters = () => {
     setSelectedWilaya("");
     setSelectedType("");
     setSelectedTech("");
+    setSelectedSkill("");
   };
 
-  const hasActiveFilters = selectedWilaya !== "" || selectedType !== "" || selectedTech !== "";
+  const hasActiveFilters = selectedWilaya !== "" || selectedType !== "" || selectedTech !== "" || selectedSkill !== "";
 
   return (
     <div className="container mx-auto pt-6 pb-12 px-4 max-w-6xl relative min-h-[80vh]">
@@ -148,6 +156,7 @@ export default function Internships() {
         onClick={() => {
           setIsSearchActive(false);
           setSearchQuery("");
+          setSubmittedSearchQuery("");
           clearFilters();
         }}
       />
@@ -180,19 +189,28 @@ export default function Internships() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() => setIsSearchActive(true)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                setSubmittedSearchQuery(searchQuery.trim());
+              }
+            }}
           />
           {isSearchActive && (
             <Button
               variant="ghost"
               size="icon"
-              className="absolute right-4 z-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors h-10 w-10 text-muted-foreground hover:text-foreground"
+              className={`absolute z-10 rounded-full transition-colors h-10 w-10 text-muted-foreground hover:text-foreground hover:bg-slate-100 dark:hover:bg-slate-800 ${isSearchActive ? 'right-4' : 'right-3'}`}
               onClick={(e) => {
                 e.stopPropagation();
                 setSearchQuery("");
-                if (searchQuery === "" && !hasActiveFilters) {
+                setSubmittedSearchQuery("");
+                clearFilters();
+                if (!hasActiveFilters) {
                   setIsSearchActive(false);
+                  searchInputRef.current?.blur();
+                } else {
+                  searchInputRef.current?.focus();
                 }
-                searchInputRef.current?.focus();
               }}
             >
               <X className="h-5 w-5" />
@@ -207,6 +225,18 @@ export default function Internships() {
               <Filter className="h-4 w-4" />
               Filters:
             </div>
+
+            {/* Skill Filter */}
+            <select
+              value={selectedSkill}
+              onChange={(e) => setSelectedSkill(e.target.value)}
+              className="bg-muted text-foreground text-sm font-medium rounded-xl px-4 py-2.5 border-0 focus:ring-2 focus:ring-primary/20 cursor-pointer hover:bg-muted/80 transition-colors appearance-none outline-none min-w-[140px] shadow-sm"
+            >
+              <option value="">By Skill (All)</option>
+              {allSkills.map(skill => (
+                <option key={skill} value={skill}>{skill}</option>
+              ))}
+            </select>
 
             {/* Type Filter */}
             <select
@@ -261,11 +291,19 @@ export default function Internships() {
           <div className="w-full mt-4 animate-in fade-in slide-in-from-top-4 duration-500 flex-1 overflow-hidden flex flex-col">
             <div className="bg-card text-card-foreground border rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-full">
               <div className="overflow-y-auto p-4 space-y-2 relative custom-scrollbar">
-                {searchQuery.trim() === "" && !hasActiveFilters ? (
+                {submittedSearchQuery.trim() === "" && !hasActiveFilters ? (
                   <div className="py-20 px-10 flex flex-col items-center justify-center text-center text-muted-foreground space-y-4">
                     <Search className="h-12 w-12 opacity-20 mb-4" />
-                    <p className="text-xl font-medium">Type anything or select a filter to start searching...</p>
-                    <p className="text-sm">Try searching for &quot;Software&quot;, &quot;Google&quot;, or filter by Tech!</p>
+                    <p className="text-xl font-medium">
+                      {searchQuery.trim() !== ""
+                        ? "Press Enter to search..."
+                        : "Type anything or select a filter to start searching..."}
+                    </p>
+                    <p className="text-sm">
+                      {searchQuery.trim() !== ""
+                        ? "You can still refine using filters."
+                        : "Try searching for \"Software\", \"Google\", or filter by Tech!"}
+                    </p>
                   </div>
                 ) : filteredInternships.length > 0 ? (
                   <div className="animate-in fade-in slide-in-from-top-4 duration-300">
@@ -279,7 +317,7 @@ export default function Internships() {
                         className="group flex flex-col sm:flex-row sm:items-center gap-4 p-4 hover:bg-muted/60 rounded-2xl cursor-pointer transition-all border border-transparent hover:border-border/50"
                         style={{ animationDelay: `${index * 50}ms` }}
                         onClick={() => navigate(`/internships/${internship.id}`, {
-                          state: { searchQuery, isSearchActive, selectedWilaya, selectedType, selectedTech }
+                          state: { searchQuery: submittedSearchQuery, isSearchActive, selectedWilaya, selectedType, selectedTech, selectedSkill }
                         })}
                       >
                         <div className="h-14 w-14 rounded-xl shrink-0 group-hover:scale-105 transition-transform overflow-hidden">
@@ -392,7 +430,7 @@ export default function Internships() {
                     onClick={(e) => {
                       e.stopPropagation();
                       navigate(`/internships/${internship.id}`, {
-                        state: { searchQuery, isSearchActive, selectedWilaya, selectedType, selectedTech }
+                          state: { searchQuery: submittedSearchQuery, isSearchActive, selectedWilaya, selectedType, selectedTech, selectedSkill }
                       });
                     }}
                   >

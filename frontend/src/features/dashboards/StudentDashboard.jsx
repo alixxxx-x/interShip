@@ -19,59 +19,58 @@ import {
 import { useNavigate } from "react-router-dom";
 import CreateCvModal from "./CreateCvModal";
 import { useSearchParams } from "react-router-dom";
+import api from "@/api/api";
 
 
 export default function StudentDashboard() {
   const [stats, setStats] = useState(null);
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [cvModalMode, setCvModalMode] = useState("create");
+  const [cvForModal, setCvForModal] = useState(null);
   const navigate = useNavigate();
 
   const [searchParams, setSearchParams] = useSearchParams();
   const isModalOpen = searchParams.get("newOffer") === "true";
-  const openModal = () => setSearchParams({ newOffer: "true" });
+  const openModal = async () => {
+    try {
+      const res = await api.get("/cv/");
+      setCvModalMode("edit");
+      setCvForModal(res.data);
+    } catch (e) {
+      const status = e?.response?.status;
+      if (status === 404) {
+        setCvModalMode("create");
+        setCvForModal(null);
+      } else {
+        // If something unexpected happened, still allow opening create modal.
+        console.error("Failed to check existing CV:", e);
+        setCvModalMode("create");
+        setCvForModal(null);
+      }
+    } finally {
+      setSearchParams({ newOffer: "true" });
+    }
+  };
   const closeModal = () => setSearchParams({});
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      // Mock data for now
-      const mockStats = {
-        pendingAplications: 4,
-        acceptedApplications: 2,
-        totalApplications: 10,
-      };
+      setError(null);
 
-      const mockApplications = [
-        {
-          id: 1,
-          offer: "Developer Intern at TechCorp",
-          status: "Rejected",
-          appliedDate: "2026-04-15",
-        },
-        {
-          id: 2,
-          offer: "Software Engineer at InnovateX",
-          status: "In progress",
-          appliedDate: "2026-04-14",
-        },
-        {
-          id: 3,
-          offer: "Data Analyst at DataWorks",
-          status: "Accepted",
-          appliedDate: "2026-04-14",
-        },
-        {
-          id: 4,
-          offer: "Marketing Intern at BrandBoost",
-          status: "In progress",
-          appliedDate: "2026-04-11",
-        }
-      ];
-      setStats(mockStats);
-      setApplications(mockApplications);
+      const res = await api.get("/student/dashboard/");
+      const nextStats = res?.data?.stats ?? null;
+      const nextApps = Array.isArray(res?.data?.applications) ? res.data.applications : [];
+
+      setStats(nextStats);
+      setApplications(nextApps);
     } catch (error) {
       console.error("Failed to load dashboard:", error);
+      setError("Failed to load dashboard data.");
+      setStats(null);
+      setApplications([]);
     } finally {
       setLoading(false);
     }
@@ -149,6 +148,8 @@ export default function StudentDashboard() {
       <CreateCvModal 
         open={isModalOpen} 
         onOpenChange={closeModal}
+        mode={cvModalMode}
+        initialCv={cvForModal}
         //refresh data after creating CV
         onCvCreated={() => {
             fetchDashboardData(); 
@@ -191,37 +192,42 @@ export default function StudentDashboard() {
                 You latest applications you applied for
               </p>
             </div>
-            <Button variant="outline" size="sm" onClick={() => navigate("/studentdashboard")}>
+            <Button variant="outline" size="sm" onClick={() => navigate("/studentdashboard/MyApplications")}>
               View All
             </Button>
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Offer</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Applied Date</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {applications.map((application) => (
-                <TableRow key={application.id}>
-                    {/* 1st column */}
-                  <TableCell className="font-medium">{application.offer}</TableCell>
-                  
-                  <TableCell>
-                    <Badge variant={getStatusBadge(application.status)}>
-                      {application.status}
-                    </Badge>
-                  </TableCell>
-                  
-                  <TableCell>{application.appliedDate}</TableCell>
+          {error ? (
+            <p className="text-sm text-destructive">{error}</p>
+          ) : applications.length === 0 ? (
+            <p className="text-sm text-muted-foreground">You don't have applications yet.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Offer</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Applied Date</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {applications.map((application) => (
+                  <TableRow key={application.id}>
+                    <TableCell className="font-medium">{application.offer}</TableCell>
+
+                    <TableCell>
+                      <Badge variant={getStatusBadge(application.status)}>
+                        {application.status}
+                      </Badge>
+                    </TableCell>
+
+                    <TableCell>{application.appliedDate}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>
