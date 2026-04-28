@@ -623,7 +623,7 @@ export default function CreateCvModal({
           <DialogClose asChild>
             <Button type="button" variant="outline">Cancel</Button>
           </DialogClose>
-          <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Submitting..." : "Create CV"}</Button>
+          <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Submitting..." : mode === "edit" ? "Confirm Edits" : "Create CV"}</Button>
         </DialogFooter>
       </form>
     </DialogContent>

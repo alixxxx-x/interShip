@@ -239,10 +239,12 @@ class DigitalCVSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'student']
 
     def validate(self, attrs):
-        request = self.context.get('request')
-        if request and hasattr(request.user, 'student'):
-            if DigitalCV.objects.filter(student=request.user.student).exists():
-                raise serializers.ValidationError("You already have a digital CV")
+        # Only check for duplicate CV on creation, not on update
+        if self.instance is None:
+            request = self.context.get('request')
+            if request and hasattr(request.user, 'student'):
+                if DigitalCV.objects.filter(student=request.user.student).exists():
+                    raise serializers.ValidationError("You already have a digital CV")
         return attrs
 
     def update(self, instance, validated_data):
