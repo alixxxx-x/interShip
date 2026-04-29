@@ -4,9 +4,7 @@ import {
   BadgeCheck,
   Bell,
   ChevronsUpDown,
-  CreditCard,
   LogOut,
-  Sparkles,
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
@@ -98,22 +96,16 @@ export function NavUser({
             </div>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem disabled>
-                <Sparkles className="mr-2" />
-                Upgrade to Pro
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/profile')}>
                 <BadgeCheck className="mr-2" />
                 Account
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCard className="mr-2" />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/companydashboard/notifications')}>
+              <DropdownMenuItem onClick={() => {
+                const notificationUrl = user?.role === "STUDENT" 
+                  ? '/studentdashboard/notifications'
+                  : '/companydashboard/notifications';
+                navigate(notificationUrl);
+              }}>
                 <div className="relative mr-2">
                   <Bell className="size-4" />
                   {unreadCount > 0 && (

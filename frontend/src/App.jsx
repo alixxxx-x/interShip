@@ -93,6 +93,7 @@ function App() {
             <Route path="/studentdashboard" element={<StudentDashboard />} />
             <Route path="/studentdashboard/cv" element={<MyCv />} />
             <Route path="/studentdashboard/MyApplications" element={<MyApplications />} />
+            <Route path="/studentdashboard/notifications" element={<Notifications />} />
           </Route>
         </Routes>
       </TooltipProvider>
