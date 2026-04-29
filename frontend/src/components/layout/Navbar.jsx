@@ -3,23 +3,16 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import logoGif from "@/assets/logo.gif";
 import {
     Menu, X, User, Settings, LogOut,
-    ChevronDown, LayoutDashboard, Bell, Sun, Moon
+    ChevronDown, LayoutDashboard, Sun, Moon
 } from "lucide-react";
 import { useTheme } from "@/components/theme-provider";
 import api from "@/api/api";
 import { ACCESS_TOKEN } from "@/constants";
-import {
-    NavigationMenu,
-    NavigationMenuItem,
-    NavigationMenuLink,
-    NavigationMenuList,
-    navigationMenuTriggerStyle,
-} from "@/components/ui/navigation-menu";
+
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
-    DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -87,9 +80,9 @@ export default function Navbar({ children }) {
             <nav className={`fixed top-0 left-0 right-0 z-[100] bg-background border-b border-border duration-300 ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}>
                 <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
                     <Link to="/" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                        <img src={logoGif} alt="Inter.Ship" className="w-8 h-8 rounded-md" />
+                        <img src={logoGif} alt="Stag.Io" className="w-8 h-8 rounded-md" />
                         <span className="text-xl font-bold tracking-tight text-purple-600 font-['Poppins',sans-serif]">
-                            Inter<span className="text-purple-400">.Ship</span>
+                            Stag<span className="text-purple-400">.Io</span>
                         </span>
                     </Link>
 

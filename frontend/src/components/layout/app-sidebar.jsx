@@ -3,11 +3,9 @@
 import * as React from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import {
-  GalleryVerticalEnd,
   LayoutDashboard,
   Settings2,
   SquareTerminal,
-  Building2,
   Users,
   Search,
   FileText,
@@ -30,20 +28,9 @@ import api from "@/api/api"
 import { ACCESS_TOKEN } from "@/constants"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import logoGif from "@/assets/logo.gif"
 
 const data = {
-  teams: [
-    {
-      name: "Inter.Ship",
-      logo: GalleryVerticalEnd,
-      plan: "Platform Admin",
-    },
-    {
-      name: "Acme Corp",
-      logo: Building2,
-      plan: "Hiring Partner",
-    },
-  ],
   navMain: [
     {
       title: "Dashboard",
@@ -121,6 +108,7 @@ const data = {
 export function AppSidebar({ ...props }) {
   const [userInfo, setUserInfo] = React.useState(null)
   const [unreadCount, setUnreadCount] = React.useState(0)
+  const [searchQuery, setSearchQuery] = React.useState("")
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -157,9 +145,10 @@ export function AppSidebar({ ...props }) {
   const navItems = React.useMemo(() => {
     if (!userInfo) return []
 
-    // Student sidebar: remove internships toggle/list and provide a "My CV" entry.
+    // Student sidebar: 
+    let baseItems = []
     if (userInfo?.role === "STUDENT") {
-      return [
+      baseItems = [
         {
           title: "Dashboard",
           url: "/studentdashboard",
@@ -169,11 +158,6 @@ export function AppSidebar({ ...props }) {
             {
               title: "Overview",
               url: "/studentdashboard",
-            },
-
-            {
-              title: "Analytics",
-              url: "/companydashboard/analytics",
             },
           ],
         },
@@ -205,23 +189,65 @@ export function AppSidebar({ ...props }) {
         ],
       },
       ]
+    } else {
+      baseItems = data.navMain.map(item => {
+        if (item.title === "Notifications") {
+          return {
+            ...item,
+            badge: unreadCount > 0
+          }
+        }
+        return item
+      })
     }
 
-    return data.navMain.map(item => {
-      if (item.title === "Notifications") {
-        return {
-          ...item,
-          badge: unreadCount > 0
+    // Filter items based on search query
+    if (!searchQuery.trim()) {
+      return baseItems
+    }
+
+    const query = searchQuery.toLowerCase()
+    return baseItems
+      .map(item => {
+        const titleMatch = item.title.toLowerCase().includes(query)
+        const itemsMatch = item.items?.filter(subItem =>
+          subItem.title.toLowerCase().includes(query)
+        ) || []
+
+        if (titleMatch) {
+          return item
         }
-      }
-      return item
-    })
-  }, [location.pathname, userInfo, unreadCount])
+
+        if (itemsMatch.length > 0) {
+          return {
+            ...item,
+            items: itemsMatch,
+          }
+        }
+
+        return null
+      })
+      .filter(Boolean)
+  }, [location.pathname, userInfo, unreadCount, searchQuery])
+
+  const getSubtitle = React.useMemo(() => {
+    const role = userInfo?.role ? String(userInfo.role).toUpperCase() : ""
+    const subtitleMap = {
+      STUDENT: "Student Platform",
+      COMPANY: "Company Platform",
+      ADMIN: "Platform Admin",
+    }
+    return subtitleMap[role] || "Platform"
+  }, [userInfo])
 
   return (
     <Sidebar variant="inset" collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <TeamSwitcher 
+          logoSrc={logoGif}
+          name="Stag.Io"
+          subtitle={getSubtitle}
+        />
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup className="py-0 group-data-[collapsible=icon]:hidden">
@@ -232,6 +258,8 @@ export function AppSidebar({ ...props }) {
             <Input
               id="search"
               placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-8 bg-sidebar-accent/50 border-none shadow-none h-9 mt-2"
             />
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 select-none opacity-50" />

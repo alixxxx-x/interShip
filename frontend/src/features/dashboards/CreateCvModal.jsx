@@ -68,6 +68,7 @@ export default function CreateCvModal({
 
   const [formData, setFormData] = useState(emptyFormData);
   const [currentSkill, setCurrentSkill] = useState("");
+  const [currentLanguage, setCurrentLanguage] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
   const [pdfName, setPdfName] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -112,6 +113,7 @@ export default function CreateCvModal({
     if (mode !== "edit" || !initialCv) {
       setFormData(emptyFormData);
       setCurrentSkill("");
+      setCurrentLanguage("");
       setImagePreview(null);
       setPdfName(null);
       return;
@@ -134,6 +136,7 @@ export default function CreateCvModal({
     });
 
     setCurrentSkill("");
+    setCurrentLanguage("");
     setImagePreview(toAbsoluteBackendUrl(initialCv.image));
 
     const existingPdfUrl = toAbsoluteBackendUrl(initialCv.pdfFile);
@@ -177,6 +180,17 @@ export default function CreateCvModal({
       ...prev,
       languages: prev.languages.filter((l) => l !== languageToRemove),
     }));
+  };
+
+  const handleAddLanguage = (e) => {
+    e.preventDefault();
+    if (currentLanguage.trim() && !formData.languages.includes(currentLanguage.trim())) {
+      setFormData((prev) => ({
+        ...prev,
+        languages: [...prev.languages, currentLanguage.trim()],
+      }));
+      setCurrentLanguage("");
+    }
   };
 
   const handleImageChange = (e) => {
@@ -513,7 +527,7 @@ export default function CreateCvModal({
 
         <div className="grid gap-4 py-2">
           <div className="grid gap-2">
-            <Label htmlFor="skills" className="flex items-center gap-2">
+            <Label htmlFor="languages" className="flex items-center gap-2">
               <Wand2 className="h-4 w-4 text-muted-foreground" />
               Required Languages
             </Label>
@@ -531,19 +545,19 @@ export default function CreateCvModal({
                 </Badge>
               ))}
               <input
-                id="skills"
-                value={currentSkill}
-                onChange={(e) => setCurrentSkill(e.target.value)}
+                id="languages"
+                value={currentLanguage}
+                onChange={(e) => setCurrentLanguage(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
-                    handleAddSkill(e);
-                  } else if (e.key === "Backspace" && !currentSkill && formData.skills.length > 0) {
-                    // Remove last skill on backspace if input is empty
-                    removeSkill(formData.skills[formData.skills.length - 1]);
+                    handleAddLanguage(e);
+                  } else if (e.key === "Backspace" && !currentLanguage && formData.languages.length > 0) {
+                    // Remove last language on backspace if input is empty
+                    removeLanguage(formData.languages[formData.languages.length - 1]);
                   }
                 }}
-                placeholder={formData.skills.length === 0 ? "e.g. English, French..." : ""}
+                placeholder={formData.languages.length === 0 ? "e.g. English, French..." : ""}
                 className="flex-1 bg-transparent border-none outline-none text-sm min-w-[120px] h-7"
               />
             </div>
