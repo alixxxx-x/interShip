@@ -21,7 +21,8 @@ import {
 } from "@/components/ui/sidebar"
 
 export function NavMain({
-  items
+  items,
+  onAction,
 }) {
   return (
     <SidebarGroup>
@@ -75,9 +76,23 @@ export function NavMain({
                     <SidebarMenuSubItem key={subItem.title}>
                       <SidebarMenuSubButton
                         render={
-                          <Link to={subItem.url}>
-                            <span>{subItem.title}</span>
-                          </Link>
+                          subItem.onClick || subItem.notice ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault()
+                                if (subItem.onClick) return subItem.onClick()
+                                if (onAction) return onAction(subItem)
+                              }}
+                              className="w-full text-left"
+                            >
+                              <span>{subItem.title}</span>
+                            </button>
+                          ) : (
+                            <Link to={subItem.url}>
+                              <span>{subItem.title}</span>
+                            </Link>
+                          )
                         }
                       />
                     </SidebarMenuSubItem>

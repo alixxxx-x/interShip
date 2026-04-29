@@ -10,6 +10,7 @@ import {
   Search,
   FileText,
   Bell,
+  AlertCircle,
 } from "lucide-react"
 
 import { NavMain } from "@/components/layout/nav-main"
@@ -69,23 +70,8 @@ const data = {
     },
     {
       title: "Applications",
-      url: "/applications",
+      url: "/companydashboard/applications",
       icon: Users,
-      items: [
-        {
-          title: "Received",
-          url: "/companydashboard/applications",
-        },
-        {
-          title: "Shortlisted",
-          url: "/companydashboard/applications?status=shortlisted",
-        },
-      ],
-    },
-    {
-      title: "Notifications",
-      url: "/companydashboard/notifications",
-      icon: Bell,
     },
     {
         title: "Platform",
@@ -109,6 +95,7 @@ export function AppSidebar({ ...props }) {
   const [userInfo, setUserInfo] = React.useState(null)
   const [unreadCount, setUnreadCount] = React.useState(0)
   const [searchQuery, setSearchQuery] = React.useState("")
+  const [noticeMessage, setNoticeMessage] = React.useState(null)
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -191,13 +178,22 @@ export function AppSidebar({ ...props }) {
       ]
     } else {
       baseItems = data.navMain.map(item => {
-        if (item.title === "Notifications") {
+        const newItem = item.title === "Notifications" ? { ...item, badge: unreadCount > 0 } : item
+
+        // For company role, mark Analytics subitem as coming soon
+        if (userInfo?.role === "COMPANY" && newItem.items) {
           return {
-            ...item,
-            badge: unreadCount > 0
+            ...newItem,
+            items: newItem.items.map(si => {
+              if (si.title === "Analytics") {
+                return { ...si, notice: "Coming soon..." }
+              }
+              return si
+            })
           }
         }
-        return item
+
+        return newItem
       })
     }
 
@@ -265,7 +261,20 @@ export function AppSidebar({ ...props }) {
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 select-none opacity-50" />
           </SidebarGroupContent>
         </SidebarGroup>
-        <NavMain items={navItems} />
+        {noticeMessage && (
+          <div className="mb-3 px-2 py-2 rounded-full bg-purple-400 text-white flex items-center gap-3 shadow-sm">
+            <div >
+              <AlertCircle className="h-4 w-4 text-white" />
+            </div>
+            <span className="text-md font-medium">{noticeMessage}</span>
+          </div>
+        )}
+        <NavMain items={navItems} onAction={(subItem) => {
+          if (subItem?.notice) {
+            setNoticeMessage(subItem.notice)
+            setTimeout(() => setNoticeMessage(null), 1000)
+          }
+        }} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={userInfo} handleLogout={handleLogout} unreadCount={unreadCount} />
