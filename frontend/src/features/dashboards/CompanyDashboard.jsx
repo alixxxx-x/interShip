@@ -19,12 +19,14 @@ import {
 import { useNavigate } from "react-router-dom";
 import CreateOfferModal from "./CreateOfferModal";
 import { useSearchParams } from "react-router-dom";
+import api from "@/api/api";
 
 
 export default function CompanyDashboard() {
   const [stats, setStats] = useState(null);
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -34,62 +36,20 @@ export default function CompanyDashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      //Replace with actual Django API calls
-      
-      //replace with real API responses
-      const mockStats = {
-        totalInternships: 12,
-        activeApplications: 48,
-        totalViews: 1234,
-        pendingReviews: 5,
-      };
+      setLoading(true);
+      setError(null);
 
-      const mockApplications = [
-        {
-          id: 1,
-          candidate: "Sarah Johnson",
-          status: "Rejected",
-          appliedDate: "2026-04-15",
-          email: "sarah.j@email.com",
-          cv: "path/to/cv.pdf"
-        },
-        {
-          id: 2,
-          candidate: "Michael Chen",
-          status: "In progress",
-          appliedDate: "2026-04-14",
-          email: "m.chen@email.com",
-          cv: "path/to/cv.pdf"
-        },
-        {
-          id: 3,
-          candidate: "Emma Williams",
-          status: "Accepted",
-          appliedDate: "2026-04-14",
-          email: "emma.w@email.com",
-          cv: "path/to/cv.pdf"
-        },
-        {
-          id: 4,
-          candidate: "James Brown",
-          status: "Accepted",
-          appliedDate: "2026-04-12",
-          email: "james.b@email.com",
-          cv: "path/to/cv.pdf"
-        },
-        {
-          id: 5,
-          candidate: "Lisa Anderson",
-          status: "In progress",
-          appliedDate: "2026-04-11",
-          email: "lisa.a@email.com",
-          cv: "path/to/cv.pdf"
-        }
-      ];
-      setStats(mockStats);
-      setApplications(mockApplications);
+      const res = await api.get("/company/dashboard/");
+      const nextStats = res?.data?.stats ?? null;
+      const nextApps = Array.isArray(res?.data?.applications) ? res.data.applications : [];
+
+      setStats(nextStats);
+      setApplications(nextApps);
     } catch (error) {
       console.error("Failed to load dashboard:", error);
+      setError("Failed to load dashboard data.");
+      setStats(null);
+      setApplications([]);
     } finally {
       setLoading(false);
     }
@@ -115,23 +75,20 @@ export default function CompanyDashboard() {
   const statCards = [
     {
       title: "Pending Applications",
-      value: stats?.activeApplications,
+      value: stats?.pendingApplications ?? 0,
       icon: Users,
-      change: stats?.applicationsChange,
-      description: "New applications this week"
+      description: "Applications awaiting review"
     },
     {
       title: "Accepted Applications",
-      value: stats?.totalViews?.toLocaleString(),
+      value: stats?.acceptedApplications ?? 0,
       icon: TrendingUp,
-      change: stats?.viewsChange,
-      description: "Application accepted this week"
+      description: "Applications accepted"
     },
     {
       title: "Total Internships",
-      value: stats?.totalInternships,
+      value: stats?.totalInternships ?? 0,
       icon: Briefcase,
-      change: "+2",
       description: "Active positions"
     },
   ];
@@ -143,6 +100,14 @@ export default function CompanyDashboard() {
       "Rejected": "destructive"
     };
     return variants[status] || "outline";
+  };
+
+  const handleDownloadCV = (application) => {
+    if (application.cvUrl) {
+      window.open(application.cvUrl, "_blank");
+    } else {
+      alert(`No CV available for ${application.candidate}`);
+    }
   };
 
   return (
@@ -215,38 +180,44 @@ export default function CompanyDashboard() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Candidate</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Applied Date</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>CV</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {applications.map((application) => (
-                <TableRow key={application.id}>
-                  <TableCell className="font-medium">{application.candidate}</TableCell>
-                  <TableCell>
-                    <Badge variant={getStatusBadge(application.status)}>
-                      {application.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{application.appliedDate}</TableCell>
-                  <TableCell>{application.email}</TableCell>
-                  <TableCell>
-                    <Button variant="outline" size="sm" onClick={() => alert(`Downloading CV for ${application.candidate}`)}>
-                      Download
-                    </Button>
-                  </TableCell>
+          {error ? (
+            <p className="text-sm text-destructive">{error}</p>
+          ) : applications.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No applications yet.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Candidate</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Applied Date</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>CV</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {applications.map((application) => (
+                  <TableRow key={application.id}>
+                    <TableCell className="font-medium">{application.candidate}</TableCell>
+                    <TableCell>
+                      <Badge variant={getStatusBadge(application.status)}>
+                        {application.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{application.appliedDate}</TableCell>
+                    <TableCell>{application.email}</TableCell>
+                    <TableCell>
+                      <Button variant="outline" size="sm" onClick={() => handleDownloadCV(application)}>
+                        Download
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>
   );
-}
+}

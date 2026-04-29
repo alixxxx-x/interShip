@@ -8,6 +8,7 @@ import {
   LogOut,
   Sparkles,
 } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 
 import {
   Avatar,
@@ -32,9 +33,11 @@ import {
 
 export function NavUser({
   user,
-  handleLogout
+  handleLogout,
+  unreadCount = 0
 }) {
   const { isMobile } = useSidebar()
+  const navigate = useNavigate()
 
   if (!user) return null;
 
@@ -56,7 +59,12 @@ export function NavUser({
                   </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">{user.username}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="truncate font-semibold">{user.username}</span>
+                    {unreadCount > 0 && (
+                      <span className="h-2 w-2 rounded-full bg-primary shrink-0" />
+                    )}
+                  </div>
                   <span className="truncate text-xs">{user.email}</span>
                 </div>
                 <ChevronsUpDown className="ml-auto size-4" />
@@ -78,7 +86,12 @@ export function NavUser({
                   </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">{user.username}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="truncate font-semibold">{user.username}</span>
+                    {unreadCount > 0 && (
+                      <span className="h-2 w-2 rounded-full bg-primary shrink-0" />
+                    )}
+                  </div>
                   <span className="truncate text-xs">{user.email}</span>
                 </div>
               </div>
@@ -100,8 +113,13 @@ export function NavUser({
                 <CreditCard className="mr-2" />
                 Billing
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Bell className="mr-2" />
+              <DropdownMenuItem onClick={() => navigate('/companydashboard/notifications')}>
+                <div className="relative mr-2">
+                  <Bell className="size-4" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-primary border border-background" />
+                  )}
+                </div>
                 Notifications
               </DropdownMenuItem>
             </DropdownMenuGroup>

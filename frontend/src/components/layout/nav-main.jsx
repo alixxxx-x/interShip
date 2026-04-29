@@ -38,7 +38,12 @@ export function NavMain({
                   isActive={Boolean(item.isActive)}
                   render={
                     <Link to={item.url} className="flex w-full items-center gap-2">
-                      {item.icon && <item.icon />}
+                      <div className="relative flex items-center justify-center">
+                        {item.icon && <item.icon />}
+                        {item.badge && (
+                          <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary border-2 border-background" />
+                        )}
+                      </div>
                       <span>{item.title}</span>
                     </Link>
                   }

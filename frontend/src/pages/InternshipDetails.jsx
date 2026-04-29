@@ -18,6 +18,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import api from '@/api/api';
+import { ACCESS_TOKEN } from '@/constants';
 
 export default function InternshipDetails() {
   const { id } = useParams();
@@ -29,6 +30,7 @@ export default function InternshipDetails() {
   const [isApplying, setIsApplying] = useState(false);
   const [applied, setApplied] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
+  const [userRole, setUserRole] = useState(null);
 
   useEffect(() => {
     const fetchDetails = async () => {
@@ -72,6 +74,27 @@ export default function InternshipDetails() {
           banner_image: item.internship_image || null,
           internship_duration: formatDuration(item.internship_duration),
         });
+
+        // Check if the student already applied to this internship
+        const token = localStorage.getItem(ACCESS_TOKEN);
+        if (token) {
+          try {
+            const profileRes = await api.get('/auth/profile/');
+            const role = profileRes.data.role;
+            setUserRole(role);
+
+            if (role === 'STUDENT') {
+              const appsRes = await api.get("/applications/");
+              const apps = appsRes.data?.results || appsRes.data || [];
+              const alreadyApplied = apps.some(
+                (app) => app.internship === parseInt(id)
+              );
+              if (alreadyApplied) setApplied(true);
+            }
+          } catch (e) {
+            // Silently ignore — user might be unauthenticated
+          }
+        }
       } catch (err) {
         console.error("Error fetching details:", err);
         setError("Could not find this internship opportunity.");
@@ -84,7 +107,7 @@ export default function InternshipDetails() {
   }, [id]);
 
   const handleApply = async () => {
-    const token = localStorage.getItem('access');
+    const token = localStorage.getItem(ACCESS_TOKEN);
     if (!token) {
       navigate('/login');
       return;
@@ -266,9 +289,8 @@ export default function InternshipDetails() {
               </div>
 
               <div className="mt-10 pt-8 border-t">
-                {applied ? (
-                  <div className="bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-800 rounded-2xl p-6 text-center animate-in zoom-in duration-300">
-                    <CheckCircle2 className="h-10 w-10 text-green-500 mx-auto mb-3" />
+                {userRole === 'COMPANY' || userRole === 'ADMIN' ? null : applied ? (
+                  <div className="bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-800 rounded-2xl p-6 text-center">
                     <p className="font-bold text-green-800 dark:text-green-400 text-sm">Application Received</p>
                   </div>
                 ) : new Date(internship.offer_end_date) < new Date() ? (

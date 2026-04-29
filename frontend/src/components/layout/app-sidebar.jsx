@@ -11,6 +11,7 @@ import {
   Users,
   Search,
   FileText,
+  Bell,
 } from "lucide-react"
 
 import { NavMain } from "@/components/layout/nav-main"
@@ -95,6 +96,11 @@ const data = {
       ],
     },
     {
+      title: "Notifications",
+      url: "/companydashboard/notifications",
+      icon: Bell,
+    },
+    {
         title: "Platform",
         url: "#",
         icon: Settings2,
@@ -114,6 +120,7 @@ const data = {
 
 export function AppSidebar({ ...props }) {
   const [userInfo, setUserInfo] = React.useState(null)
+  const [unreadCount, setUnreadCount] = React.useState(0)
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -124,6 +131,16 @@ export function AppSidebar({ ...props }) {
         if (token) {
           const res = await api.get("/auth/profile/")
           setUserInfo(res.data)
+
+          // Fetch unread count
+          if (res.data?.role === 'COMPANY') {
+            try {
+              const notifsRes = await api.get("/notifications/")
+              setUnreadCount(notifsRes.data?.unreadCount || 0)
+            } catch (err) {
+              console.error("Failed to fetch notifications count:", err)
+            }
+          }
         }
       } catch (error) {
         console.error("Failed to fetch profile:", error)
@@ -190,8 +207,16 @@ export function AppSidebar({ ...props }) {
       ]
     }
 
-    return data.navMain
-  }, [location.pathname, userInfo])
+    return data.navMain.map(item => {
+      if (item.title === "Notifications") {
+        return {
+          ...item,
+          badge: unreadCount > 0
+        }
+      }
+      return item
+    })
+  }, [location.pathname, userInfo, unreadCount])
 
   return (
     <Sidebar variant="inset" collapsible="icon" {...props}>
@@ -215,7 +240,7 @@ export function AppSidebar({ ...props }) {
         <NavMain items={navItems} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={userInfo} handleLogout={handleLogout} />
+        <NavUser user={userInfo} handleLogout={handleLogout} unreadCount={unreadCount} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

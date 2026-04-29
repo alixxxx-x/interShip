@@ -23,6 +23,7 @@ import MyApplications from "@/features/dashboards/MyApplications";
 import StudentRoute from "@/routes/StudentRoute";
 import DashboardRedirect from "@/routes/DashboardRedirect";
 import MyCv from "@/features/dashboards/MyCv";
+import Notifications from "@/features/dashboards/Notifications";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -84,6 +85,7 @@ function App() {
             <Route path="/companydashboard" element={<CompanyDashboard />} />
             <Route path="/companydashboard/listings" element={<CompanyListings />} />
             <Route path="/companydashboard/applications" element={<AllApplications />} />
+            <Route path="/companydashboard/notifications" element={<Notifications />} />
           </Route>
 
           {/* Student Dashboard Layout */}
