@@ -12,6 +12,8 @@ import Home from "@/pages/Home";
 import AdminPanel from "@/pages/AdminPanel";
 import AboutUs from "@/pages/AboutUs";
 import Internships from "@/pages/Internships";
+import Companies from "@/pages/Companies";
+import CompaniesDetails from "@/pages/CompaniesDetails";
 import Profile from "@/pages/Profile";
 import InternshipDetails from "@/pages/InternshipDetails";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -47,6 +49,8 @@ function App() {
             <Route path="/about" element={<AboutUs />} />
             <Route path="/internships" element={<Internships />} />
             <Route path="/internships/:id" element={<InternshipDetails />} />
+            <Route path="/companies" element={<Companies />} />
+            <Route path="/companies/:id" element={<CompaniesDetails />} />
             <Route
               path="/profile"
               element={
