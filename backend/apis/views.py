@@ -153,7 +153,17 @@ class ApplicationCreateView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         internship = serializer.context['internship']
-        serializer.save(student=self.request.user.student, internship=internship)
+        application = serializer.save(student=self.request.user.student, internship=internship)
+
+        # Create notification for the company
+        student = self.request.user.student
+        student_name = f"{student.first_name} {student.last_name}".strip() or student.username or student.email
+        Notification.objects.create(
+            recipient=internship.company,
+            notification_type=Notification.NotificationType.NEW_APPLICATION,
+            message=f"{student_name} applied for '{internship.title}'",
+            application=application,
+        )
 
 class ApplicationUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Application.objects.all()
@@ -162,16 +172,46 @@ class ApplicationUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_object(self):
         obj = super().get_object()
-        if obj.internship.company != self.request.user:
+        if obj.internship.company_id != self.request.user.id:
             raise PermissionDenied("You do not have permission to update this application.")
         return obj
 
     def perform_update(self, serializer):
-        serializer.save()
+        old_status = serializer.instance.status
+        application = serializer.save()
+        
+        if old_status != application.status:
+            if application.status == Application.Status.ACCEPTED:
+                Notification.objects.create(
+                    recipient=application.student,
+                    notification_type=Notification.NotificationType.APPLICATION_ACCEPTED,
+                    message=f"Your application for '{application.internship.title}' has been accepted!",
+                    application=application
+                )
+            elif application.status == Application.Status.REJECTED:
+                Notification.objects.create(
+                    recipient=application.student,
+                    notification_type=Notification.NotificationType.APPLICATION_REJECTED,
+                    message=f"Your application for '{application.internship.title}' has been rejected.",
+                    application=application
+                )
 
     def perform_destroy(self, instance):
         instance.status = Application.Status.REJECTED
         instance.save()
+
+class StudentApplicationCancelView(generics.DestroyAPIView):
+    queryset = Application.objects.all()
+    serializer_class = ApplicationSerializer
+    permission_classes = [IsAuthenticated, IsStudent]
+
+    def get_object(self):
+        internship_id = self.kwargs['internship_id']
+        obj = get_object_or_404(Application, internship_id=internship_id, student_id=self.request.user.id)
+        return obj
+
+    def perform_destroy(self, instance):
+        instance.delete()
 
 class ApplicationRetrieveView(generics.RetrieveAPIView):
     queryset = Application.objects.all()
@@ -180,7 +220,7 @@ class ApplicationRetrieveView(generics.RetrieveAPIView):
 
     def get_object(self):
         obj = super().get_object()
-        if obj.internship.company != self.request.user and obj.student != self.request.user:
+        if obj.internship.company_id != self.request.user.id and obj.student_id != self.request.user.id:
             raise PermissionDenied("You do not have permission to view this application.")
         return obj
 
@@ -330,3 +370,107 @@ class StudentDashboardView(generics.GenericAPIView):
             "stats": stats,
             "applications": recent_apps_data
         })
+
+
+class CompanyDashboardView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated, IsCompany]
+
+    def get(self, request, *args, **kwargs):
+        company = request.user.company
+
+        # All internships belonging to this company
+        internships = InternshipOffer.objects.filter(company=company)
+
+        # All applications for this company's internships
+        applications = Application.objects.filter(internship__company=company)
+
+        stats = {
+            "pendingApplications": applications.filter(status=Application.Status.PENDING).count(),
+            "acceptedApplications": applications.filter(status=Application.Status.ACCEPTED).count(),
+            "totalInternships": internships.count(),
+        }
+
+        # Recent applications (limit to 5)
+        recent_apps = applications.select_related(
+            'student', 'internship'
+        ).order_by('-application_date')[:5]
+
+        # Mapping statuses to frontend expectations
+        status_map = {
+            Application.Status.PENDING: "In progress",
+            Application.Status.ACCEPTED: "Accepted",
+            Application.Status.REJECTED: "Rejected",
+        }
+
+        recent_apps_data = []
+        for app in recent_apps:
+            # Try to get student name from first_name/last_name, fallback to username/email
+            student = app.student
+            candidate_name = f"{student.first_name} {student.last_name}".strip()
+            if not candidate_name:
+                candidate_name = student.username or student.email
+
+            # Try to get CV pdf URL
+            cv_url = None
+            if hasattr(student, 'digital_cv') and student.digital_cv and student.digital_cv.cv_pdf:
+                cv_url = request.build_absolute_uri(student.digital_cv.cv_pdf.url)
+
+            recent_apps_data.append({
+                "id": app.id,
+                "candidate": candidate_name,
+                "status": status_map.get(app.status, app.status),
+                "appliedDate": app.application_date.strftime("%Y-%m-%d"),
+                "email": student.email,
+                "internshipTitle": app.internship.title,
+                "cvUrl": cv_url,
+            })
+
+        return Response({
+            "stats": stats,
+            "applications": recent_apps_data
+        })
+
+
+# notification views
+
+class NotificationListView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        notifications = Notification.objects.filter(recipient=request.user)[:20]
+        unread_count = Notification.objects.filter(recipient=request.user, is_read=False).count()
+
+        data = [
+            {
+                "id": n.id,
+                "type": n.notification_type,
+                "message": n.message,
+                "isRead": n.is_read,
+                "createdAt": n.created_at.strftime("%Y-%m-%d %H:%M"),
+                "applicationId": n.application_id,
+            }
+            for n in notifications
+        ]
+
+        return Response({
+            "unreadCount": unread_count,
+            "notifications": data,
+        })
+
+
+class NotificationMarkReadView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, pk, *args, **kwargs):
+        notification = get_object_or_404(Notification, pk=pk, recipient=request.user)
+        notification.is_read = True
+        notification.save()
+        return Response({"status": "ok"})
+
+
+class NotificationMarkAllReadView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, *args, **kwargs):
+        Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
+        return Response({"status": "ok"})

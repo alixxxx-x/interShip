@@ -21,7 +21,8 @@ urlpatterns = [
 
 
     # Applications
-    path('applications/apply/', ApplicationCreateView.as_view(), name='apply'),
+    path('applications/apply/<int:pk>/', ApplicationCreateView.as_view(), name='apply'),
+    path('applications/cancel/<int:internship_id>/', StudentApplicationCancelView.as_view(), name='application-cancel'),
     path('applications/', ApplicationListView.as_view(), name='application-list'),
     path('applications/<int:pk>/', ApplicationRetrieveView.as_view(), name='application-retrieve'),
     path('applications/<int:pk>/update/', ApplicationUpdateDestroyView.as_view(), name='application-update'),
@@ -37,5 +38,11 @@ urlpatterns = [
     path('cv/create/', DigitalCVCreateView.as_view(), name='cv-create'),
     path('cv/', DigitalCVRetrieveUpdateView.as_view(), name='cv-detail'),
     path('student/dashboard/', StudentDashboardView.as_view(), name='student-dashboard'),
+    path('company/dashboard/', CompanyDashboardView.as_view(), name='company-dashboard'),
+
+    # Notifications
+    path('notifications/', NotificationListView.as_view(), name='notification-list'),
+    path('notifications/<int:pk>/read/', NotificationMarkReadView.as_view(), name='notification-read'),
+    path('notifications/read-all/', NotificationMarkAllReadView.as_view(), name='notification-read-all'),
 ]
    
