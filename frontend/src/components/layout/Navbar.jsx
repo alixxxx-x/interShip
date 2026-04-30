@@ -108,7 +108,7 @@ export default function Navbar({ children }) {
                                 key={link.path}
                                 to={link.path}
                                 className={`px-3 py-2 rounded-md font-bold text-[13px] transition-colors ${location.pathname === link.path ? "text-primary bg-slate-50/50" : "text-slate-600 hover:text-primary"
-                                }`}
+                                    }`}
                             >
                                 {link.name}
                             </Link>
@@ -126,129 +126,129 @@ export default function Navbar({ children }) {
                         </Button>
                         <div className="h-4 w-px bg-border mx-1"></div>
                         {userInfo ? (
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger className="relative h-10 w-auto flex items-center gap-2.5 pl-1 pr-3.5 hover:bg-accent rounded-full group transition-all duration-200 outline-none border border-transparent hover:border-border bg-transparent">
-                                        <Avatar className="h-8 w-8 border border-border shadow-sm ring-1 ring-border group-hover:ring-primary/20 transition-all">
-                                            {userInfo.profile_picture && (
-                                                <img src={userInfo.profile_picture} alt={userInfo.username} className="h-full w-full object-cover" />
-                                            )}
-                                            <AvatarFallback className="bg-primary text-white text-[10px] font-medium uppercase">
-                                                {userInfo.username?.charAt(0).toUpperCase() || 'A'}
-                                            </AvatarFallback>
-                                        </Avatar>
-                                        <div className="text-left hidden lg:block pr-1">
-                                            <p className="text-xs font-semibold text-slate-900 leading-none mb-1">{userInfo.username}</p>
-                                            <p className="text-[10px] text-primary font-medium">
-                                                {userInfo.role === 'company' ? 'Company' : userInfo.role?.replace('_', ' ')}
-                                            </p>
-                                        </div>
-                                        <ChevronDown className="h-3 w-3 text-slate-400 group-hover:text-primary transition-colors" />
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent className="w-56 mt-2 rounded-2xl p-2 shadow-2xl border border-border bg-popover text-popover-foreground" align="end">
-                                        <div className="font-normal px-3 py-3">
-                                            <div className="flex flex-col space-y-1">
-                                                <p className="text-sm font-bold text-foreground leading-none">{userInfo.username}</p>
-                                                <p className="text-xs text-muted-foreground truncate">{userInfo.email}</p>
-                                            </div>
-                                        </div>
-                                        <DropdownMenuSeparator className="bg-border" />
-                                        <DropdownMenuItem onClick={() => navigate('/dashboard')} className="cursor-pointer font-medium text-sm text-slate-700 dark:text-slate-200 p-2.5 rounded-xl flex items-center hover:bg-accent transition-colors w-full">
-                                            <LayoutDashboard className="mr-3 h-4 w-4 text-primary" />
-                                            Dashboard
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => navigate('/profile')} className="cursor-pointer font-medium text-sm text-slate-700 dark:text-slate-200 p-2.5 rounded-xl flex items-center hover:bg-accent transition-colors w-full">
-                                            <User className="mr-3 h-4 w-4 text-primary" />
-                                            View Profile
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => setShowNotifications(true)} className="cursor-pointer font-medium text-sm text-slate-700 dark:text-slate-200 p-2.5 rounded-xl flex items-center hover:bg-accent transition-colors w-full">
-                                            <Bell className="mr-3 h-4 w-4 text-primary"/>
-                                            Notifications
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => navigate('/settings')} className="cursor-pointer font-medium text-sm text-slate-700 dark:text-slate-200 p-2.5 rounded-xl flex items-center hover:bg-accent transition-colors w-full">
-                                        <Settings className="mr-3 h-4 w-4 text-primary" />
-                                            Settings
-                                        </DropdownMenuItem>
-                                        <DropdownMenuSeparator className="bg-border" />
-                                        <DropdownMenuItem onClick={handleLogout} className="cursor-pointer font-semibold text-sm text-red-600 dark:text-red-400 p-2.5 rounded-xl flex items-center hover:bg-red-50 dark:hover:bg-red-500/10 focus:bg-red-50 dark:focus:bg-red-500/10 transition-colors w-full">
-                                            <LogOut className="mr-3 h-4 w-4" />
-                                            Logout
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            ) : (
-                                    <div className="flex items-center gap-4">
-                                        <Link to="/login">
-                                            <Button variant="ghost" className="text-[13px] font-medium text-slate-600 hover:text-primary transition-colors px-4 h-9 shadow-none">
-                                                Log In
-                                            </Button>
-                                        </Link>
-                                        <Link to="/register">
-                                            <Button className="bg-primary hover:bg-primary/90 text-white text-[13px] font-bold rounded-full px-6 h-9 shadow-lg shadow-primary/20 active:scale-95 transition-all border-none">
-                                                Register
-                                            </Button>
-                                        </Link>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger className="relative h-10 w-auto flex items-center gap-2.5 pl-1 pr-3.5 hover:bg-accent rounded-full group transition-all duration-200 outline-none border border-transparent hover:border-border bg-transparent">
+                                    <Avatar className="h-8 w-8 border border-border shadow-sm ring-1 ring-border group-hover:ring-primary/20 transition-all">
+                                        {userInfo.profile_picture && (
+                                            <img src={userInfo.profile_picture} alt={userInfo.username} className="h-full w-full object-cover" />
+                                        )}
+                                        <AvatarFallback className="bg-primary text-white text-[10px] font-medium uppercase">
+                                            {userInfo.username?.charAt(0).toUpperCase() || 'A'}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div className="text-left hidden lg:block pr-1">
+                                        <p className="text-xs font-semibold text-slate-900 leading-none mb-1">{userInfo.username}</p>
+                                        <p className="text-[10px] text-primary font-medium">
+                                            {userInfo.role === 'company' ? 'Company' : userInfo.role?.replace('_', ' ')}
+                                        </p>
                                     </div>
-                                )}
-                        </div>
-
-                                {/* Mobile Menu Button */}
-                                <button
-                                    className="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-                                    onClick={() => setMenuOpen(!menuOpen)}
-                                >
-                                    {menuOpen ? <X size={24} /> : <Menu size={24} />}
-                                </button>
+                                    <ChevronDown className="h-3 w-3 text-slate-400 group-hover:text-primary transition-colors" />
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="w-56 mt-2 rounded-2xl p-2 shadow-2xl border border-border bg-popover text-popover-foreground" align="end">
+                                    <div className="font-normal px-3 py-3">
+                                        <div className="flex flex-col space-y-1">
+                                            <p className="text-sm font-bold text-foreground leading-none">{userInfo.username}</p>
+                                            <p className="text-xs text-muted-foreground truncate">{userInfo.email}</p>
+                                        </div>
+                                    </div>
+                                    <DropdownMenuSeparator className="bg-border" />
+                                    <DropdownMenuItem onClick={() => navigate('/dashboard')} className="cursor-pointer font-medium text-sm text-slate-700 dark:text-slate-200 p-2.5 rounded-xl flex items-center hover:bg-accent transition-colors w-full">
+                                        <LayoutDashboard className="mr-3 h-4 w-4 text-primary" />
+                                        Dashboard
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => navigate('/profile')} className="cursor-pointer font-medium text-sm text-slate-700 dark:text-slate-200 p-2.5 rounded-xl flex items-center hover:bg-accent transition-colors w-full">
+                                        <User className="mr-3 h-4 w-4 text-primary" />
+                                        View Profile
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setShowNotifications(true)} className="cursor-pointer font-medium text-sm text-slate-700 dark:text-slate-200 p-2.5 rounded-xl flex items-center hover:bg-accent transition-colors w-full">
+                                        <Bell className="mr-3 h-4 w-4 text-primary" />
+                                        Notifications
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => navigate('/settings')} className="cursor-pointer font-medium text-sm text-slate-700 dark:text-slate-200 p-2.5 rounded-xl flex items-center hover:bg-accent transition-colors w-full">
+                                        <Settings className="mr-3 h-4 w-4 text-primary" />
+                                        Settings
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator className="bg-border" />
+                                    <DropdownMenuItem onClick={handleLogout} className="cursor-pointer font-semibold text-sm text-red-600 dark:text-red-400 p-2.5 rounded-xl flex items-center hover:bg-red-50 dark:hover:bg-red-500/10 focus:bg-red-50 dark:focus:bg-red-500/10 transition-colors w-full">
+                                        <LogOut className="mr-3 h-4 w-4" />
+                                        Logout
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        ) : (
+                            <div className="flex items-center gap-4">
+                                <Link to="/login">
+                                    <Button variant="ghost" className="text-[13px] font-medium text-slate-600 hover:text-primary transition-colors px-4 h-9 shadow-none">
+                                        Log In
+                                    </Button>
+                                </Link>
+                                <Link to="/register">
+                                    <Button className="bg-primary hover:bg-primary/90 text-white text-[13px] font-bold rounded-full px-6 h-9 shadow-lg shadow-primary/20 active:scale-95 transition-all border-none">
+                                        Register
+                                    </Button>
+                                </Link>
                             </div>
-
-                            {/* Mobile Menu */}
-                            {menuOpen && (
-                                <div className="md:hidden absolute top-16 left-0 right-0 bg-white border-b border-slate-100 p-6 space-y-4 shadow-xl animate-in fade-in slide-in-from-top-4">
-                                    {navLinks.map((link) => (
-                                        <Link
-                                            key={link.path}
-                                            to={link.path}
-                                            className={`block py-3.5 px-4 rounded-xl text-[13px] font-bold transition-all ${location.pathname === link.path ? "bg-primary/10 text-primary" : "text-slate-600 hover:bg-slate-50"
-                                                }`}
-                                            onClick={() => setMenuOpen(false)}
-                                        >
-                                            {link.name}
-                                        </Link>
-                                    ))}
-
-                                    <div className="h-px bg-slate-100 my-4"></div>
-
-                                    {userInfo ? (
-                                        <div className="space-y-4 px-2">
-                                            <div className="flex items-center gap-4 py-2">
-                                                <Avatar className="h-10 w-10">
-                                                    {userInfo.profile_picture && (
-                                                        <img src={userInfo.profile_picture} alt={userInfo.username} className="h-full w-full object-cover" />
-                                                    )}
-                                                    <AvatarFallback className="bg-primary text-white font-medium">{userInfo.username?.charAt(0).toUpperCase() || 'A'}</AvatarFallback>
-                                                </Avatar>
-                                                <div>
-                                                    <p className="text-sm font-semibold text-slate-900">{userInfo.username}</p>
-                                                    <p className="text-xs text-primary font-medium">{userInfo.role?.replace('_', ' ')}</p>
-                                                </div>
-                                            </div>
-                                            <Link to="/dashboard" className="block py-3.5 px-2 text-[13px] font-bold text-primary" onClick={() => setMenuOpen(false)}>Dashboard</Link>
-                                            <button onClick={handleLogout} className="block w-full text-left py-3.5 px-2 text-[13px] font-bold text-red-600">Logout</button>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-3 pt-2">
-                                            <Link to="/login" className="block w-full text-center py-3.5 border border-slate-100 hover:bg-slate-50 rounded-xl font-medium text-[13px] text-slate-900 transition-all" onClick={() => setMenuOpen(false)}>Log In</Link>
-                                            <Link to="/register" className="block w-full text-center py-3.5 bg-primary hover:bg-primary/95 rounded-xl font-bold text-[13px] text-white shadow-xl shadow-primary/10 transition-all" onClick={() => setMenuOpen(false)}>Register</Link>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </nav>
-
-                        {/* Spacer for fixed navbar */}
-                        <div className="h-16"></div>
-
-                        {children}
+                        )}
                     </div>
+
+                    {/* Mobile Menu Button */}
+                    <button
+                        className="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                        onClick={() => setMenuOpen(!menuOpen)}
+                    >
+                        {menuOpen ? <X size={24} /> : <Menu size={24} />}
+                    </button>
+                </div>
+
+                {/* Mobile Menu */}
+                {menuOpen && (
+                    <div className="md:hidden absolute top-16 left-0 right-0 bg-white border-b border-slate-100 p-6 space-y-4 shadow-xl animate-in fade-in slide-in-from-top-4">
+                        {navLinks.map((link) => (
+                            <Link
+                                key={link.path}
+                                to={link.path}
+                                className={`block py-3.5 px-4 rounded-xl text-[13px] font-bold transition-all ${location.pathname === link.path ? "bg-primary/10 text-primary" : "text-slate-600 hover:bg-slate-50"
+                                    }`}
+                                onClick={() => setMenuOpen(false)}
+                            >
+                                {link.name}
+                            </Link>
+                        ))}
+
+                        <div className="h-px bg-slate-100 my-4"></div>
+
+                        {userInfo ? (
+                            <div className="space-y-4 px-2">
+                                <div className="flex items-center gap-4 py-2">
+                                    <Avatar className="h-10 w-10">
+                                        {userInfo.profile_picture && (
+                                            <img src={userInfo.profile_picture} alt={userInfo.username} className="h-full w-full object-cover" />
+                                        )}
+                                        <AvatarFallback className="bg-primary text-white font-medium">{userInfo.username?.charAt(0).toUpperCase() || 'A'}</AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                        <p className="text-sm font-semibold text-slate-900">{userInfo.username}</p>
+                                        <p className="text-xs text-primary font-medium">{userInfo.role?.replace('_', ' ')}</p>
+                                    </div>
+                                </div>
+                                <Link to="/dashboard" className="block py-3.5 px-2 text-[13px] font-bold text-primary" onClick={() => setMenuOpen(false)}>Dashboard</Link>
+                                <button onClick={handleLogout} className="block w-full text-left py-3.5 px-2 text-[13px] font-bold text-red-600">Logout</button>
+                            </div>
+                        ) : (
+                            <div className="space-y-3 pt-2">
+                                <Link to="/login" className="block w-full text-center py-3.5 border border-slate-100 hover:bg-slate-50 rounded-xl font-medium text-[13px] text-slate-900 transition-all" onClick={() => setMenuOpen(false)}>Log In</Link>
+                                <Link to="/register" className="block w-full text-center py-3.5 bg-primary hover:bg-primary/95 rounded-xl font-bold text-[13px] text-white shadow-xl shadow-primary/10 transition-all" onClick={() => setMenuOpen(false)}>Register</Link>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </nav>
+
+            {/* Spacer for fixed navbar */}
+            <div className="h-16"></div>
+
+            {children}
+        </div>
     );
-    
+
 }

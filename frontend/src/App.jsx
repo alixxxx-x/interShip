@@ -9,6 +9,7 @@ import CompanyRoute from "@/routes/CompanyRoute";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import Home from "@/pages/Home";
+import ContactUs from "@/pages/ContactUs";
 import AdminPanel from "@/pages/AdminPanel";
 import AboutUs from "@/pages/AboutUs";
 import Internships from "@/pages/Internships";
@@ -47,6 +48,7 @@ function App() {
           <Route element={<MainLayout />}>
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<AboutUs />} />
+            <Route path="/contact" element={<ContactUs />} />
             <Route path="/internships" element={<Internships />} />
             <Route path="/internships/:id" element={<InternshipDetails />} />
             <Route path="/companies" element={<Companies />} />

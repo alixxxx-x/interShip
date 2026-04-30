@@ -412,14 +412,11 @@ function Home() {
                                 {userInfo ? "Account Active" : "Create an Account"} <ArrowRight className="w-4 h-4 ml-2 max-h-4 max-w-4" />
                             </Button>
                         </Link>
-                        <a href="#contact-us" onClick={(e) => {
-                            e.preventDefault();
-                            document.getElementById('contact-us')?.scrollIntoView({ behavior: 'smooth' });
-                        }}>
+                        <Link to="/contact">
                             <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-lg px-6 h-12 text-[15px] font-semibold bg-white text-black hover:bg-gray-50 border border-gray-200 dark:bg-transparent dark:text-foreground dark:border-border dark:hover:bg-accent shadow-sm">
                                 Contact Us
                             </Button>
-                        </a>
+                        </Link>
                     </div>
                 </div>
             </section>

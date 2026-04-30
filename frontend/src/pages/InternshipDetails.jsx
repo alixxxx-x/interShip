@@ -128,6 +128,21 @@ export default function InternshipDetails() {
     }
   };
 
+  const handleCancel = async () => {
+    if (!window.confirm("Are you sure you want to cancel your application?")) return;
+
+    try {
+      setIsApplying(true);
+      await api.delete(`/applications/cancel/${id}/`);
+      setApplied(false);
+    } catch (err) {
+      console.error("Error cancelling:", err);
+      alert("Failed to cancel application.");
+    } finally {
+      setIsApplying(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto py-24 px-4 max-w-4xl flex flex-col items-center text-center">
@@ -290,12 +305,22 @@ export default function InternshipDetails() {
 
               <div className="mt-10 pt-8 border-t">
                 {userRole === 'COMPANY' || userRole === 'ADMIN' ? null : applied ? (
-                  <div className="bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-800 rounded-2xl p-6 text-center">
-                    <p className="font-bold text-green-800 dark:text-green-400 text-sm">Application Received</p>
+                  <div className="flex flex-col gap-3">
+                    <div className="bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-800 rounded-2xl p-6 text-center">
+                      <p className="font-bold text-green-800 dark:text-green-400 text-sm">Application Received</p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      className="w-full border-red-200 text-red-500 hover:bg-red-50 hover:text-red-600 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/30"
+                      onClick={handleCancel}
+                      disabled={isApplying}
+                    >
+                      {isApplying ? "Wait..." : "Cancel Application"}
+                    </Button>
                   </div>
-                ) : new Date(internship.offer_end_date) < new Date() ? (
+                ) : internship.status !== 'OPEN_FOR_APPLICATION' || new Date(internship.offer_end_date) < new Date() ? (
                   <Button
-                    className="w-full h-10 text-base font-bold rounded-xl cursor-not-allowed bg-red-300 dark:bg-red-900/40 text-white/90 shadow-none hover:bg-red-400 dark:hover:bg-red-900/60 disabled:pointer-events-auto"
+                    className="w-full h-10 text-base font-bold rounded-xl cursor-not-allowed bg-red-200 text-white shadow-none hover:bg-red-300 disabled:opacity-100 disabled:pointer-events-auto"
                     disabled
                   >
                     Closed

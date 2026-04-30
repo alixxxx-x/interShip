@@ -32,7 +32,8 @@ import {
   CheckCircle, 
   Clock, 
   Archive,
-  AlertCircle
+  AlertCircle,
+  Briefcase
 } from "lucide-react";
 import api from "@/api/api";
 import CreateOfferModal from "./CreateOfferModal";
@@ -187,10 +188,26 @@ export default function CompanyListings() {
                 ) : (
                   listings.map((item) => (
                     <TableRow key={item.id} className="hover:bg-muted/30 transition-colors group">
-                      <TableCell className="font-semibold">
-                        <div className="flex flex-col gap-0.5">
-                          <span>{item.title}</span>
-                          <span className="text-[10px] text-muted-foreground font-mono uppercase">ID: {item.id}</span>
+                      <TableCell 
+                        className="font-semibold cursor-pointer hover:text-primary transition-colors" 
+                        onClick={() => window.open(`/internships/${item.id}`, "_blank")}
+                      >
+                        <div className="flex items-center gap-3">
+                          {item.internship_image ? (
+                            <img 
+                              src={item.internship_image} 
+                              alt={item.title} 
+                              className="w-10 h-10 rounded-md object-cover border"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-md bg-muted flex items-center justify-center border">
+                              <Briefcase className="w-5 h-5 text-muted-foreground" />
+                            </div>
+                          )}
+                          <div className="flex flex-col gap-0.5">
+                            <span className="hover:underline">{item.title}</span>
+                            <span className="text-[10px] text-muted-foreground font-mono uppercase hover:no-underline">ID: {item.id}</span>
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -223,12 +240,21 @@ export default function CompanyListings() {
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-muted">
-                              <MoreVertical className="h-5 w-5" />
-                              <span className="sr-only">Open menu</span>
-                            </Button>
+                        <div className="flex items-center justify-end gap-3">
+                          <Button 
+                            className="bg-[#8b5cf6] hover:bg-[#7c3aed] text-white rounded-xl font-semibold shadow-sm"
+                            size="sm"
+                            onClick={() => handleEdit(item)}
+                          >
+                            <Edit className="mr-2 h-4 w-4" />
+                             Edit Details
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-muted">
+                                <MoreVertical className="h-5 w-5" />
+                                <span className="sr-only">Open menu</span>
+                              </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-56 p-2">
                             <DropdownMenuItem 
@@ -237,14 +263,6 @@ export default function CompanyListings() {
                             >
                               <Eye className="mr-3 h-4 w-4 text-muted-foreground" />
                               <span>View Public Page</span>
-                            </DropdownMenuItem>
-                            
-                            <DropdownMenuItem 
-                              className="cursor-pointer"
-                              onClick={() => handleEdit(item)}
-                            >
-                              <Edit className="mr-3 h-4 w-4 text-muted-foreground" />
-                              <span>Edit Details</span>
                             </DropdownMenuItem>
                             
                             <div className="h-px bg-muted my-2" />
@@ -303,6 +321,7 @@ export default function CompanyListings() {
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
