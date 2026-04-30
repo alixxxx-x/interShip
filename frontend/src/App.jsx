@@ -19,7 +19,7 @@ import InternshipDetails from "@/pages/InternshipDetails";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import CompanyDashboard from "@/features/dashboards/CompanyDashboard";
 import CompanyListings from "@/features/dashboards/CompanyListings";
-import AllApplications from "@/pages/AllApplications";
+import AllApplications from "@/features/dashboards/AllApplications";
 import StudentDashboard from "@/features/dashboards/StudentDashboard";
 import MyApplications from "@/features/dashboards/MyApplications";
 import StudentRoute from "@/routes/StudentRoute";
