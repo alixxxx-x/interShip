@@ -25,9 +25,6 @@ class Student(User):
     university_id = models.CharField(max_length=50, blank=True, null=True)
     wilaya = models.CharField(max_length=100, blank=True, null=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
-    first_name = models.CharField(max_length=100, blank=True, null=True)
-    last_name = models.CharField(max_length=100, blank=True, null=True)
-
     class Meta:
         verbose_name_plural = "Students"
 
