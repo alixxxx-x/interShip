@@ -172,12 +172,34 @@ class InternshipSerializer(serializers.ModelSerializer):
 # application serializers
 
 class ApplicationSerializer(serializers.ModelSerializer):
+    candidate = serializers.SerializerMethodField()
+    offer = serializers.CharField(source='internship.title', read_only=True)
+    email = serializers.EmailField(source='student.email', read_only=True)
+    cv = serializers.SerializerMethodField()
+
     class Meta:
         model = Application
-        fields = ['id', 'student', 'internship', 'status', 'application_date']
-        read_only_fields = ['id', 'student', 'internship', 'status', 'application_date']
+        fields = ['id', 'student', 'internship', 'status', 'application_date', 'candidate', 'offer', 'email', 'cv']
+        read_only_fields = ['id', 'student', 'internship', 'application_date', 'candidate', 'offer', 'email', 'cv']
+
+    def get_candidate(self, obj):
+        student = obj.student
+        candidate_name = f"{student.first_name} {student.last_name}".strip()
+        if not candidate_name:
+            candidate_name = student.username or student.email
+        return candidate_name
+
+    def get_cv(self, obj):
+        request = self.context.get('request')
+        student = obj.student
+        if hasattr(student, 'digital_cv') and student.digital_cv and student.digital_cv.cv_pdf:
+            if request:
+                return request.build_absolute_uri(student.digital_cv.cv_pdf.url)
+            return student.digital_cv.cv_pdf.url
+        return None
 
     def create(self, validated_data):
+        validated_data['status'] = Application.Status.PENDING
         return Application.objects.create(**validated_data)
 
     def update(self, instance, validated_data):
