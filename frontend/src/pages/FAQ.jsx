@@ -1,11 +1,66 @@
-import React, { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { ChevronDown, Send, User, Bot, Loader2 } from 'lucide-react';
 
 export default function FAQ() {
   const [openIndex, setOpenIndex] = useState(null);
+  {/*chat */ }
+  const [chatHistory, setChatHistory] = useState([]);
+  const [isTyping, setIsTyping] = useState(false);
+  const [question, setQuestion] = useState("");
 
   const toggleOpen = (index) => {
     setOpenIndex(openIndex === index ? null : index);
+  };
+
+  const handleChatSubmit = async (e) => {
+    e.preventDefault();
+    if (!question.trim()) return;
+
+    const userMessage = { role: 'user', text: question.trim() };
+    setChatHistory(prev => [...prev, userMessage]);
+    setQuestion("");
+    setIsTyping(true);
+
+    try {
+      const contents = chatHistory.map(msg => ({
+        role: msg.role,
+        parts: [{ text: msg.text }]
+      }));
+      contents.push({
+        role: 'user',
+        parts: [{ text: userMessage.text }]
+      });
+
+      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyA7ZRfyAKGRAob9WOcdlmIMkn1GYgwLtjE', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: contents,
+          systemInstruction: {
+            parts: [{
+              text:
+                "You are a helpful AI assistant for a University-Enterprise internship matching platform. You answer students' questions politely and concisely based on typical platform fonctionality. and companies' questions You must answer like a highly professional corporate recruiter. Keep answers short and simple Use a friendly and enthusiastic tone. For example, if asked about 'Finding internships', just say: 'u can find offers by Navigating to the Internships section'. The platform automates the internship process, connects students with companies, handles digital CVs, allows companies to post offers, and automates the creation of the 'Convention de Stage' (Internship Agreement) after university validation."
+            }]
+          }
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.candidates && data.candidates.length > 0) {
+        const aiText = data.candidates[0].content.parts[0].text;
+        setChatHistory(prev => [...prev, { role: 'model', text: aiText }]);
+      } else {
+        setChatHistory(prev => [...prev, { role: 'model', text: "I'm sorry, I couldn't process your request at the moment. Please try again later." }]);
+      }
+    } catch (error) {
+      console.error("Error communicating with AI:", error);
+      setChatHistory(prev => [...prev, { role: 'model', text: "I encountered a network error. Please check your connection and try again." }]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   const faqs = [
@@ -37,7 +92,7 @@ export default function FAQ() {
 
   return (
     <div className="min-h-screen bg-white py-20">
-        
+
       <div className="max-w-3xl mx-auto px-6 text-center mb-16">
         <h1 className="text-4xl font-bold text-slate-900 mb-4 tracking-tight">
           Frequently Asked Questions
@@ -58,18 +113,16 @@ export default function FAQ() {
                 <h2 className="text-xl font-semibold text-slate-900 pr-8">
                   {index + 1}. {faq.question}
                 </h2>
-                <ChevronDown 
-                  className={`w-6 h-6 text-slate-400 flex-shrink-0 transition-transform duration-300 ${
-                    openIndex === index ? 'rotate-180' : ''
-                  }`} 
+                <ChevronDown
+                  className={`w-6 h-6 text-slate-400 flex-shrink-0 transition-transform duration-300 ${openIndex === index ? 'rotate-180' : ''
+                    }`}
                 />
               </button>
-              
+
               {/* Collapsible Content */}
-              <div 
-                className={`grid transition-all duration-300 ease-in-out ${
-                  openIndex === index ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
-                }`}
+              <div
+                className={`grid transition-all duration-300 ease-in-out ${openIndex === index ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+                  }`}
               >
                 <div className="overflow-hidden">
                   <div className="px-6 pb-6 text-slate-600 leading-relaxed text-lg">
@@ -89,25 +142,60 @@ export default function FAQ() {
           <p className="text-slate-500 text-lg mb-10 max-w-2xl mx-auto">
             If you cannot find the answer to your question in our FAQ, you can always ask us directly.
           </p>
-          <form 
-            className="flex flex-col sm:flex-row gap-3 max-w-xl mx-auto" 
-            onSubmit={(e) => { 
-              e.preventDefault(); 
-              alert('Your question has been sent! We will get back to you soon.'); 
-              e.target.reset();
-            }}
+          {/* Chat History */}
+          {chatHistory.length > 0 && (
+            <div className="max-w-2xl mx-auto mb-6 bg-slate-50 border border-slate-200 rounded-xl p-4 text-left space-y-4 max-h-96 overflow-y-auto">
+              {chatHistory.map((msg, idx) => (
+                <div key={idx} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  {msg.role === 'model' && (
+                    <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                      <Bot size={18} className="text-indigo-600" />
+                    </div>
+                  )}
+                  <div className={`px-4 py-2 rounded-2xl max-w-[80%] whitespace-pre-wrap ${msg.role === 'user' ? 'bg-slate-900 text-white rounded-tr-sm' : 'bg-white border border-slate-200 text-slate-700 rounded-tl-sm'}`}>
+                    {msg.text}
+                  </div>
+                  {msg.role === 'user' && (
+                    <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
+                      <User size={18} className="text-slate-600" />
+                    </div>
+                  )}
+                </div>
+              ))}
+              {isTyping && (
+                <div className="flex gap-3 justify-start">
+                  <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                    <Bot size={18} className="text-indigo-600" />
+                  </div>
+                  <div className="px-4 py-2 rounded-2xl bg-white border border-slate-200 text-slate-700 rounded-tl-sm flex items-center gap-2">
+                    <Loader2 size={16} className="animate-spin text-slate-400" />
+                    <span className="text-sm text-slate-400">Thinking...</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* replace static msg with api call to gemini */}
+          <form
+            className="flex flex-col sm:flex-row gap-3 max-w-2xl mx-auto"
+            onSubmit={handleChatSubmit}
           >
-            <input 
-              type="text" 
-              placeholder="Type your question here..." 
+            <input
+              type="text"
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              placeholder="Type your question here..."
               required
-              className="flex-1 px-5 py-4 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent bg-white text-slate-800 placeholder-slate-400"
+              disabled={isTyping}
+              className="flex-1 px-5 py-4 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent bg-white text-slate-800 placeholder-slate-400 disabled:opacity-50 disabled:cursor-not-allowed"
             />
-            <button 
-              type="submit" 
-              className="bg-slate-900 text-white px-8 py-4 rounded-xl font-bold hover:bg-slate-800 transition-colors flex items-center justify-center whitespace-nowrap"
+            <button
+              type="submit"
+              disabled={isTyping}
+              className="bg-slate-900 text-white px-8 py-4 rounded-xl font-bold hover:bg-slate-800 transition-colors flex items-center justify-center whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Send
+              {isTyping ? <Loader2 size={20} className="animate-spin" /> : <><Send size={18} className="mr-2" /> Send</>}
             </button>
           </form>
         </div>
