@@ -25,6 +25,8 @@ class Student(User):
     university_id = models.CharField(max_length=50, blank=True, null=True)
     wilaya = models.CharField(max_length=100, blank=True, null=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
+    first_name = models.CharField(max_length=100, blank=True, null=True)
+    last_name = models.CharField(max_length=100, blank=True, null=True)
 
     class Meta:
         verbose_name_plural = "Students"
@@ -35,6 +37,7 @@ class Company(User):
     description = models.TextField(blank=True, null=True)
     location = models.CharField(max_length=255, blank=True, null=True)
     website = models.URLField(blank=True, null=True)
+    company_field = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
         verbose_name_plural = "Companies"
@@ -85,7 +88,7 @@ class InternshipOffer(models.Model):
     offer_end_date = models.DateField()
     number_of_places = models.IntegerField()
     internship_duration = models.DurationField(default=timedelta(days=0))
-    internship_salary = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    internship_salary = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     internship_skills = models.TextField(blank=True, null=True)
     internship_image = models.ImageField(upload_to='internship_images/', blank=True, null=True)
 
@@ -126,13 +129,13 @@ class DigitalCV(models.Model):
     student = models.OneToOneField(Student, on_delete=models.CASCADE, related_name='digital_cv')
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
-    profile_picture = models.ImageField(upload_to='cv_profiles/', blank=True, null=True)
     phone_number = models.CharField(max_length=20)
     email = models.EmailField()
     address = models.TextField()
     education = models.TextField()
     skills = models.TextField()
     profile_summary = models.TextField()
+    github_link = models.URLField(blank=True, null=True)
     experience = models.TextField()
     languages = models.TextField()  
     cv_pdf = models.FileField(upload_to='cv_pdfs/', blank=True, null=True)
