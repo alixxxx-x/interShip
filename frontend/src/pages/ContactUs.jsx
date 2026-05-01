@@ -137,7 +137,7 @@ export default function ContactUs() {
                 Phone
               </h3>
               <p className="text-slate-800 dark:text-slate-300 font-medium">
-                +213 77 53 12 93
+                +213 779 53 12 93
               </p>
             </div>
           </div>

@@ -160,8 +160,8 @@ export default function InternshipDetails() {
         </div>
         <h2 className="text-3xl font-bold mb-4 tracking-tight">Not Found</h2>
         <p className="text-muted-foreground mb-10 max-w-md mx-auto">{error}</p>
-        <Button onClick={() => navigate('/internships', { state: location.state })} size="lg" className="rounded-2xl px-8">
-          <ChevronLeft className="mr-2 h-4 w-4" /> Back to Search
+        <Button onClick={() => navigate(-1)} size="lg" className="rounded-2xl px-8">
+          <ChevronLeft className="mr-2 h-4 w-4" /> Go Back
         </Button>
       </div>
     );
@@ -173,11 +173,11 @@ export default function InternshipDetails() {
       <div className="bg-white/80 dark:bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
         <div className="container mx-auto max-w-6xl h-16 flex items-center justify-between px-4 border-b border-slate-100 dark:border-slate-800/50">
           <button
-            onClick={() => navigate('/internships', { state: location.state })}
+            onClick={() => navigate(-1)}
             className="flex items-center gap-1.5 text-sm font-bold text-slate-500 hover:text-primary transition-all group"
           >
             <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-            <span className="group-hover:underline underline-offset-4">Back to Internships</span>
+            <span className="group-hover:underline underline-offset-4">Go Back</span>
           </button>
           <div className="flex gap-2">
             <Button

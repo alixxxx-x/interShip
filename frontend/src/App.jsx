@@ -17,6 +17,8 @@ import Companies from "@/pages/Companies";
 import CompaniesDetails from "@/pages/CompaniesDetails";
 import Profile from "@/pages/Profile";
 import InternshipDetails from "@/pages/InternshipDetails";
+import StudentGuidelines from "@/pages/StudentGuidelines";
+import FAQ from "@/pages/FAQ";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import CompanyDashboard from "@/features/dashboards/CompanyDashboard";
 import CompanyListings from "@/features/dashboards/CompanyListings";
@@ -51,6 +53,8 @@ function App() {
             <Route path="/contact" element={<ContactUs />} />
             <Route path="/internships" element={<Internships />} />
             <Route path="/internships/:id" element={<InternshipDetails />} />
+            <Route path="/guidelines" element={<StudentGuidelines />} />
+            <Route path="/faq" element={<FAQ />} />
             <Route path="/companies" element={<Companies />} />
             <Route path="/companies/:id" element={<CompaniesDetails />} />
             <Route
