@@ -22,15 +22,15 @@ export default function AllApplications() {
       try {
         const response = await api.get('/applications/');
         const applications = response.data.results || response.data;
-        
+
         const grouped = applications.reduce((acc, app) => {
-            const { offer } = app;
-            if (!acc[offer]) {
-              acc[offer] = [];
-            }
-            acc[offer].push(app);
-            return acc;
-          }, {});
+          const { offer } = app;
+          if (!acc[offer]) {
+            acc[offer] = [];
+          }
+          acc[offer].push(app);
+          return acc;
+        }, {});
 
         setApplicationsByOffer(grouped);
       } catch (error) {
@@ -47,7 +47,7 @@ export default function AllApplications() {
     try {
       await api.patch(`/applications/${id}/update/`, { status: newStatus });
       setApplicationsByOffer(prev => {
-        const updatedApplications = prev[offer].map(app => 
+        const updatedApplications = prev[offer].map(app =>
           app.id === id ? { ...app, status: newStatus } : app
         );
         return { ...prev, [offer]: updatedApplications };
@@ -81,7 +81,7 @@ export default function AllApplications() {
 
   return (
     <div className="p-6 space-y-6">
-        <h1 className="text-3xl font-bold tracking-tight">All Applications</h1>
+      <h1 className="text-3xl font-bold tracking-tight">All Applications</h1>
       {Object.keys(applicationsByOffer).length === 0 ? (
         <p className="text-gray-500">No applications found.</p>
       ) : (
@@ -114,9 +114,9 @@ export default function AllApplications() {
                       <TableCell>{application.application_date}</TableCell>
                       <TableCell>{application.email}</TableCell>
                       <TableCell>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => application.cv ? window.open(application.cv, '_blank') : alert('No CV available')}
                           disabled={!application.cv}
                         >

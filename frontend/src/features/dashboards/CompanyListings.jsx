@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { 
   Card, 
   CardContent, 
@@ -49,6 +50,7 @@ const STATUS_CONFIG = {
 };
 
 export default function CompanyListings() {
+  const navigate = useNavigate();
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingOffer, setEditingOffer] = useState(null);
@@ -190,7 +192,7 @@ export default function CompanyListings() {
                     <TableRow key={item.id} className="hover:bg-muted/30 transition-colors group">
                       <TableCell 
                         className="font-semibold cursor-pointer hover:text-primary transition-colors" 
-                        onClick={() => window.open(`/internships/${item.id}`, "_blank")}
+                        onClick={() => navigate(`/internships/${item.id}`)}
                       >
                         <div className="flex items-center gap-3">
                           {item.internship_image ? (
@@ -259,7 +261,7 @@ export default function CompanyListings() {
                           <DropdownMenuContent align="end" className="w-56 p-2">
                             <DropdownMenuItem 
                               className="cursor-pointer"
-                              onClick={() => window.open(`/internships/${item.id}`, "_blank")}
+                              onClick={() => navigate(`/internships/${item.id}`)}
                             >
                               <Eye className="mr-3 h-4 w-4 text-muted-foreground" />
                               <span>View Public Page</span>
