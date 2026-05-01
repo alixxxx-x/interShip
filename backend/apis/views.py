@@ -12,6 +12,67 @@ from django.http import FileResponse
 from .models import *
 from .serializers import *
 from .permissions import *
+# gemini ai
+import google.generativeai as genai
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
+import json
+
+genai.configure(api_key=settings.GEMINI_API_KEY)
+SYSTEM_INSTRUCTION = """
+    You are a helpful AI assistant for a University-Enterprise internship matching platform. 
+    You answer students' questions politely and concisely based on typical platform fonctionality. 
+    and companies' questions You must answer like a highly professional corporate recruiter.
+    Keep answers short and simple
+    Use a friendly and enthusiastic tone.
+    For example, if asked about 'Finding internships', just say: 'You can find offers by navigating to the Internships section'.
+    The platform automates the internship process, connects students with companies, handles digital CVs,
+    allows companies to post offers, and automates the creation of the 'Convention de Stage' (Internship Agreement) after university validation.
+"""
+
+@csrf_exempt       # to allow POST requests from any origin
+def chatbot(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Only POST requests are allowed'}, status=405)
+    try:
+        data = json.loads(request.body)
+        user_question = data.get('question', '').strip()
+        chat_history=data.get('chat_history', [])
+
+        if not user_question:
+            return JsonResponse({'error': 'No question provided'}, status=400)
+
+        # Initialize Gemini model
+        model = genai.GenerativeModel(
+            model_name='gemini-flash-latest',
+            system_instruction=SYSTEM_INSTRUCTION
+        )
+
+        # Prepare history for Gemini
+        formatted_history = []
+        for msg in chat_history:
+            formatted_history.append({
+                "role": "user" if msg.get("role") == "user" else "model",
+                "parts": [{"text": msg.get("text", "")}]
+            })
+
+        chat = model.start_chat(history=formatted_history)
+        
+        # Generate response
+        response = chat.send_message(user_question)
+        ai_response = response.text
+
+        return JsonResponse({
+            'success': True,
+            'response': ai_response
+        })
+
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        print(f"Error in chatbot: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
 
 # Authentication Views
 

@@ -3,7 +3,10 @@ import { ChevronDown, Send, User, Bot, Loader2 } from 'lucide-react';
 
 export default function FAQ() {
   const [openIndex, setOpenIndex] = useState(null);
-  {/*chat */ }
+  {/* save chat msgs, they dispear once refreshing 
+      is chat replying?
+      text that user types
+  */ }
   const [chatHistory, setChatHistory] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
   const [question, setQuestion] = useState("");
@@ -12,46 +15,33 @@ export default function FAQ() {
     setOpenIndex(openIndex === index ? null : index);
   };
 
+  {/* linking between use interface & Gemini API */ }
   const handleChatSubmit = async (e) => {
     e.preventDefault();
     if (!question.trim()) return;
 
+    // add qst to array
     const userMessage = { role: 'user', text: question.trim() };
     setChatHistory(prev => [...prev, userMessage]);
     setQuestion("");
     setIsTyping(true);
 
     try {
-      const contents = chatHistory.map(msg => ({
-        role: msg.role,
-        parts: [{ text: msg.text }]
-      }));
-      contents.push({
-        role: 'user',
-        parts: [{ text: userMessage.text }]
-      });
-
-      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyA7ZRfyAKGRAob9WOcdlmIMkn1GYgwLtjE', {
+      const response = await fetch('http://localhost:8000/api/chat/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          contents: contents,
-          systemInstruction: {
-            parts: [{
-              text:
-                "You are a helpful AI assistant for a University-Enterprise internship matching platform. You answer students' questions politely and concisely based on typical platform fonctionality. and companies' questions You must answer like a highly professional corporate recruiter. Keep answers short and simple Use a friendly and enthusiastic tone. For example, if asked about 'Finding internships', just say: 'u can find offers by Navigating to the Internships section'. The platform automates the internship process, connects students with companies, handles digital CVs, allows companies to post offers, and automates the creation of the 'Convention de Stage' (Internship Agreement) after university validation."
-            }]
-          }
+          question: question.trim(),
+          chat_history: chatHistory
         })
       });
 
       const data = await response.json();
 
-      if (data.candidates && data.candidates.length > 0) {
-        const aiText = data.candidates[0].content.parts[0].text;
-        setChatHistory(prev => [...prev, { role: 'model', text: aiText }]);
+      if (data.success) {
+        setChatHistory(prev => [...prev, { role: 'model', text: data.response }]);
       } else {
         setChatHistory(prev => [...prev, { role: 'model', text: "I'm sorry, I couldn't process your request at the moment. Please try again later." }]);
       }
