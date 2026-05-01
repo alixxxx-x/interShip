@@ -1,21 +1,16 @@
 "use client"
 
 import * as React from "react"
-import { useNavigate } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 import {
-  BookOpen,
-  Bot,
-  Command,
-  Frame,
-  GalleryVerticalEnd,
   LayoutDashboard,
-  Map,
-  PieChart,
   Settings2,
   SquareTerminal,
-  Building2,
   Users,
   Search,
+  FileText,
+  Bell,
+  AlertCircle,
 } from "lucide-react"
 
 import { NavMain } from "@/components/layout/nav-main"
@@ -34,20 +29,9 @@ import api from "@/api/api"
 import { ACCESS_TOKEN } from "@/constants"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import logoGif from "@/assets/logo.gif"
 
 const data = {
-  teams: [
-    {
-      name: "Inter.Ship",
-      logo: GalleryVerticalEnd,
-      plan: "Platform Admin",
-    },
-    {
-      name: "Acme Corp",
-      logo: Building2,
-      plan: "Hiring Partner",
-    },
-  ],
   navMain: [
     {
       title: "Dashboard",
@@ -86,18 +70,8 @@ const data = {
     },
     {
       title: "Applications",
-      url: "/applications",
+      url: "/companydashboard/applications",
       icon: Users,
-      items: [
-        {
-          title: "Received",
-          url: "/companydashboard/applications",
-        },
-        {
-          title: "Shortlisted",
-          url: "/companydashboard/applications?status=shortlisted",
-        },
-      ],
     },
     {
         title: "Platform",
@@ -119,7 +93,11 @@ const data = {
 
 export function AppSidebar({ ...props }) {
   const [userInfo, setUserInfo] = React.useState(null)
+  const [unreadCount, setUnreadCount] = React.useState(0)
+  const [searchQuery, setSearchQuery] = React.useState("")
+  const [noticeMessage, setNoticeMessage] = React.useState(null)
   const navigate = useNavigate()
+  const location = useLocation()
 
   React.useEffect(() => {
     const fetchProfile = async () => {
@@ -128,6 +106,16 @@ export function AppSidebar({ ...props }) {
         if (token) {
           const res = await api.get("/auth/profile/")
           setUserInfo(res.data)
+
+          // Fetch unread count
+          if (res.data?.role === 'COMPANY') {
+            try {
+              const notifsRes = await api.get("/notifications/")
+              setUnreadCount(notifsRes.data?.unreadCount || 0)
+            } catch (err) {
+              console.error("Failed to fetch notifications count:", err)
+            }
+          }
         }
       } catch (error) {
         console.error("Failed to fetch profile:", error)
@@ -141,10 +129,121 @@ export function AppSidebar({ ...props }) {
     navigate("/login")
   }
 
+  const navItems = React.useMemo(() => {
+    if (!userInfo) return []
+
+    // Student sidebar: 
+    let baseItems = []
+    if (userInfo?.role === "STUDENT") {
+      baseItems = [
+        {
+          title: "Dashboard",
+          url: "/studentdashboard",
+          icon: LayoutDashboard,
+          isActive: location.pathname === "/studentdashboard",
+          items: [
+            {
+              title: "Overview",
+              url: "/studentdashboard",
+            },
+          ],
+        },
+        {
+          title: "My CV",
+          url: "/studentdashboard/cv",
+          icon: FileText,
+          isActive: location.pathname.startsWith("/studentdashboard/cv"),
+        },
+        {
+          title: "My applications",
+          url: "/studentdashboard/MyApplications",
+          icon: Users,
+          isActive: location.pathname.startsWith("/studentdashboard/MyApplications"),
+        },
+        {
+        title: "Platform",
+        url: "#",
+        icon: Settings2,
+        items: [
+          {
+            title: "Settings",
+            url: "/settings",
+          },
+          {
+            title: "Help Center",
+            url: "/help",
+          },
+        ],
+      },
+      ]
+    } else {
+      baseItems = data.navMain.map(item => {
+        const newItem = item.title === "Notifications" ? { ...item, badge: unreadCount > 0 } : item
+
+        // For company role, mark Analytics subitem as coming soon
+        if (userInfo?.role === "COMPANY" && newItem.items) {
+          return {
+            ...newItem,
+            items: newItem.items.map(si => {
+              if (si.title === "Analytics") {
+                return { ...si, notice: "Coming soon..." }
+              }
+              return si
+            })
+          }
+        }
+
+        return newItem
+      })
+    }
+
+    // Filter items based on search query
+    if (!searchQuery.trim()) {
+      return baseItems
+    }
+
+    const query = searchQuery.toLowerCase()
+    return baseItems
+      .map(item => {
+        const titleMatch = item.title.toLowerCase().includes(query)
+        const itemsMatch = item.items?.filter(subItem =>
+          subItem.title.toLowerCase().includes(query)
+        ) || []
+
+        if (titleMatch) {
+          return item
+        }
+
+        if (itemsMatch.length > 0) {
+          return {
+            ...item,
+            items: itemsMatch,
+          }
+        }
+
+        return null
+      })
+      .filter(Boolean)
+  }, [location.pathname, userInfo, unreadCount, searchQuery])
+
+  const getSubtitle = React.useMemo(() => {
+    const role = userInfo?.role ? String(userInfo.role).toUpperCase() : ""
+    const subtitleMap = {
+      STUDENT: "Student Platform",
+      COMPANY: "Company Platform",
+      ADMIN: "Platform Admin",
+    }
+    return subtitleMap[role] || "Platform"
+  }, [userInfo])
+
   return (
     <Sidebar variant="inset" collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <TeamSwitcher 
+          logoSrc={logoGif}
+          name="Stag.Io"
+          subtitle={getSubtitle}
+        />
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup className="py-0 group-data-[collapsible=icon]:hidden">
@@ -155,15 +254,30 @@ export function AppSidebar({ ...props }) {
             <Input
               id="search"
               placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-8 bg-sidebar-accent/50 border-none shadow-none h-9 mt-2"
             />
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 select-none opacity-50" />
           </SidebarGroupContent>
         </SidebarGroup>
-        <NavMain items={data.navMain} />
+        {noticeMessage && (
+          <div className="mb-3 px-2 py-2 rounded-full bg-purple-400 text-white flex items-center gap-3 shadow-sm">
+            <div >
+              <AlertCircle className="h-4 w-4 text-white" />
+            </div>
+            <span className="text-md font-medium">{noticeMessage}</span>
+          </div>
+        )}
+        <NavMain items={navItems} onAction={(subItem) => {
+          if (subItem?.notice) {
+            setNoticeMessage(subItem.notice)
+            setTimeout(() => setNoticeMessage(null), 1000)
+          }
+        }} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={userInfo} handleLogout={handleLogout} />
+        <NavUser user={userInfo} handleLogout={handleLogout} unreadCount={unreadCount} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

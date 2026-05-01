@@ -9,18 +9,26 @@ import CompanyRoute from "@/routes/CompanyRoute";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import Home from "@/pages/Home";
+import ContactUs from "@/pages/ContactUs";
 import AdminPanel from "@/pages/AdminPanel";
 import AboutUs from "@/pages/AboutUs";
 import Internships from "@/pages/Internships";
+import Companies from "@/pages/Companies";
+import CompaniesDetails from "@/pages/CompaniesDetails";
 import Profile from "@/pages/Profile";
 import InternshipDetails from "@/pages/InternshipDetails";
+import StudentGuidelines from "@/pages/StudentGuidelines";
+import FAQ from "@/pages/FAQ";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import CompanyDashboard from "@/features/dashboards/CompanyDashboard";
 import CompanyListings from "@/features/dashboards/CompanyListings";
-import AllApplications from "@/pages/AllApplications";
+import AllApplications from "@/features/dashboards/AllApplications";
 import StudentDashboard from "@/features/dashboards/StudentDashboard";
+import MyApplications from "@/features/dashboards/MyApplications";
 import StudentRoute from "@/routes/StudentRoute";
 import DashboardRedirect from "@/routes/DashboardRedirect";
+import MyCv from "@/features/dashboards/MyCv";
+import Notifications from "@/features/dashboards/Notifications";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -42,8 +50,13 @@ function App() {
           <Route element={<MainLayout />}>
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<AboutUs />} />
+            <Route path="/contact" element={<ContactUs />} />
             <Route path="/internships" element={<Internships />} />
             <Route path="/internships/:id" element={<InternshipDetails />} />
+            <Route path="/guidelines" element={<StudentGuidelines />} />
+            <Route path="/faq" element={<FAQ />} />
+            <Route path="/companies" element={<Companies />} />
+            <Route path="/companies/:id" element={<CompaniesDetails />} />
             <Route
               path="/profile"
               element={
@@ -82,11 +95,15 @@ function App() {
             <Route path="/companydashboard" element={<CompanyDashboard />} />
             <Route path="/companydashboard/listings" element={<CompanyListings />} />
             <Route path="/companydashboard/applications" element={<AllApplications />} />
+            <Route path="/companydashboard/notifications" element={<Notifications />} />
           </Route>
 
           {/* Student Dashboard Layout */}
           <Route element={<StudentRoute><DashboardLayout /></StudentRoute>}>
             <Route path="/studentdashboard" element={<StudentDashboard />} />
+            <Route path="/studentdashboard/cv" element={<MyCv />} />
+            <Route path="/studentdashboard/MyApplications" element={<MyApplications />} />
+            <Route path="/studentdashboard/notifications" element={<Notifications />} />
           </Route>
         </Routes>
       </TooltipProvider>

@@ -4,10 +4,9 @@ import {
   BadgeCheck,
   Bell,
   ChevronsUpDown,
-  CreditCard,
   LogOut,
-  Sparkles,
 } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 
 import {
   Avatar,
@@ -19,7 +18,6 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
@@ -32,9 +30,11 @@ import {
 
 export function NavUser({
   user,
-  handleLogout
+  handleLogout,
+  unreadCount = 0
 }) {
   const { isMobile } = useSidebar()
+  const navigate = useNavigate()
 
   if (!user) return null;
 
@@ -56,7 +56,12 @@ export function NavUser({
                   </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">{user.username}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="truncate font-semibold">{user.username}</span>
+                    {unreadCount > 0 && (
+                      <span className="h-2 w-2 rounded-full bg-primary shrink-0" />
+                    )}
+                  </div>
                   <span className="truncate text-xs">{user.email}</span>
                 </div>
                 <ChevronsUpDown className="ml-auto size-4" />
@@ -78,30 +83,34 @@ export function NavUser({
                   </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">{user.username}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="truncate font-semibold">{user.username}</span>
+                    {unreadCount > 0 && (
+                      <span className="h-2 w-2 rounded-full bg-primary shrink-0" />
+                    )}
+                  </div>
                   <span className="truncate text-xs">{user.email}</span>
                 </div>
               </div>
             </div>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem disabled>
-                <Sparkles className="mr-2" />
-                Upgrade to Pro
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/profile')}>
                 <BadgeCheck className="mr-2" />
                 Account
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCard className="mr-2" />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Bell className="mr-2" />
+              <DropdownMenuItem onClick={() => {
+                const notificationUrl = user?.role === "STUDENT" 
+                  ? '/studentdashboard/notifications'
+                  : '/companydashboard/notifications';
+                navigate(notificationUrl);
+              }}>
+                <div className="relative mr-2">
+                  <Bell className="size-4" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-primary border border-background" />
+                  )}
+                </div>
                 Notifications
               </DropdownMenuItem>
             </DropdownMenuGroup>

@@ -139,3 +139,25 @@ class DigitalCV(models.Model):
 
     def __str__(self):
         return f"CV of {self.first_name} {self.last_name}"
+
+
+# notification model
+
+class Notification(models.Model):
+    class NotificationType(models.TextChoices):
+        NEW_APPLICATION = 'NEW_APPLICATION', 'New Application'
+        APPLICATION_ACCEPTED = 'APPLICATION_ACCEPTED', 'Application Accepted'
+        APPLICATION_REJECTED = 'APPLICATION_REJECTED', 'Application Rejected'
+
+    recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    notification_type = models.CharField(max_length=30, choices=NotificationType.choices)
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    application = models.ForeignKey(Application, on_delete=models.CASCADE, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Notification for {self.recipient.email}: {self.message[:50]}"

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -44,26 +44,113 @@ export default function CreateCvModal({
     open, 
     onOpenChange, 
     triggerButton, 
-    onCvCreated 
+    onCvCreated,
+    mode = "create",
+    initialCv
 }) {
-  const [formData, setFormData] = useState({
-    first_name: "",
-    last_name: "",
-    image: null,
-    phone_number: "",
-    email: "",
-    address: "",
-    education: "",
-    skills: [],
-    profile_summary: "",
-    any_experience: "",
-    languages: [],
-    pdfFile: null,
-  });
+  const emptyFormData = useMemo(
+    () => ({
+      first_name: "",
+      last_name: "",
+      image: null,
+      phone_number: "",
+      email: "",
+      address: "",
+      education: "",
+      skills: [],
+      profile_summary: "",
+      any_experience: "",
+      languages: [],
+      pdfFile: null,
+    }),
+    []
+  );
+
+  const [formData, setFormData] = useState(emptyFormData);
   const [currentSkill, setCurrentSkill] = useState("");
+  const [currentLanguage, setCurrentLanguage] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
   const [pdfName, setPdfName] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const dialogTitle = mode === "edit" ? "Edit CV" : "Create CV";
+
+  const parseMaybeJsonArray = (value) => {
+    if (!value) return [];
+    if (Array.isArray(value)) return value;
+    if (typeof value !== "string") return [String(value)];
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) return parsed;
+      if (parsed === null || parsed === undefined) return [];
+      return [String(parsed)];
+    } catch {
+      if (trimmed.includes(",")) {
+        return trimmed
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+      }
+      return [trimmed];
+    }
+  };
+
+  const toAbsoluteBackendUrl = (maybeRelativeUrl) => {
+    if (!maybeRelativeUrl) return null;
+    if (typeof maybeRelativeUrl !== "string") return null;
+    if (maybeRelativeUrl.startsWith("http://") || maybeRelativeUrl.startsWith("https://")) return maybeRelativeUrl;
+
+    const origin = new URL(import.meta.env.VITE_API_URL).origin;
+    if (maybeRelativeUrl.startsWith("/")) return `${origin}${maybeRelativeUrl}`;
+    return `${origin}/${maybeRelativeUrl}`;
+  };
+
+  useEffect(() => {
+    if (!open) return;
+
+    if (mode !== "edit" || !initialCv) {
+      setFormData(emptyFormData);
+      setCurrentSkill("");
+      setCurrentLanguage("");
+      setImagePreview(null);
+      setPdfName(null);
+      return;
+    }
+
+    setFormData({
+      ...emptyFormData,
+      first_name: initialCv.first_name || "",
+      last_name: initialCv.last_name || "",
+      phone_number: initialCv.phone_number || "",
+      email: initialCv.email || "",
+      address: initialCv.address || "",
+      education: initialCv.education || "",
+      profile_summary: initialCv.profile_summary || "",
+      any_experience: initialCv.any_experience || "",
+      skills: parseMaybeJsonArray(initialCv.skills),
+      languages: parseMaybeJsonArray(initialCv.languages),
+      image: null,
+      pdfFile: null,
+    });
+
+    setCurrentSkill("");
+    setCurrentLanguage("");
+    setImagePreview(toAbsoluteBackendUrl(initialCv.image));
+
+    const existingPdfUrl = toAbsoluteBackendUrl(initialCv.pdfFile);
+    if (existingPdfUrl) {
+      try {
+        const name = decodeURIComponent(existingPdfUrl.split("/").pop() || "");
+        setPdfName(name || "Existing PDF");
+      } catch {
+        setPdfName("Existing PDF");
+      }
+    } else {
+      setPdfName(null);
+    }
+  }, [open, mode, initialCv, emptyFormData]);
 
   const handleChange = (e) => {
     const { id, value } = e.target;
@@ -93,6 +180,17 @@ export default function CreateCvModal({
       ...prev,
       languages: prev.languages.filter((l) => l !== languageToRemove),
     }));
+  };
+
+  const handleAddLanguage = (e) => {
+    e.preventDefault();
+    if (currentLanguage.trim() && !formData.languages.includes(currentLanguage.trim())) {
+      setFormData((prev) => ({
+        ...prev,
+        languages: [...prev.languages, currentLanguage.trim()],
+      }));
+      setCurrentLanguage("");
+    }
   };
 
   const handleImageChange = (e) => {
@@ -180,16 +278,35 @@ export default function CreateCvModal({
       Object.entries(formData).forEach(([k, v]) => {
         if (v === null || v === undefined) return;
         if (k === "skills" || k === "languages") data.append(k, JSON.stringify(v));
-        else if (k === "image" || k === "pdfFile") data.append(k, v);
+        else if (k === "image" || k === "pdfFile") {
+          // Only send files if user selected a new one
+          if (v instanceof File) data.append(k, v);
+        }
         else data.append(k, v);
       });
 
-      const res = await api.post("/cv/create/", data);
+      const res =
+        mode === "edit"
+          ? await api.put("/cv/", data)
+          : await api.post("/cv/create/", data);
       if (onCvCreated) onCvCreated(res.data);
       if (onOpenChange) onOpenChange(false);
     } catch (err) {
-      console.error("Error creating CV", err);
-      alert("Failed to submit CV. Please try again.");
+      console.error(mode === "edit" ? "Error updating CV" : "Error creating CV", err);
+
+      const backendData = err?.response?.data;
+      const message =
+        typeof backendData === "string"
+          ? backendData
+          : backendData?.detail
+            ? String(backendData.detail)
+            : backendData && typeof backendData === "object"
+              ? Object.entries(backendData)
+                  .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(" ") : String(v)}`)
+                  .join("\n")
+              : null;
+
+      alert(message || "Failed to submit CV. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -198,7 +315,7 @@ export default function CreateCvModal({
   const dialogContent = (
     <DialogContent className="overflow-y-auto max-h-[90vh] sm:max-w-[700px]">
       <DialogHeader>
-        <DialogTitle>Create CV</DialogTitle>
+        <DialogTitle>{dialogTitle}</DialogTitle>
         <DialogDescription>
           Enter your details or upload a PDF to prefill fields.
         </DialogDescription>
@@ -342,8 +459,7 @@ export default function CreateCvModal({
            value={formData.any_experience} 
            onChange={handleChange} 
            className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"  rows={3}
-           placeholder="e.g. Software Engineer at ABC Corp (2020-2023): Developed web applications using React and Node.js."
-           required
+           placeholder="(Optional) e.g. Internship at ABC Corp (2025): Built a React dashboard..."
           />
         </div>
   
@@ -411,7 +527,7 @@ export default function CreateCvModal({
 
         <div className="grid gap-4 py-2">
           <div className="grid gap-2">
-            <Label htmlFor="skills" className="flex items-center gap-2">
+            <Label htmlFor="languages" className="flex items-center gap-2">
               <Wand2 className="h-4 w-4 text-muted-foreground" />
               Required Languages
             </Label>
@@ -429,19 +545,19 @@ export default function CreateCvModal({
                 </Badge>
               ))}
               <input
-                id="skills"
-                value={currentSkill}
-                onChange={(e) => setCurrentSkill(e.target.value)}
+                id="languages"
+                value={currentLanguage}
+                onChange={(e) => setCurrentLanguage(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
-                    handleAddSkill(e);
-                  } else if (e.key === "Backspace" && !currentSkill && formData.skills.length > 0) {
-                    // Remove last skill on backspace if input is empty
-                    removeSkill(formData.skills[formData.skills.length - 1]);
+                    handleAddLanguage(e);
+                  } else if (e.key === "Backspace" && !currentLanguage && formData.languages.length > 0) {
+                    // Remove last language on backspace if input is empty
+                    removeLanguage(formData.languages[formData.languages.length - 1]);
                   }
                 }}
-                placeholder={formData.skills.length === 0 ? "e.g. English, French..." : ""}
+                placeholder={formData.languages.length === 0 ? "e.g. English, French..." : ""}
                 className="flex-1 bg-transparent border-none outline-none text-sm min-w-[120px] h-7"
               />
             </div>
@@ -521,7 +637,7 @@ export default function CreateCvModal({
           <DialogClose asChild>
             <Button type="button" variant="outline">Cancel</Button>
           </DialogClose>
-          <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Submitting..." : "Create CV"}</Button>
+          <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Submitting..." : mode === "edit" ? "Confirm Edits" : "Create CV"}</Button>
         </DialogFooter>
       </form>
     </DialogContent>

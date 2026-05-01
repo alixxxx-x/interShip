@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { 
   Card, 
   CardContent, 
@@ -32,7 +33,8 @@ import {
   CheckCircle, 
   Clock, 
   Archive,
-  AlertCircle
+  AlertCircle,
+  Briefcase
 } from "lucide-react";
 import api from "@/api/api";
 import CreateOfferModal from "./CreateOfferModal";
@@ -48,6 +50,7 @@ const STATUS_CONFIG = {
 };
 
 export default function CompanyListings() {
+  const navigate = useNavigate();
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingOffer, setEditingOffer] = useState(null);
@@ -61,27 +64,41 @@ export default function CompanyListings() {
   const fetchListings = async () => {
     try {
       setLoading(true);
-      const res = await api.get("/internships/");
       
+      // 1. Get current user profile to know the role and ID
       const profileRes = await api.get("/auth/profile/");
-      const companyId = profileRes.data.id;
+      const currentUser = profileRes.data;
+      const companyId = currentUser.id;
+      const isAdmin = currentUser.role === 'ADMIN';
       
-      console.log("Current Company ID:", companyId);
-      console.log("All Internship Data:", res.data);
+      console.log("Current User:", currentUser);
       
-      // Filter only this company's listings and map skills
-      // Temporarily show all listings to debug why the draft isn't showing
+      // 2. Use the correct endpoint:
+      // - Companies should use /internships/company/ to see drafts
+      // - Admins can use /internships/ to see everything
+      const endpoint = currentUser.role === 'COMPANY' ? "/internships/company/" : "/internships/";
+      const res = await api.get(endpoint);
+      
+      console.log("Fetched Data:", res.data);
+      
       const rawData = res.data.results || res.data;
-      const filtered = (Array.isArray(rawData) ? rawData : [])
+      const listingsData = Array.isArray(rawData) ? rawData : [];
+      
+      // 3. Filter and map
+      const filtered = listingsData
         .filter(item => {
-          // Use == for loose comparison and handle potential string/number mismatch
-          return item.company == companyId;
+          // If admin, show everything. If company, the backend already filtered but we double-check.
+          return isAdmin || item.company == companyId;
         })
         .map(item => {
+          // Map skills from JSON string or array
           let skills = [];
           if (item.internship_skills) {
             try {
-              skills = JSON.parse(item.internship_skills);
+              // Handle if it's already an array or a JSON string
+              skills = typeof item.internship_skills === 'string' 
+                ? JSON.parse(item.internship_skills) 
+                : item.internship_skills;
               if (!Array.isArray(skills)) skills = [skills];
             } catch (e) {
               skills = [item.internship_skills];
@@ -173,10 +190,26 @@ export default function CompanyListings() {
                 ) : (
                   listings.map((item) => (
                     <TableRow key={item.id} className="hover:bg-muted/30 transition-colors group">
-                      <TableCell className="font-semibold">
-                        <div className="flex flex-col gap-0.5">
-                          <span>{item.title}</span>
-                          <span className="text-[10px] text-muted-foreground font-mono uppercase">ID: {item.id}</span>
+                      <TableCell 
+                        className="font-semibold cursor-pointer hover:text-primary transition-colors" 
+                        onClick={() => navigate(`/internships/${item.id}`)}
+                      >
+                        <div className="flex items-center gap-3">
+                          {item.internship_image ? (
+                            <img 
+                              src={item.internship_image} 
+                              alt={item.title} 
+                              className="w-10 h-10 rounded-md object-cover border"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-md bg-muted flex items-center justify-center border">
+                              <Briefcase className="w-5 h-5 text-muted-foreground" />
+                            </div>
+                          )}
+                          <div className="flex flex-col gap-0.5">
+                            <span className="hover:underline">{item.title}</span>
+                            <span className="text-[10px] text-muted-foreground font-mono uppercase hover:no-underline">ID: {item.id}</span>
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -209,28 +242,29 @@ export default function CompanyListings() {
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-muted">
-                              <MoreVertical className="h-5 w-5" />
-                              <span className="sr-only">Open menu</span>
-                            </Button>
+                        <div className="flex items-center justify-end gap-3">
+                          <Button 
+                            className="bg-[#8b5cf6] hover:bg-[#7c3aed] text-white rounded-xl font-semibold shadow-sm"
+                            size="sm"
+                            onClick={() => handleEdit(item)}
+                          >
+                            <Edit className="mr-2 h-4 w-4" />
+                             Edit Details
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-muted">
+                                <MoreVertical className="h-5 w-5" />
+                                <span className="sr-only">Open menu</span>
+                              </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-56 p-2">
                             <DropdownMenuItem 
                               className="cursor-pointer"
-                              onClick={() => window.open(`/internships/${item.id}`, "_blank")}
+                              onClick={() => navigate(`/internships/${item.id}`)}
                             >
                               <Eye className="mr-3 h-4 w-4 text-muted-foreground" />
                               <span>View Public Page</span>
-                            </DropdownMenuItem>
-                            
-                            <DropdownMenuItem 
-                              className="cursor-pointer"
-                              onClick={() => handleEdit(item)}
-                            >
-                              <Edit className="mr-3 h-4 w-4 text-muted-foreground" />
-                              <span>Edit Details</span>
                             </DropdownMenuItem>
                             
                             <div className="h-px bg-muted my-2" />
@@ -289,6 +323,7 @@ export default function CompanyListings() {
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
