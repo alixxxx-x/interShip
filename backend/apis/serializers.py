@@ -52,6 +52,15 @@ class UserSerializer(serializers.ModelSerializer):
                     else:
                         data[field] = val
                     
+                # Add has_cv check for students
+                if instance.role == User.Role.STUDENT:
+                    # Multi-table inheritance: instance is a User, but getattr(instance, 'student') returns the Student profile
+                    student = getattr(instance, 'student', None)
+                    if student:
+                        data['has_cv'] = hasattr(student, 'digital_cv') and bool(student.digital_cv.cv_pdf)
+                    else:
+                        data['has_cv'] = False
+                    
         return data
 
     def create(self, validated_data):
@@ -207,8 +216,18 @@ class ApplicationSerializer(serializers.ModelSerializer):
         internship = self.context.get('internship')
         
         if request and internship:
-            if Application.objects.filter(student=request.user, internship=internship).exists():
+            # Multi-table inheritance: request.user is a User instance, request.user.student is the Student instance
+            student = getattr(request.user, 'student', None)
+            if not student:
+                 raise serializers.ValidationError("Only students can apply for internships.")
+
+            if Application.objects.filter(student=student, internship=internship).exists():
                 raise serializers.ValidationError("You have already applied for this internship")
+            
+            # Check if student has a CV
+            has_cv = hasattr(student, 'digital_cv') and bool(student.digital_cv.cv_pdf)
+            if not has_cv:
+                raise serializers.ValidationError("You must upload a CV (PDF) to your profile before applying.")
         
         return attrs
 

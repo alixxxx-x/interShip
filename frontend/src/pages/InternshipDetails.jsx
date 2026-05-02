@@ -31,6 +31,7 @@ export default function InternshipDetails() {
   const [applied, setApplied] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [userRole, setUserRole] = useState(null);
+  const [hasCV, setHasCV] = useState(false);
 
   useEffect(() => {
     const fetchDetails = async () => {
@@ -82,6 +83,7 @@ export default function InternshipDetails() {
             const profileRes = await api.get('/auth/profile/');
             const role = profileRes.data.role;
             setUserRole(role);
+            setHasCV(profileRes.data.has_cv);
 
             if (role === 'STUDENT') {
               const appsRes = await api.get("/applications/");
@@ -325,9 +327,33 @@ export default function InternshipDetails() {
                   >
                     Closed
                   </Button>
+                ) : userRole === 'STUDENT' && !hasCV ? (
+                  <div className="space-y-4">
+                    <Button
+                      className="w-full h-12 text-base font-bold rounded-xl bg-slate-200 text-slate-500 cursor-not-allowed shadow-none"
+                      disabled
+                    >
+                      Apply Now
+                    </Button>
+                    <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800/50 rounded-2xl p-4 flex items-start gap-3">
+                      <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                      <div className="space-y-1">
+                        <p className="text-xs font-bold text-amber-800 dark:text-amber-300">CV Required</p>
+                        <p className="text-[11px] text-amber-700/80 dark:text-amber-400/80 font-medium leading-relaxed">
+                          Please upload your CV in your dashboard to unlock applications.
+                        </p>
+                        <button 
+                          onClick={() => navigate('/studentdashboard/cv')}
+                          className="text-[11px] font-bold text-primary hover:underline flex items-center gap-1 mt-1"
+                        >
+                          Go to CV Manager <ArrowRight className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 ) : (
                   <Button
-                    className="w-full h-10 text-base font-bold rounded-xl shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98] group"
+                    className="w-full h-12 text-base font-bold rounded-xl shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98] group"
                     onClick={handleApply}
                     disabled={isApplying}
                   >
