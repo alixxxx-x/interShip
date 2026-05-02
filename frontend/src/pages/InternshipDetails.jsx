@@ -29,6 +29,7 @@ export default function InternshipDetails() {
   const [error, setError] = useState(null);
   const [isApplying, setIsApplying] = useState(false);
   const [applied, setApplied] = useState(false);
+  const [applicationStatus, setApplicationStatus] = useState(null);
   const [isLiked, setIsLiked] = useState(false);
   const [userRole, setUserRole] = useState(null);
 
@@ -51,7 +52,6 @@ export default function InternshipDetails() {
 
         const formatDuration = (durationStr) => {
           if (!durationStr) return "Flexible";
-          // Handle Django timedelta format "D HH:MM:SS" or "HH:MM:SS"
           const parts = durationStr.split(' ');
           if (parts.length > 1) {
             const days = parts[0];
@@ -75,7 +75,6 @@ export default function InternshipDetails() {
           internship_duration: formatDuration(item.internship_duration),
         });
 
-        // Check if the student already applied to this internship
         const token = localStorage.getItem(ACCESS_TOKEN);
         if (token) {
           try {
@@ -84,15 +83,16 @@ export default function InternshipDetails() {
             setUserRole(role);
 
             if (role === 'STUDENT') {
-              const appsRes = await api.get("/applications/");
-              const apps = appsRes.data?.results || appsRes.data || [];
-              const alreadyApplied = apps.some(
-                (app) => app.internship === parseInt(id)
-              );
-              if (alreadyApplied) setApplied(true);
+              const appRes = await api.get('/applications/');
+              const applications = appRes.data.results || appRes.data;
+              const myApp = applications.find(app => app.internship === parseInt(id));
+              if (myApp) {
+                setApplied(true);
+                setApplicationStatus(myApp.status);
+              }
             }
           } catch (e) {
-            // Silently ignore — user might be unauthenticated
+            console.error("Error fetching profile/apps:", e);
           }
         }
       } catch (err) {
@@ -117,11 +117,12 @@ export default function InternshipDetails() {
       setIsApplying(true);
       await api.post(`/applications/apply/${id}/`);
       setApplied(true);
+      setApplicationStatus('PENDING');
     } catch (err) {
       console.error("Error applying:", err);
       const msg = err.response?.data?.non_field_errors?.[0] ||
         err.response?.data?.detail ||
-        "Failed to submit application. You might have already applied.";
+        "Failed to submit application.";
       alert(msg);
     } finally {
       setIsApplying(false);
@@ -129,15 +130,15 @@ export default function InternshipDetails() {
   };
 
   const handleCancel = async () => {
-    if (!window.confirm("Are you sure you want to cancel your application?")) return;
-
+    if (!window.confirm("Are you sure?")) return;
     try {
       setIsApplying(true);
       await api.delete(`/applications/cancel/${id}/`);
       setApplied(false);
+      setApplicationStatus(null);
     } catch (err) {
       console.error("Error cancelling:", err);
-      alert("Failed to cancel application.");
+      alert("Failed to cancel.");
     } finally {
       setIsApplying(false);
     }
@@ -256,6 +257,12 @@ export default function InternshipDetails() {
                       </div>
                       {internship.internship_duration}
                     </div>
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-lg bg-white dark:bg-slate-800 border flex items-center justify-center">
+                        <Users className="h-4 w-4 text-primary" />
+                      </div>
+                      {internship.number_of_places} Positions
+                    </div>
                   </div>
                 </div>
               </div>
@@ -298,25 +305,62 @@ export default function InternshipDetails() {
               <div className="space-y-6">
                 <SidebarItem icon={Calendar} label="Starts on" value={internship.offer_start_date} />
                 <SidebarItem icon={Calendar} label="Ends on" value={internship.offer_end_date} />
+                <SidebarItem icon={Clock} label="Time Left" value={(() => {
+                  const now = new Date();
+                  const start = new Date(internship.offer_start_date);
+                  const diff = start - now;
+                  if (diff <= 0) return "Started";
+                  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                  if (days > 0) return `${days} ${days === 1 ? 'day' : 'days'} left`;
+                  const hours = Math.floor(diff / (1000 * 60 * 60));
+                  return `${hours} hours left`;
+                })()} />
                 <SidebarItem icon={Clock} label="Duration" value={internship.internship_duration || "Flexible"} />
-                <SidebarItem icon={Users} label="Open Positions" value={`${internship.number_of_places} Interns`} />
+                <SidebarItem icon={Users} label="Spots Filled" value={`${internship.accepted_count || 0}/${internship.number_of_places}`} />
                 <SidebarItem icon={MapPin} label="Work Mode" value={internship.internship_location} />
               </div>
 
               <div className="mt-10 pt-8 border-t">
                 {userRole === 'COMPANY' || userRole === 'ADMIN' ? null : applied ? (
                   <div className="flex flex-col gap-3">
-                    <div className="bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-800 rounded-2xl p-6 text-center">
-                      <p className="font-bold text-green-800 dark:text-green-400 text-sm">Application Received</p>
+                    <div className={`border rounded-2xl p-6 text-center ${
+                      applicationStatus === 'REJECTED' 
+                        ? 'bg-red-50 border-red-100' 
+                        : applicationStatus === 'ACCEPTED'
+                        ? 'bg-green-50 border-green-100'
+                        : 'bg-green-50 dark:bg-green-900/10 border-green-100 dark:border-green-800'
+                    }`}>
+                      <p className={`font-bold text-sm ${
+                        applicationStatus === 'REJECTED' 
+                          ? 'text-red-600' 
+                          : applicationStatus === 'ACCEPTED'
+                          ? 'text-green-600'
+                          : 'text-green-800 dark:text-green-400'
+                      }`}>
+                        {applicationStatus === 'REJECTED' 
+                          ? 'Application Rejected' 
+                          : applicationStatus === 'ACCEPTED'
+                          ? 'Application Accepted'
+                          : 'Application Received'}
+                      </p>
                     </div>
-                    <Button
-                      variant="outline"
-                      className="w-full border-red-200 text-red-500 hover:bg-red-50 hover:text-red-600 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/30"
-                      onClick={handleCancel}
-                      disabled={isApplying}
-                    >
-                      {isApplying ? "Wait..." : "Cancel Application"}
-                    </Button>
+                    
+                    {applicationStatus === 'PENDING' && (
+                      <Button
+                        variant="outline"
+                        className="w-full border-red-200 text-red-500 hover:bg-red-50 hover:text-red-600 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/30"
+                        onClick={handleCancel}
+                        disabled={isApplying}
+                      >
+                        {isApplying ? "Wait..." : "Cancel Application"}
+                      </Button>
+                    )}
+
+                    {applicationStatus === 'REJECTED' && (
+                      <p className="text-center text-xs text-gray-500 italic px-2">
+                        You cannot apply again for this specific internship.
+                      </p>
+                    )}
                   </div>
                 ) : internship.status !== 'OPEN_FOR_APPLICATION' || new Date(internship.offer_end_date) < new Date() ? (
                   <Button

@@ -102,7 +102,54 @@ class Application(models.Model):
     internship = models.ForeignKey(InternshipOffer, on_delete=models.CASCADE)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     application_date = models.DateField(auto_now_add=True)
-    
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.update_internship_status()
+
+    def delete(self, *args, **kwargs):
+        internship = self.internship
+        super().delete(*args, **kwargs)
+        self.update_internship_status(internship)
+
+    def update_internship_status(self, internship=None):
+        if not internship:
+            internship = self.internship
+        
+        # Count only accepted applications
+        accepted_count = self.__class__.objects.filter(
+            internship_id=internship.id,
+            status='ACCEPTED'
+        ).count()
+        
+        # If accepted count reaches the limit, close internship and reject the rest
+        if accepted_count >= internship.number_of_places:
+            if internship.status == 'OPEN_FOR_APPLICATION':
+                internship.status = 'CLOSED_FOR_APPLICATION'
+                internship.save()
+                
+            # Send manual notifications to automatically rejected students
+            pending_apps = self.__class__.objects.filter(
+                internship_id=internship.id,
+                status='PENDING'
+            )
+            from django.apps import apps
+            NotificationModel = apps.get_model('apis', 'Notification')
+            for app in pending_apps:
+                NotificationModel.objects.create(
+                    recipient=app.student,
+                    notification_type='APPLICATION_REJECTED',
+                    message=f"Your application for '{internship.title}' has been rejected as the positions are now filled.",
+                    application=app
+                )
+            
+            # Bulk reject the remaining pending applications
+            pending_apps.update(status='REJECTED')
+        else:
+            # If accepted count is below limit, reopen if it was closed
+            if internship.status == 'CLOSED_FOR_APPLICATION':
+                internship.status = 'OPEN_FOR_APPLICATION'
+                internship.save()
 
 
  # skills model

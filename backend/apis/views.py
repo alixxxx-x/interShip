@@ -226,7 +226,7 @@ class ApplicationCreateView(generics.CreateAPIView):
         internship = serializer.context['internship']
         application = serializer.save(student=self.request.user.student, internship=internship)
 
-        # Create notification for the company
+        # Create notification for the company (Status management is handled by the model)
         student = self.request.user.student
         student_name = f"{student.first_name} {student.last_name}".strip() or student.username or student.email
         Notification.objects.create(
@@ -250,7 +250,9 @@ class ApplicationUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     def perform_update(self, serializer):
         old_status = serializer.instance.status
         application = serializer.save()
+        internship = application.internship
         
+        # Notify candidate on status change (The model now handles the internship status)
         if old_status != application.status:
             if application.status == Application.Status.ACCEPTED:
                 Notification.objects.create(
@@ -270,6 +272,16 @@ class ApplicationUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     def perform_destroy(self, instance):
         instance.status = Application.Status.REJECTED
         instance.save()
+        
+        # Check if we should reopen
+        internship = instance.internship
+        application_count = Application.objects.filter(
+            internship=internship
+        ).exclude(status=Application.Status.REJECTED).count()
+        
+        if application_count < internship.number_of_places and internship.status == InternshipOffer.Status.CLOSED_FOR_APPLICATION:
+            internship.status = InternshipOffer.Status.OPEN_FOR_APPLICATION
+            internship.save()
 
 class StudentApplicationCancelView(generics.DestroyAPIView):
     queryset = Application.objects.all()
@@ -282,7 +294,17 @@ class StudentApplicationCancelView(generics.DestroyAPIView):
         return obj
 
     def perform_destroy(self, instance):
+        internship = instance.internship
         instance.delete()
+        
+        # Reopen if a spot became available
+        application_count = Application.objects.filter(
+            internship=internship
+        ).exclude(status=Application.Status.REJECTED).count()
+        
+        if application_count < internship.number_of_places and internship.status == InternshipOffer.Status.CLOSED_FOR_APPLICATION:
+            internship.status = InternshipOffer.Status.OPEN_FOR_APPLICATION
+            internship.save()
 
 class ApplicationRetrieveView(generics.RetrieveAPIView):
     queryset = Application.objects.all()
