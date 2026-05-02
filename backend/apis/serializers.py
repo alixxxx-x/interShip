@@ -15,6 +15,7 @@ class UserSerializer(serializers.ModelSerializer):
     description = serializers.CharField(required=False, write_only=True)
     location = serializers.CharField(required=False, write_only=True)
     website = serializers.URLField(required=False, write_only=True)
+    company_field = serializers.CharField(required=False, write_only=True)
     department = serializers.CharField(required=False, write_only=True)
 
     class Meta:
@@ -22,9 +23,9 @@ class UserSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'username', 'email', 'role', 'profile_picture', 'password',
             'first_name', 'last_name', 'university_id', 'wilaya', 'phone',
-            'name', 'logo', 'description', 'location', 'website', 'department'
+            'name', 'logo', 'description', 'location', 'website', 'company_field', 'department'
         ]
-        read_only_fields = ['id', 'username']
+        read_only_fields = ['id']
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -32,7 +33,7 @@ class UserSerializer(serializers.ModelSerializer):
         # Add role-specific profile fields to the output
         profile_map = {
             User.Role.STUDENT: ('student', ['university_id', 'wilaya', 'phone']),
-            User.Role.COMPANY: ('company', ['name', 'logo', 'description', 'location', 'website']),
+            User.Role.COMPANY: ('company', ['name', 'logo', 'description', 'location', 'website', 'company_field']),
             User.Role.ADMIN: ('administrator', ['department']),
         }
         
@@ -67,8 +68,8 @@ class UserSerializer(serializers.ModelSerializer):
         role = validated_data.pop('role', User.Role.STUDENT)
         password = validated_data.pop('password')
         
-        # Auto-generate username based on email
-        username = validated_data.get('email')
+        # Use provided username if available, otherwise fallback to email
+        username = validated_data.pop('username', None) or validated_data.get('email')
         
         # Create user instance using the correct model
         models_map = {

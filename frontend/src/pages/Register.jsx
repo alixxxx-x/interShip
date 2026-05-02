@@ -7,8 +7,11 @@ import premiumPhoto from "@/assets/premium_photo-1725534270555-84e4b39e6b90.avif
 
 function Register() {
     const [username, setUsername] = useState("");
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
     const [role, setRole] = useState("STUDENT");
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
@@ -18,9 +21,19 @@ function Register() {
         e.preventDefault();
 
         let EmptyErrors = {};
-        if (!username.trim()) EmptyErrors.username = "Username is required";
+        if (role === "STUDENT") {
+            if (!firstName.trim()) EmptyErrors.firstName = "First name is required";
+            if (!lastName.trim()) EmptyErrors.lastName = "Last name is required";
+        } else {
+            if (!username.trim()) EmptyErrors.username = "Username is required";
+        }
         if (!email.trim()) EmptyErrors.email = "Email is required";
         if (!password) EmptyErrors.password = "Password is required";
+        if (!confirmPassword) {
+            EmptyErrors.confirmPassword = "Please confirm your password";
+        } else if (password !== confirmPassword) {
+            EmptyErrors.confirmPassword = "Passwords do not match";
+        }
 
         if (Object.keys(EmptyErrors).length > 0) {
             setErrors(EmptyErrors);
@@ -30,7 +43,15 @@ function Register() {
         setErrors({});
         setLoading(true);
         try {
-            await api.post("/auth/register/", { username, email, password, role });
+            const payload = {
+                email,
+                password,
+                role,
+                ...(role === "STUDENT" 
+                    ? { first_name: firstName, last_name: lastName } 
+                    : { username, name: username })
+            };
+            await api.post("/auth/register/", payload);
             navigate("/login");
         } catch (error) {
             if (error.response && error.response.data) {
@@ -110,19 +131,46 @@ function Register() {
                         </p>
 
                         <form onSubmit={handleSubmit} className="space-y-3">
-                            <div className="space-y-1">
-                                <label className="text-[11px] font-semibold text-black ml-1">Username</label>
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        placeholder="johndoe"
-                                        value={username}
-                                        onChange={(e) => { setUsername(e.target.value); setErrors(prev => ({ ...prev, username: null })) }}
-                                        className="w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans"
-                                    />
+                            {role === "STUDENT" ? (
+                                <div className="flex gap-3">
+                                    <div className="space-y-1 flex-1">
+                                        <label className="text-[11px] font-semibold text-black ml-1">First Name</label>
+                                        <input
+                                            type="text"
+                                            placeholder="John"
+                                            value={firstName}
+                                            onChange={(e) => { setFirstName(e.target.value); setErrors(prev => ({ ...prev, firstName: null })) }}
+                                            className="w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans"
+                                        />
+                                        {errors.firstName && <p className="text-[10px] text-red-500 ml-1">{errors.firstName}</p>}
+                                    </div>
+                                    <div className="space-y-1 flex-1">
+                                        <label className="text-[11px] font-semibold text-black ml-1">Last Name</label>
+                                        <input
+                                            type="text"
+                                            placeholder="Doe"
+                                            value={lastName}
+                                            onChange={(e) => { setLastName(e.target.value); setErrors(prev => ({ ...prev, lastName: null })) }}
+                                            className="w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans"
+                                        />
+                                        {errors.lastName && <p className="text-[10px] text-red-500 ml-1">{errors.lastName}</p>}
+                                    </div>
                                 </div>
-                                {errors.username && <p className="text-[10px] text-red-500 ml-1">{errors.username}</p>}
-                            </div>
+                            ) : (
+                                <div className="space-y-1">
+                                    <label className="text-[11px] font-semibold text-black ml-1">Username</label>
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            placeholder="johndoe"
+                                            value={username}
+                                            onChange={(e) => { setUsername(e.target.value); setErrors(prev => ({ ...prev, username: null })) }}
+                                            className="w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans"
+                                        />
+                                    </div>
+                                    {errors.username && <p className="text-[10px] text-red-500 ml-1">{errors.username}</p>}
+                                </div>
+                            )}
 
                             <div className="space-y-1">
                                 <label className="text-[11px] font-semibold text-black ml-1">Email address</label>
@@ -150,6 +198,20 @@ function Register() {
                                     />
                                 </div>
                                 {errors.password && <p className="text-[10px] text-red-500 ml-1">{errors.password}</p>}
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-[11px] font-semibold text-black ml-1">Confirm Password</label>
+                                <div className="relative">
+                                    <input
+                                        type="password"
+                                        placeholder="••••••••"
+                                        value={confirmPassword}
+                                        onChange={(e) => { setConfirmPassword(e.target.value); setErrors(prev => ({ ...prev, confirmPassword: null })) }}
+                                        className="w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans"
+                                    />
+                                </div>
+                                {errors.confirmPassword && <p className="text-[10px] text-red-500 ml-1">{errors.confirmPassword}</p>}
                             </div>
 
                             <div className="space-y-1 pt-1">

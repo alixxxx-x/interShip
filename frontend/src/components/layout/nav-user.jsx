@@ -42,7 +42,7 @@ export function NavUser({
     <SidebarMenu>
       <SidebarMenuItem>
         <DropdownMenu>
-          <DropdownMenuTrigger 
+          <DropdownMenuTrigger
             className="w-full"
             render={
               <SidebarMenuButton
@@ -52,7 +52,7 @@ export function NavUser({
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage src={user.profile_picture} alt={user.username} />
                   <AvatarFallback className="rounded-lg uppercase">
-                      {user.username?.charAt(0) || 'U'}
+                    {user.username?.charAt(0) || 'U'}
                   </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
@@ -100,7 +100,7 @@ export function NavUser({
                 Account
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => {
-                const notificationUrl = user?.role === "STUDENT" 
+                const notificationUrl = user?.role === "STUDENT"
                   ? '/studentdashboard/notifications'
                   : '/companydashboard/notifications';
                 navigate(notificationUrl);
