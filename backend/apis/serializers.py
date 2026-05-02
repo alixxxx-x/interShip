@@ -26,6 +26,17 @@ class UserSerializer(serializers.ModelSerializer):
             'name', 'logo', 'description', 'location', 'website', 'company_field', 'department'
         ]
         read_only_fields = ['id']
+    # hdi hiya t3 email  
+    def validate(self, attrs):
+        role = attrs.get('role', User.Role.STUDENT)
+        email = attrs.get('email', '')
+
+        if role == User.Role.STUDENT:
+            if not email.endswith('@univ.dz'):
+                raise serializers.ValidationError({
+                    "email": "Students must use a university email address ending with @univ.dz"
+                })
+        return attrs
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
