@@ -13,13 +13,15 @@ from .models import *
 from .serializers import *
 from .permissions import *
 # gemini ai
-import google.generativeai as genai
+from google import genai
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 import json
 
-genai.configure(api_key=settings.GEMINI_API_KEY)
+# Initialize Gemini Client
+client = genai.Client(api_key=settings.GEMINI_API_KEY)
+
 SYSTEM_INSTRUCTION = """
     You are a helpful AI assistant for a University-Enterprise internship matching platform. 
     You answer students' questions politely and concisely based on typical platform fonctionality. 
@@ -38,29 +40,29 @@ def chatbot(request):
     try:
         data = json.loads(request.body)
         user_question = data.get('question', '').strip()
-        chat_history=data.get('chat_history', [])
+        chat_history = data.get('chat_history', [])
 
         if not user_question:
             return JsonResponse({'error': 'No question provided'}, status=400)
 
-        # Initialize Gemini model
-        model = genai.GenerativeModel(
-            model_name='gemini-flash-latest',
-            system_instruction=SYSTEM_INSTRUCTION
-        )
-
         # Prepare history for Gemini
-        formatted_history = []
+        # The new SDK uses 'role' and 'parts' [ { 'text': ... } ]
+        history = []
         for msg in chat_history:
-            formatted_history.append({
+            history.append({
                 "role": "user" if msg.get("role") == "user" else "model",
                 "parts": [{"text": msg.get("text", "")}]
             })
 
-        chat = model.start_chat(history=formatted_history)
-        
-        # Generate response
-        response = chat.send_message(user_question)
+        # Generate response using the new client structure
+        response = client.models.generate_content(
+            model='gemini-2.0-flash',
+            config={
+                'system_instruction': SYSTEM_INSTRUCTION,
+            },
+            contents=history + [{"role": "user", "parts": [{"text": user_question}]}]
+        )
+
         ai_response = response.text
 
         return JsonResponse({
