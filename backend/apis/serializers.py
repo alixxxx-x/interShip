@@ -103,6 +103,7 @@ class InternshipSerializer(serializers.ModelSerializer):
     company_name = serializers.CharField(source='company.name', read_only=True)
     required_skills = serializers.CharField(write_only=True, required=False)
     banner_image = serializers.ImageField(write_only=True, required=False)
+    accepted_count = serializers.SerializerMethodField()
 
     class Meta:
         model = InternshipOffer
@@ -119,6 +120,7 @@ class InternshipSerializer(serializers.ModelSerializer):
             'offer_start_date',
             'offer_end_date',
             'number_of_places',
+            'accepted_count',
             'internship_duration',
             'internship_salary',
             'internship_skills',
@@ -127,6 +129,9 @@ class InternshipSerializer(serializers.ModelSerializer):
             'banner_image',
         ]
         read_only_fields = ['id', 'internship_duration', 'company']
+
+    def get_accepted_count(self, obj):
+        return obj.application_set.filter(status='ACCEPTED').count()
 
     def create(self, validated_data):
         # Map frontend fields to backend fields
@@ -217,15 +222,30 @@ class ApplicationSerializer(serializers.ModelSerializer):
         internship = self.context.get('internship')
         
         if request and internship:
-            # Multi-table inheritance: request.user is a User instance, request.user.student is the Student instance
+            # 1. Ensure user is a student
             student = getattr(request.user, 'student', None)
             if not student:
                  raise serializers.ValidationError("Only students can apply for internships.")
 
+            # 2. Check if already applied
             if Application.objects.filter(student=student, internship=internship).exists():
                 raise serializers.ValidationError("You have already applied for this internship")
             
-            # Check if student has a CV
+            # 3. Check if internship is open
+            from .models import InternshipOffer
+            if internship.status != InternshipOffer.Status.OPEN_FOR_APPLICATION:
+                raise serializers.ValidationError("This internship is no longer accepting applications.")
+            
+            # 4. Check if full (Double safety, only counting ACCEPTED)
+            accepted_apps = Application.objects.filter(
+                internship=internship,
+                status='ACCEPTED'
+            ).count()
+            
+            if accepted_apps >= internship.number_of_places:
+                raise serializers.ValidationError("This internship has reached its maximum number of accepted interns.")
+            
+            # 5. Check if student has a CV
             has_cv = hasattr(student, 'digital_cv') and bool(student.digital_cv.cv_file)
             if not has_cv:
                 raise serializers.ValidationError("You must upload a CV (PDF) to your profile before applying.")
