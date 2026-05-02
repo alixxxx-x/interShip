@@ -3,6 +3,8 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
+from django.db.models import Q
+
 class EmailModelBackend(ModelBackend):
     def authenticate(self, request, username=None, password=None, **kwargs):
         email = username or kwargs.get(User.USERNAME_FIELD)
@@ -12,6 +14,7 @@ class EmailModelBackend(ModelBackend):
             return None
 
         try:
+            # Strictly login with email (case-insensitive)
             user = User.objects.get(email__iexact=email)
         except (User.DoesNotExist, User.MultipleObjectsReturned):
             print(f"DEBUG: User not found for email: {email}")
