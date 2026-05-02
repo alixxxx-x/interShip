@@ -154,11 +154,21 @@ class InternshipRetrieveView(generics.RetrieveAPIView):
 
     def get_object(self): # hada y5li nas kaml ychoufou internship lakan machi draft wla archived 
         obj = super().get_object()
-        if self.request.user.role != User.Role.ADMIN :
+        user = self.request.user
+        
+        if not user.is_authenticated:
+            if obj.status in [InternshipOffer.Status.DRAFT, InternshipOffer.Status.ARCHIVED, InternshipOffer.Status.HIDDEN]:
+                raise PermissionDenied("You do not have permission to view this internship.")
+            return obj
+
+        if user.role != User.Role.ADMIN:
             if obj.status == InternshipOffer.Status.HIDDEN:
                 raise PermissionDenied("You do not have permission to view this internship.")
-        if obj.status in [InternshipOffer.Status.DRAFT, InternshipOffer.Status.ARCHIVED] and self.request.user != obj.company:
-            raise PermissionDenied("You do not have permission to view this internship.")
+            
+            # Use .id comparison to handle base User vs Subclass (Company)
+            if obj.status in [InternshipOffer.Status.DRAFT, InternshipOffer.Status.ARCHIVED] and user.id != obj.company_id:
+                raise PermissionDenied("You do not have permission to view this internship.")
+        
         return obj
 
 

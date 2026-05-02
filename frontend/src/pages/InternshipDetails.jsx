@@ -237,7 +237,7 @@ export default function InternshipDetails() {
                   <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-slate-600 dark:text-slate-400 font-semibold">
                     <div
                       className="flex items-center gap-2 cursor-pointer hover:text-primary transition-colors group/company"
-                      onClick={() => navigate(`/company/${internship.company}`)}
+                      onClick={() => navigate(`/companies/${internship.company}`)}
                     >
                       <div className="h-8 w-8 rounded-lg bg-white dark:bg-slate-800 border flex items-center justify-center group-hover/company:border-primary/30 transition-colors">
                         <Building2 className="h-4 w-4 text-primary" />
