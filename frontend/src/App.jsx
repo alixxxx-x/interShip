@@ -65,9 +65,11 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
           </Route>
+
+          {/* Auth Pages (No Navbar/Footer) */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
 
           {/* Auth & Standalone Pages */}
           <Route

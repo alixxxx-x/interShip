@@ -58,13 +58,8 @@ class UserSerializer(serializers.ModelSerializer):
         role = validated_data.pop('role', User.Role.STUDENT)
         password = validated_data.pop('password')
         
-        # Auto-generate username based on role
-        if role == User.Role.STUDENT:
-            username = f"{validated_data.get('first_name', '')} {validated_data.get('last_name', '')}".strip()
-        elif role == User.Role.COMPANY:
-            username = validated_data.get('name', validated_data.get('email'))
-        else:
-            username = validated_data.get('email')
+        # Auto-generate username based on email
+        username = validated_data.get('email')
         
         # Create user instance using the correct model
         models_map = {
