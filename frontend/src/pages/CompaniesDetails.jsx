@@ -110,18 +110,26 @@ export default function CompaniesDetails() {
   const [isFollowing, setIsFollowing] = useState(false);
 
   useEffect(() => {
-    // Simulate an API call with mock data
-    setLoading(true);
-    const fetchCompanyDetails = () => {
-      setTimeout(() => {
-        const foundCompany = MOCK_COMPANIES.find((c) => c.id === parseInt(id));
+    const fetchCompanyDetails = async () => {
+      try {
+        setLoading(true);
+        const res = await api.get(`/users/`); // Or a specific company detail endpoint if you have one
+        // Since /users/ returns a list, we find the company here or ideally use a detail endpoint
+        // Assuming your backend has or should have a way to get company by ID
+        const companies = res.data.results || res.data;
+        const foundCompany = companies.find(u => u.id === parseInt(id));
+        
         if (foundCompany) {
           setCompany(foundCompany);
         } else {
           setError("Company not found.");
         }
+      } catch (err) {
+        console.error("Error fetching company:", err);
+        setError("Failed to load company details.");
+      } finally {
         setLoading(false);
-      }, 600); // Small artificial delay
+      }
     };
 
     fetchCompanyDetails();

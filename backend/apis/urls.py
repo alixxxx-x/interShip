@@ -3,6 +3,9 @@ from rest_framework_simplejwt.views import (TokenObtainPairView, TokenRefreshVie
 from .views import *
 
 urlpatterns = [
+    #chat gemini
+    path('chat/', chatbot, name='chatbot'),
+
     # Authentication
     path('auth/register/', RegisterView.as_view(), name='register'),
     path('auth/login/', TokenObtainPairView.as_view(), name='login'),

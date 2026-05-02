@@ -15,6 +15,7 @@ class UserSerializer(serializers.ModelSerializer):
     description = serializers.CharField(required=False, write_only=True)
     location = serializers.CharField(required=False, write_only=True)
     website = serializers.URLField(required=False, write_only=True)
+    company_field = serializers.CharField(required=False, write_only=True)
     department = serializers.CharField(required=False, write_only=True)
 
     class Meta:
@@ -22,9 +23,9 @@ class UserSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'username', 'email', 'role', 'profile_picture', 'password',
             'first_name', 'last_name', 'university_id', 'wilaya', 'phone',
-            'name', 'logo', 'description', 'location', 'website', 'department'
+            'name', 'logo', 'description', 'location', 'website', 'company_field', 'department'
         ]
-        read_only_fields = ['id', 'username']
+        read_only_fields = ['id']
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -32,7 +33,7 @@ class UserSerializer(serializers.ModelSerializer):
         # Add role-specific profile fields to the output
         profile_map = {
             User.Role.STUDENT: ('student', ['university_id', 'wilaya', 'phone']),
-            User.Role.COMPANY: ('company', ['name', 'logo', 'description', 'location', 'website']),
+            User.Role.COMPANY: ('company', ['name', 'logo', 'description', 'location', 'website', 'company_field']),
             User.Role.ADMIN: ('administrator', ['department']),
         }
         
@@ -52,19 +53,23 @@ class UserSerializer(serializers.ModelSerializer):
                     else:
                         data[field] = val
                     
+                # Add has_cv check for students
+                if instance.role == User.Role.STUDENT:
+                    # Multi-table inheritance: instance is a User, but getattr(instance, 'student') returns the Student profile
+                    student = getattr(instance, 'student', None)
+                    if student:
+                        data['has_cv'] = hasattr(student, 'digital_cv') and bool(student.digital_cv.cv_file)
+                    else:
+                        data['has_cv'] = False
+                    
         return data
 
     def create(self, validated_data):
         role = validated_data.pop('role', User.Role.STUDENT)
         password = validated_data.pop('password')
         
-        # Auto-generate username based on role
-        if role == User.Role.STUDENT:
-            username = f"{validated_data.get('first_name', '')} {validated_data.get('last_name', '')}".strip()
-        elif role == User.Role.COMPANY:
-            username = validated_data.get('name', validated_data.get('email'))
-        else:
-            username = validated_data.get('email')
+        # Use provided username if available, otherwise fallback to email
+        username = validated_data.pop('username', None) or validated_data.get('email')
         
         # Create user instance using the correct model
         models_map = {
@@ -98,6 +103,7 @@ class InternshipSerializer(serializers.ModelSerializer):
     company_name = serializers.CharField(source='company.name', read_only=True)
     required_skills = serializers.CharField(write_only=True, required=False)
     banner_image = serializers.ImageField(write_only=True, required=False)
+    accepted_count = serializers.SerializerMethodField()
 
     class Meta:
         model = InternshipOffer
@@ -114,6 +120,7 @@ class InternshipSerializer(serializers.ModelSerializer):
             'offer_start_date',
             'offer_end_date',
             'number_of_places',
+            'accepted_count',
             'internship_duration',
             'internship_salary',
             'internship_skills',
@@ -122,6 +129,9 @@ class InternshipSerializer(serializers.ModelSerializer):
             'banner_image',
         ]
         read_only_fields = ['id', 'internship_duration', 'company']
+
+    def get_accepted_count(self, obj):
+        return obj.application_set.filter(status='ACCEPTED').count()
 
     def create(self, validated_data):
         # Map frontend fields to backend fields
@@ -212,8 +222,33 @@ class ApplicationSerializer(serializers.ModelSerializer):
         internship = self.context.get('internship')
         
         if request and internship:
-            if Application.objects.filter(student=request.user, internship=internship).exists():
+            # 1. Ensure user is a student
+            student = getattr(request.user, 'student', None)
+            if not student:
+                 raise serializers.ValidationError("Only students can apply for internships.")
+
+            # 2. Check if already applied
+            if Application.objects.filter(student=student, internship=internship).exists():
                 raise serializers.ValidationError("You have already applied for this internship")
+            
+            # 3. Check if internship is open
+            from .models import InternshipOffer
+            if internship.status != InternshipOffer.Status.OPEN_FOR_APPLICATION:
+                raise serializers.ValidationError("This internship is no longer accepting applications.")
+            
+            # 4. Check if full (Double safety, only counting ACCEPTED)
+            accepted_apps = Application.objects.filter(
+                internship=internship,
+                status='ACCEPTED'
+            ).count()
+            
+            if accepted_apps >= internship.number_of_places:
+                raise serializers.ValidationError("This internship has reached its maximum number of accepted interns.")
+            
+            # 5. Check if student has a CV
+            has_cv = hasattr(student, 'digital_cv') and bool(student.digital_cv.cv_file)
+            if not has_cv:
+                raise serializers.ValidationError("You must upload a CV (PDF) to your profile before applying.")
         
         return attrs
 
@@ -247,21 +282,20 @@ class SkillsSerializer(serializers.ModelSerializer):
 # digital cv serializers
 
 class DigitalCVSerializer(serializers.ModelSerializer):
-    image = serializers.ImageField(source='profile_picture', required=False)
-    pdfFile = serializers.FileField(source='cv_pdf', required=False)
-    any_experience = serializers.CharField(source='experience', required=False, allow_blank=True)
+    image = serializers.ImageField(required=False)
+    pdfFile = serializers.FileField(source='cv_file', required=False)
 
     class Meta:
         model = DigitalCV
         fields = [
-            'id', 'student', 'first_name', 'last_name', 'image', 'phone_number',
-            'email', 'address', 'education', 'skills', 'profile_summary',
-            'any_experience', 'languages', 'pdfFile'
+            'id', 'student', 'first_name', 'last_name', 'image', 'phone',
+            'email', 'linkedin', 'github', 'education', 'skills', 
+            'experience', 'wilaya', 'university_id', 'date_of_birth', 
+            'nationality', 'pdfFile'
         ]
         read_only_fields = ['id', 'student']
 
     def validate(self, attrs):
-        # Only check for duplicate CV on creation, not on update
         if self.instance is None:
             request = self.context.get('request')
             if request and hasattr(request.user, 'student'):
@@ -270,16 +304,8 @@ class DigitalCVSerializer(serializers.ModelSerializer):
         return attrs
 
     def update(self, instance, validated_data):
-        instance.first_name = validated_data.get('first_name', instance.first_name)
-        instance.last_name = validated_data.get('last_name', instance.last_name)
-        instance.phone_number = validated_data.get('phone_number', instance.phone_number)
-        instance.email = validated_data.get('email', instance.email)
-        instance.address = validated_data.get('address', instance.address)
-        instance.education = validated_data.get('education', instance.education)
-        instance.skills = validated_data.get('skills', instance.skills)
-        instance.profile_summary = validated_data.get('profile_summary', instance.profile_summary)
-        instance.experience = validated_data.get('experience', instance.experience)
-        instance.languages = validated_data.get('languages', instance.languages)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
         instance.save()
         return instance
     

@@ -12,6 +12,69 @@ from django.http import FileResponse
 from .models import *
 from .serializers import *
 from .permissions import *
+# gemini ai
+from google import genai
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
+import json
+
+# Initialize Gemini Client
+client = genai.Client(api_key=settings.GEMINI_API_KEY)
+
+SYSTEM_INSTRUCTION = """
+    You are a helpful AI assistant for a University-Enterprise internship matching platform. 
+    You answer students' questions politely and concisely based on typical platform fonctionality. 
+    and companies' questions You must answer like a highly professional corporate recruiter.
+    Keep answers short and simple
+    Use a friendly and enthusiastic tone.
+    For example, if asked about 'Finding internships', just say: 'You can find offers by navigating to the Internships section'.
+    The platform automates the internship process, connects students with companies, handles digital CVs,
+    allows companies to post offers, and automates the creation of the 'Convention de Stage' (Internship Agreement) after university validation.
+"""
+
+@csrf_exempt       # to allow POST requests from any origin
+def chatbot(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Only POST requests are allowed'}, status=405)
+    try:
+        data = json.loads(request.body)
+        user_question = data.get('question', '').strip()
+        chat_history = data.get('chat_history', [])
+
+        if not user_question:
+            return JsonResponse({'error': 'No question provided'}, status=400)
+
+        # Prepare history for Gemini
+        # The new SDK uses 'role' and 'parts' [ { 'text': ... } ]
+        history = []
+        for msg in chat_history:
+            history.append({
+                "role": "user" if msg.get("role") == "user" else "model",
+                "parts": [{"text": msg.get("text", "")}]
+            })
+
+        # Generate response using the new client structure
+        response = client.models.generate_content(
+            model='gemini-2.0-flash',
+            config={
+                'system_instruction': SYSTEM_INSTRUCTION,
+            },
+            contents=history + [{"role": "user", "parts": [{"text": user_question}]}]
+        )
+
+        ai_response = response.text
+
+        return JsonResponse({
+            'success': True,
+            'response': ai_response
+        })
+
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        print(f"Error in chatbot: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
 
 # Authentication Views
 
@@ -93,11 +156,21 @@ class InternshipRetrieveView(generics.RetrieveAPIView):
 
     def get_object(self): # hada y5li nas kaml ychoufou internship lakan machi draft wla archived 
         obj = super().get_object()
-        if self.request.user.role != User.Role.ADMIN :
+        user = self.request.user
+        
+        if not user.is_authenticated:
+            if obj.status in [InternshipOffer.Status.DRAFT, InternshipOffer.Status.ARCHIVED, InternshipOffer.Status.HIDDEN]:
+                raise PermissionDenied("You do not have permission to view this internship.")
+            return obj
+
+        if user.role != User.Role.ADMIN:
             if obj.status == InternshipOffer.Status.HIDDEN:
                 raise PermissionDenied("You do not have permission to view this internship.")
-        if obj.status in [InternshipOffer.Status.DRAFT, InternshipOffer.Status.ARCHIVED] and self.request.user != obj.company:
-            raise PermissionDenied("You do not have permission to view this internship.")
+            
+            # Use .id comparison to handle base User vs Subclass (Company)
+            if obj.status in [InternshipOffer.Status.DRAFT, InternshipOffer.Status.ARCHIVED] and user.id != obj.company_id:
+                raise PermissionDenied("You do not have permission to view this internship.")
+        
         return obj
 
 
@@ -155,7 +228,7 @@ class ApplicationCreateView(generics.CreateAPIView):
         internship = serializer.context['internship']
         application = serializer.save(student=self.request.user.student, internship=internship)
 
-        # Create notification for the company
+        # Create notification for the company (Status management is handled by the model)
         student = self.request.user.student
         student_name = f"{student.first_name} {student.last_name}".strip() or student.username or student.email
         Notification.objects.create(
@@ -179,7 +252,9 @@ class ApplicationUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     def perform_update(self, serializer):
         old_status = serializer.instance.status
         application = serializer.save()
+        internship = application.internship
         
+        # Notify candidate on status change (The model now handles the internship status)
         if old_status != application.status:
             if application.status == Application.Status.ACCEPTED:
                 Notification.objects.create(
@@ -199,6 +274,16 @@ class ApplicationUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     def perform_destroy(self, instance):
         instance.status = Application.Status.REJECTED
         instance.save()
+        
+        # Check if we should reopen
+        internship = instance.internship
+        application_count = Application.objects.filter(
+            internship=internship
+        ).exclude(status=Application.Status.REJECTED).count()
+        
+        if application_count < internship.number_of_places and internship.status == InternshipOffer.Status.CLOSED_FOR_APPLICATION:
+            internship.status = InternshipOffer.Status.OPEN_FOR_APPLICATION
+            internship.save()
 
 class StudentApplicationCancelView(generics.DestroyAPIView):
     queryset = Application.objects.all()
@@ -211,7 +296,17 @@ class StudentApplicationCancelView(generics.DestroyAPIView):
         return obj
 
     def perform_destroy(self, instance):
+        internship = instance.internship
         instance.delete()
+        
+        # Reopen if a spot became available
+        application_count = Application.objects.filter(
+            internship=internship
+        ).exclude(status=Application.Status.REJECTED).count()
+        
+        if application_count < internship.number_of_places and internship.status == InternshipOffer.Status.CLOSED_FOR_APPLICATION:
+            internship.status = InternshipOffer.Status.OPEN_FOR_APPLICATION
+            internship.save()
 
 class ApplicationRetrieveView(generics.RetrieveAPIView):
     queryset = Application.objects.all()

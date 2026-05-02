@@ -102,7 +102,54 @@ class Application(models.Model):
     internship = models.ForeignKey(InternshipOffer, on_delete=models.CASCADE)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     application_date = models.DateField(auto_now_add=True)
-    
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.update_internship_status()
+
+    def delete(self, *args, **kwargs):
+        internship = self.internship
+        super().delete(*args, **kwargs)
+        self.update_internship_status(internship)
+
+    def update_internship_status(self, internship=None):
+        if not internship:
+            internship = self.internship
+        
+        # Count only accepted applications
+        accepted_count = self.__class__.objects.filter(
+            internship_id=internship.id,
+            status='ACCEPTED'
+        ).count()
+        
+        # If accepted count reaches the limit, close internship and reject the rest
+        if accepted_count >= internship.number_of_places:
+            if internship.status == 'OPEN_FOR_APPLICATION':
+                internship.status = 'CLOSED_FOR_APPLICATION'
+                internship.save()
+                
+            # Send manual notifications to automatically rejected students
+            pending_apps = self.__class__.objects.filter(
+                internship_id=internship.id,
+                status='PENDING'
+            )
+            from django.apps import apps
+            NotificationModel = apps.get_model('apis', 'Notification')
+            for app in pending_apps:
+                NotificationModel.objects.create(
+                    recipient=app.student,
+                    notification_type='APPLICATION_REJECTED',
+                    message=f"Your application for '{internship.title}' has been rejected as the positions are now filled.",
+                    application=app
+                )
+            
+            # Bulk reject the remaining pending applications
+            pending_apps.update(status='REJECTED')
+        else:
+            # If accepted count is below limit, reopen if it was closed
+            if internship.status == 'CLOSED_FOR_APPLICATION':
+                internship.status = 'OPEN_FOR_APPLICATION'
+                internship.save()
 
 
  # skills model
@@ -126,19 +173,25 @@ class DigitalCV(models.Model):
     student = models.OneToOneField(Student, on_delete=models.CASCADE, related_name='digital_cv')
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
-    phone_number = models.CharField(max_length=20)
     email = models.EmailField()
-    address = models.TextField()
-    education = models.TextField()
-    skills = models.TextField()
-    profile_summary = models.TextField()
-    github_link = models.URLField(blank=True, null=True)
-    experience = models.TextField()
-    languages = models.TextField()  
-    cv_pdf = models.FileField(upload_to='cv_pdfs/', blank=True, null=True)
+    phone = models.CharField(max_length=20)
+    linkedin = models.URLField(blank=True, null=True)
+    github = models.URLField(blank=True, null=True)
+    skills = models.TextField(blank=True, null=True)
+    experience = models.TextField(blank=True, null=True)
+    education = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
+    image = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)    
+    wilaya = models.CharField(max_length=100, blank=True, null=True)
+    university_id = models.CharField(max_length=50, blank=True, null=True)
+    date_of_birth = models.DateField(blank=True, null=True)
+    nationality = models.CharField(max_length=100, blank=True, null=True)    
+    cv_file = models.FileField(upload_to='cvs/', blank=True, null=True)
+    
 
     def __str__(self):
-        return f"CV of {self.first_name} {self.last_name}"
+        return f"{self.first_name} {self.last_name}"
 
 
 # notification model
