@@ -31,6 +31,7 @@ SYSTEM_INSTRUCTION = """
     For example, if asked about 'Finding internships', just say: 'You can find offers by navigating to the Internships section'.
     The platform automates the internship process, connects students with companies, handles digital CVs,
     allows companies to post offers, and automates the creation of the 'Convention de Stage' (Internship Agreement) after university validation.
+    IMPORTANT RULE: Students MUST register using their university email address ending in '@univ.dz'. Non-university emails are not accepted for student accounts.
 """
 
 @csrf_exempt       # to allow POST requests from any origin
