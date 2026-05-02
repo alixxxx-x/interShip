@@ -13,6 +13,8 @@ urlpatterns = [
     path('auth/profile/', UserProfileView.as_view(), name='profile'),
     path('auth/change-password/', ChangePasswordView.as_view(), name='change_password'),
     path('users/', UserListView.as_view(), name='user-list'),
+    path('users/<int:pk>/', UserAdminUpdateView.as_view(), name='user-admin-update'),
+    path('companies/', CompanyListView.as_view(), name='company-list'),
 
     # Internships
     path('internships/create/', InternshipCreateView.as_view(), name='create'),
@@ -47,5 +49,15 @@ urlpatterns = [
     path('notifications/', NotificationListView.as_view(), name='notification-list'),
     path('notifications/<int:pk>/read/', NotificationMarkReadView.as_view(), name='notification-read'),
     path('notifications/read-all/', NotificationMarkAllReadView.as_view(), name='notification-read-all'),
+
+    # Admin Dashboard Functionalities
+    path('admin/dashboard/stats/', AdminStatsView.as_view(), name='admin-stats'),
+    path('admin/applications/pending-validation/', AdminPendingValidationsView.as_view(), name='admin-pending-validations'),
+    path('admin/applications/<int:pk>/validate/', AdminValidateApplicationView.as_view(), name='admin-validate-application'),
+    path('admin/applications/<int:pk>/agreement/', GenerateInternshipAgreementView.as_view(), name='admin-generate-agreement'),
+
+    # Messaging
+    path('messages/', MessageListView.as_view(), name='message-list'),
+    path('messages/send/', MessageCreateView.as_view(), name='message-send'),
 ]
    

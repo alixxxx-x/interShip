@@ -10,7 +10,9 @@ import {
   Plus,
   ArrowUpRight,
   ArrowDownRight,
-  MoreHorizontal
+  MoreHorizontal,
+  FileText,
+  AlertCircle
 } from "lucide-react";
 import { 
   AreaChart, 
@@ -30,172 +32,126 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useNavigate } from "react-router-dom";
+import api from "@/api/api";
 
-export default function CompanyDashboard() {
-  const [stats, setStats] = useState(null);
-  const [applications, setApplications] = useState([]);
-  const [chartData, setChartData] = useState([]);
+export default function AdminDashboard() {
+  const [stats, setStats] = useState({
+    total_students: 0,
+    placed_students: 0,
+    unplaced_students: 0,
+    placement_rate: 0
+  });
+  const [pendingValidations, setPendingValidations] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Fetch dashboard data
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      console.log("Fetching admin dashboard data...");
+      const [statsRes, pendingRes] = await Promise.all([
+        api.get("/admin/dashboard/stats/"),
+        api.get("/admin/applications/pending-validation/")
+      ]);
+      
+      console.log("Stats received:", statsRes.data);
+      console.log("Pending validations received:", pendingRes.data);
+      
+      setStats(statsRes.data);
+      setPendingValidations(pendingRes.data.results || pendingRes.data);
+    } catch (error) {
+      console.error("Failed to load admin dashboard:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        // TODO: Replace with actual Django API calls
-        // const token = localStorage.getItem("access_token");
-        // const [statsRes, appsRes, chartRes] = await Promise.all([
-        //   fetch("/api/company/dashboard/stats", { headers: { Authorization: `Bearer ${token}` }}),
-        //   fetch("/api/company/applications/recent", { headers: { Authorization: `Bearer ${token}` }}),
-        //   fetch("/api/company/dashboard/analytics", { headers: { Authorization: `Bearer ${token}` }})
-        // ]);
-        
-        // Mock data - replace with real API responses
-        const mockStats = {
-          totalInternships: 12,
-          activeApplications: 48,
-          totalViews: 1234,
-          pendingReviews: 5,
-          revenueChange: "+12.5%",
-          applicationsChange: "+8.2%",
-          viewsChange: "+15.3%",
-          reviewsChange: "-2.1%"
-        };
-
-        const mockApplications = [
-          {
-            id: 1,
-            candidate: "Sarah Johnson",
-            position: "Software Engineering Intern",
-            status: "In Review",
-            appliedDate: "2026-04-15",
-            email: "sarah.j@email.com"
-          },
-          {
-            id: 2,
-            candidate: "Michael Chen",
-            position: "Data Science Intern",
-            status: "Interview Scheduled",
-            appliedDate: "2026-04-14",
-            email: "m.chen@email.com"
-          },
-          {
-            id: 3,
-            candidate: "Emma Williams",
-            position: "UX Design Intern",
-            status: "New",
-            appliedDate: "2026-04-14",
-            email: "emma.w@email.com"
-          },
-          {
-            id: 4,
-            candidate: "James Brown",
-            position: "Software Engineering Intern",
-            status: "Accepted",
-            appliedDate: "2026-04-12",
-            email: "james.b@email.com"
-          },
-          {
-            id: 5,
-            candidate: "Lisa Anderson",
-            position: "Marketing Intern",
-            status: "In Review",
-            appliedDate: "2026-04-11",
-            email: "lisa.a@email.com"
-          }
-        ];
-
-        const mockChartData = [
-          { date: "Apr 12", applications: 12, views: 145 },
-          { date: "Apr 13", applications: 18, views: 198 },
-          { date: "Apr 14", applications: 15, views: 167 },
-          { date: "Apr 15", applications: 22, views: 234 },
-          { date: "Apr 16", applications: 28, views: 289 },
-          { date: "Apr 17", applications: 25, views: 256 },
-          { date: "Apr 18", applications: 32, views: 312 },
-        ];
-
-        setStats(mockStats);
-        setApplications(mockApplications);
-        setChartData(mockChartData);
-      } catch (error) {
-        console.error("Failed to load dashboard:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchDashboardData();
   }, []);
 
+  const handleValidate = async (id) => {
+    if (!window.confirm("Are you sure you want to validate this internship agreement?")) return;
+    try {
+      await api.post(`/admin/applications/${id}/validate/`);
+      alert("Application validated successfully!");
+      fetchDashboardData();
+    } catch (error) {
+      console.error("Validation failed:", error);
+      alert("Failed to validate application.");
+    }
+  };
+
+  const handleDownloadAgreement = async (id) => {
+    try {
+      const response = await api.get(`/admin/applications/${id}/agreement/`, {
+        responseType: 'blob'
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `agreement_${id}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error("Download failed:", error);
+      alert("Could not download agreement. Ensure it is validated.");
+    }
+  };
+
   if (loading) {
     return (
-      <div className="p-6 space-y-4">
-        <div className="h-8 w-48 bg-muted animate-pulse rounded" />
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-32 bg-muted animate-pulse rounded" />
-          ))}
-        </div>
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   const statCards = [
     {
-      title: "Active Applications",
-      value: stats?.activeApplications,
+      title: "Total Students",
+      value: stats.total_students,
       icon: Users,
-      change: stats?.applicationsChange,
-      description: "New applications this week"
+      change: "Active in system",
+      description: "Total students registered"
     },
     {
-      title: "Total Views",
-      value: stats?.totalViews?.toLocaleString(),
+      title: "Placed Students",
+      value: stats.placed_students,
       icon: TrendingUp,
-      change: stats?.viewsChange,
-      description: "Internship views this month"
+      change: `${stats.placement_rate.toFixed(1)}%`,
+      description: "Validated internships"
     },
     {
-      title: "Total Internships",
-      value: stats?.totalInternships,
-      icon: Briefcase,
-      change: "+2",
-      description: "Active positions"
+      title: "Unplaced Students",
+      value: stats.unplaced_students,
+      icon: AlertCircle,
+      change: "Action required",
+      description: "Looking for internships"
     },
     {
-      title: "Pending Reviews",
-      value: stats?.pendingReviews,
+      title: "Pending Validations",
+      value: pendingValidations.length,
       icon: Clock,
-      change: stats?.reviewsChange,
-      description: "Applications to review"
+      change: "Immediate",
+      description: "Requiring admin approval"
     }
   ];
-
-  const getStatusBadge = (status) => {
-    const variants = {
-      "New": "default",
-      "In Review": "secondary",
-      "Interview Scheduled": "outline",
-      "Accepted": "success",
-      "Rejected": "destructive"
-    };
-    return variants[status] || "default";
-  };
 
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
           <p className="text-muted-foreground">
-            Welcome back! Here's what's happening with your internships.
+            Monitor placements and validate internship agreements.
           </p>
         </div>
-        <Button onClick={() => navigate("/companydashboard/post-internship")}>
-          <Plus className="mr-2 h-4 w-4" />
-          Post New Internship
+        <Button variant="outline" onClick={() => window.print()}>
+          <FileText className="mr-2 h-4 w-4" />
+          Export Report
         </Button>
       </div>
 
@@ -203,7 +159,6 @@ export default function CompanyDashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {statCards.map((stat) => {
           const Icon = stat.icon;
-          const isPositive = stat.change?.toString().includes("+");
           return (
             <Card key={stat.title}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -214,16 +169,6 @@ export default function CompanyDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stat.value}</div>
-                <div className="flex items-center gap-1 mt-1">
-                  {isPositive ? (
-                    <ArrowUpRight className="h-3 w-3 text-green-500" />
-                  ) : (
-                    <ArrowDownRight className="h-3 w-3 text-red-500" />
-                  )}
-                  <p className={`text-xs ${isPositive ? "text-green-500" : "text-red-500"}`}>
-                    {stat.change}
-                  </p>
-                </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   {stat.description}
                 </p>
@@ -233,90 +178,116 @@ export default function CompanyDashboard() {
         })}
       </div>
 
-      {/* Chart Section */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Application Activity</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Applications and views over the last 7 days
-              </p>
+      {/* Main Content Split */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Trend Chart */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Application Activity</CardTitle>
+            <p className="text-sm text-muted-foreground">Monthly application trends for the current year</p>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={stats.apps_by_month || []}>
+                  <defs>
+                    <linearGradient id="colorApps" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.1}/>
+                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                  <XAxis 
+                    dataKey="month" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{fontSize: 12, fill: 'hsl(var(--muted-foreground))'}}
+                    dy={10}
+                  />
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{fontSize: 12, fill: 'hsl(var(--muted-foreground))'}}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--background))', 
+                      borderColor: 'hsl(var(--border))',
+                      borderRadius: '12px',
+                      fontSize: '12px'
+                    }}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="count" 
+                    stroke="hsl(var(--primary))" 
+                    fillOpacity={1} 
+                    fill="url(#colorApps)" 
+                    strokeWidth={2}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm">Last 7 days</Button>
-              <Button variant="ghost" size="sm">Last 30 days</Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData}>
-                <defs>
-                  <linearGradient id="colorApplications" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis 
-                  dataKey="date" 
-                  axisLine={false} 
-                  tickLine={false}
-                  tick={{ fill: "#9ca3af", fontSize: 12 }}
-                />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false}
-                  tick={{ fill: "#9ca3af", fontSize: 12 }}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: "hsl(var(--background))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "8px"
-                  }}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="applications" 
-                  stroke="#8b5cf6" 
-                  strokeWidth={2}
-                  fillOpacity={1} 
-                  fill="url(#colorApplications)" 
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="views" 
-                  stroke="#3b82f6" 
-                  strokeWidth={2}
-                  fillOpacity={1} 
-                  fill="url(#colorViews)" 
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      {/* Recent Applications Table */}
+        {/* Analytics Summary */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Placement Overview</CardTitle>
+            <p className="text-sm text-muted-foreground">Real-time success metrics</p>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground font-medium">Placed Students</span>
+                  <span className="font-bold">{stats.placed_students}</span>
+                </div>
+                <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-emerald-500 transition-all duration-1000" 
+                    style={{ width: `${stats.placement_rate}%` }} 
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground font-medium">Unplaced Students</span>
+                  <span className="font-bold">{stats.unplaced_students}</span>
+                </div>
+                <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-amber-500 transition-all duration-1000" 
+                    style={{ width: `${100 - stats.placement_rate}%` }} 
+                  />
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-border">
+                <div className="flex flex-col items-center justify-center p-4 bg-primary/5 rounded-2xl">
+                  <span className="text-3xl font-black text-primary">{stats.placement_rate.toFixed(1)}%</span>
+                  <span className="text-[10px] uppercase tracking-wider font-bold text-primary/60 mt-1">Total Success Rate</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+      </div>
+
+      {/* Pending Validations List */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Recent Applications</CardTitle>
+              <CardTitle>Validation Queue</CardTitle>
               <p className="text-sm text-muted-foreground">
-                Latest candidates who applied to your internships
+                Review and validate accepted internship applications
               </p>
             </div>
-            <Button variant="outline" size="sm" onClick={() => navigate("/companydashboard/applications")}>
-              View All
-            </Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -324,34 +295,38 @@ export default function CompanyDashboard() {
             <TableHeader>
               <TableRow>
                 <TableHead>Candidate</TableHead>
-                <TableHead>Position</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Applied Date</TableHead>
-                <TableHead className="hidden md:table-cell">Email</TableHead>
-                <TableHead className="w-10"></TableHead>
+                <TableHead>Company</TableHead>
+                <TableHead>Internship</TableHead>
+                <TableHead className="text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {applications.map((app) => (
-                <TableRow key={app.id}>
-                  <TableCell className="font-medium">{app.candidate}</TableCell>
-                  <TableCell>{app.position}</TableCell>
-                  <TableCell>
-                    <Badge variant={getStatusBadge(app.status)}>
-                      {app.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{new Date(app.appliedDate).toLocaleDateString()}</TableCell>
-                  <TableCell className="hidden md:table-cell text-muted-foreground">
-                    {app.email}
-                  </TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
+              {pendingValidations.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-6 text-muted-foreground italic">
+                    No applications waiting for validation.
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                pendingValidations.map((app) => (
+                  <TableRow key={app.id}>
+                    <TableCell className="font-medium text-sm">
+                      {app.candidate}
+                    </TableCell>
+                    <TableCell className="text-sm">{app.company_name}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{app.offer}</TableCell>
+                    <TableCell className="text-right">
+                      <Button 
+                        size="sm" 
+                        onClick={() => handleValidate(app.id)}
+                        className="shadow-sm hover:shadow-md transition-shadow"
+                      >
+                        Validate
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
