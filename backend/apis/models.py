@@ -126,19 +126,25 @@ class DigitalCV(models.Model):
     student = models.OneToOneField(Student, on_delete=models.CASCADE, related_name='digital_cv')
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
-    phone_number = models.CharField(max_length=20)
     email = models.EmailField()
-    address = models.TextField()
-    education = models.TextField()
-    skills = models.TextField()
-    profile_summary = models.TextField()
-    github_link = models.URLField(blank=True, null=True)
-    experience = models.TextField()
-    languages = models.TextField()  
-    cv_pdf = models.FileField(upload_to='cv_pdfs/', blank=True, null=True)
+    phone = models.CharField(max_length=20)
+    linkedin = models.URLField(blank=True, null=True)
+    github = models.URLField(blank=True, null=True)
+    skills = models.TextField(blank=True, null=True)
+    experience = models.TextField(blank=True, null=True)
+    education = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    image = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)    
+    wilaya = models.CharField(max_length=100, blank=True, null=True)
+    university_id = models.CharField(max_length=50, blank=True, null=True)
+    date_of_birth = models.DateField(blank=True, null=True)
+    nationality = models.CharField(max_length=100, blank=True, null=True)    
+    cv_file = models.FileField(upload_to='cvs/', blank=True, null=True)
+    
 
     def __str__(self):
-        return f"CV of {self.first_name} {self.last_name}"
+        return f"{self.first_name} {self.last_name}"
 
 
 # notification model

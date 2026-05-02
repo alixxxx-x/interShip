@@ -58,7 +58,7 @@ class UserSerializer(serializers.ModelSerializer):
                     # Multi-table inheritance: instance is a User, but getattr(instance, 'student') returns the Student profile
                     student = getattr(instance, 'student', None)
                     if student:
-                        data['has_cv'] = hasattr(student, 'digital_cv') and bool(student.digital_cv.cv_pdf)
+                        data['has_cv'] = hasattr(student, 'digital_cv') and bool(student.digital_cv.cv_file)
                     else:
                         data['has_cv'] = False
                     
@@ -226,7 +226,7 @@ class ApplicationSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("You have already applied for this internship")
             
             # Check if student has a CV
-            has_cv = hasattr(student, 'digital_cv') and bool(student.digital_cv.cv_pdf)
+            has_cv = hasattr(student, 'digital_cv') and bool(student.digital_cv.cv_file)
             if not has_cv:
                 raise serializers.ValidationError("You must upload a CV (PDF) to your profile before applying.")
         
