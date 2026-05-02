@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import api from "@/api/api";
+import axios from "axios";
 
 /* ─── Icons ─── */
 const EyeIcon = ({ open }) =>
@@ -58,7 +59,7 @@ const StepDots = ({ current, total = 3 }) => (
             <div
                 key={i}
                 className={`rounded-full transition-all duration-400 ${i === current
-                    ? "w-6 h-2 bg-gradient-to-r from-purple-600 to-pink-500"
+                    ? "w-6 h-2 bg-purple-600"
                     : i < current
                         ? "w-2 h-2 bg-purple-400"
                         : "w-2 h-2 bg-indigo-200"
@@ -140,7 +141,7 @@ function ForgotPasswordModal({ isOpen, onClose }) {
         setErrors({});
         setLoading(true);
         try {
-            await api.post("/auth/forgot-password/", { email });
+            await axios.post("http://127.0.0.1:8000/api/auth/forgot-password/", { email });
             setStep(1);
             startResendTimer();
         } catch (error) {
@@ -182,9 +183,12 @@ function ForgotPasswordModal({ isOpen, onClose }) {
         setErrors({});
         setLoading(true);
         try {
-            await api.post("/auth/verify-reset-code/", { email, code });
+            await axios.post("http://127.0.0.1:8000/api/auth/verify-reset-code/", { email, code });
             setStep(2);
-        } catch { setErrors({ otp: "Invalid or expired code." }); }
+        } catch (error) { 
+            const msg = error.response?.data?.error || "Connection error or invalid code.";
+            setErrors({ otp: msg }); 
+        }
         finally { setLoading(false); }
     };
 
@@ -200,7 +204,7 @@ function ForgotPasswordModal({ isOpen, onClose }) {
         setErrors({});
         setLoading(true);
         try {
-            await api.post("/auth/reset-password/", { email, code: otp.join(""), new_password: newPassword });
+            await axios.post("http://127.0.0.1:8000/api/auth/reset-password/", { email, code: otp.join(""), new_password: newPassword });
             setStep(3);
         } catch { setErrors({ newPassword: "Failed to reset password." }); }
         finally { setLoading(false); }
@@ -210,7 +214,7 @@ function ForgotPasswordModal({ isOpen, onClose }) {
         if (resendTimer > 0) return;
         setLoading(true);
         try {
-            await api.post("/auth/forgot-password/", { email });
+            await api.post("auth/forgot-password/", { email });
             startResendTimer();
             setOtp(["", "", "", "", "", ""]);
         } catch { setErrors({ otp: "Failed to resend." }); }
@@ -245,10 +249,7 @@ function ForgotPasswordModal({ isOpen, onClose }) {
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Purple accent bar at top */}
-                    <div
-                        className="h-1.5 w-full"
-                        style={{ background: "linear-gradient(90deg, #7c3aed 0%, #ec4899 100%)" }}
-                    />
+                    <div className="h-1.5 w-full bg-purple-600" />
 
                     {/* Close button */}
                     <button
@@ -311,8 +312,7 @@ function ForgotPasswordModal({ isOpen, onClose }) {
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="w-full py-2.5 border-none rounded-xl text-sm font-semibold text-white cursor-pointer flex items-center justify-center min-h-[42px] transition-all hover:translate-y-[-1px] hover:shadow-[0_6px_22px_rgba(124,58,237,0.35)] active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed"
-                                    style={{ background: "linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)" }}
+                                    className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-sm font-semibold transition-all shadow-md active:scale-[0.98] flex items-center justify-center min-h-[42px] disabled:opacity-70 disabled:cursor-not-allowed"
                                 >
                                     {loading ? <span className="w-5 h-5 border-[2.5px] border-white/30 border-t-white rounded-full animate-spin" /> : "Send Reset Code"}
                                 </button>
@@ -354,8 +354,7 @@ function ForgotPasswordModal({ isOpen, onClose }) {
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="w-full py-2.5 border-none rounded-xl text-sm font-semibold text-white cursor-pointer flex items-center justify-center min-h-[42px] transition-all hover:translate-y-[-1px] hover:shadow-[0_6px_22px_rgba(124,58,237,0.35)] active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed"
-                                    style={{ background: "linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)" }}
+                                    className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-sm font-semibold transition-all shadow-md active:scale-[0.98] flex items-center justify-center min-h-[42px] disabled:opacity-70 disabled:cursor-not-allowed"
                                 >
                                     {loading ? <span className="w-5 h-5 border-[2.5px] border-white/30 border-t-white rounded-full animate-spin" /> : "Verify Code"}
                                 </button>
@@ -447,8 +446,7 @@ function ForgotPasswordModal({ isOpen, onClose }) {
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="w-full py-2.5 border-none rounded-xl text-sm font-semibold text-white cursor-pointer flex items-center justify-center min-h-[42px] transition-all hover:translate-y-[-1px] hover:shadow-[0_6px_22px_rgba(124,58,237,0.35)] active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed"
-                                    style={{ background: "linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)" }}
+                                    className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-sm font-semibold transition-all shadow-md active:scale-[0.98] flex items-center justify-center min-h-[42px] disabled:opacity-70 disabled:cursor-not-allowed"
                                 >
                                     {loading ? <span className="w-5 h-5 border-[2.5px] border-white/30 border-t-white rounded-full animate-spin" /> : "Reset Password"}
                                 </button>
@@ -468,8 +466,7 @@ function ForgotPasswordModal({ isOpen, onClose }) {
                                 </p>
                                 <button
                                     onClick={handleClose}
-                                    className="mt-1 w-full py-2.5 border-none rounded-xl text-sm font-semibold text-white cursor-pointer flex items-center justify-center min-h-[42px] transition-all hover:translate-y-[-1px] hover:shadow-[0_6px_22px_rgba(124,58,237,0.35)] active:translate-y-0"
-                                    style={{ background: "linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)" }}
+                                    className="mt-1 w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-sm font-semibold transition-all shadow-lg shadow-purple-200 active:scale-[0.98] flex items-center justify-center min-h-[42px]"
                                 >
                                     Back to Sign In
                                 </button>

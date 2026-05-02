@@ -780,3 +780,71 @@ class GenerateInternshipAgreementView(generics.GenericAPIView):
         buffer.seek(0)
         
         return FileResponse(buffer, as_attachment=True, filename=f"agreement_{application.id}.pdf")
+
+# forgot password and reset password
+import random
+from rest_framework.views import APIView
+
+class ForgotPasswordView(APIView):
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        email = request.data.get('email')
+        try:
+            user = User.objects.get(email=email)
+            # Generate a random 6-digit OTP
+            otp = str(random.randint(100000, 999999))
+            PasswordReset.objects.create(user=user, code=otp)
+            
+            # Print to console so you can see the code during development
+            print(f"\n[OTP] Code for {email}: {otp}\n")
+            
+            return Response({"status": "code_sent"})
+        except User.DoesNotExist:
+            return Response({"error": "No account found with this email."}, status=404)
+
+class VerifyResetCodeView(APIView):
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        email = request.data.get('email')
+        code = str(request.data.get('code', '')).strip()
+        
+        try:
+            user = User.objects.filter(email__iexact=email).first()
+            if not user:
+                return Response({"error": "User not found."}, status=404)
+            
+            reset_request = PasswordReset.objects.filter(user=user, code=code, is_used=False).last()
+            if reset_request:
+                return Response({"status": "code_verified"})
+            else:
+                return Response({"error": "Invalid code."}, status=400)
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
+
+class ResetPasswordView(APIView):
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        email = request.data.get('email')
+        code = str(request.data.get('code', '')).strip()
+        new_password = request.data.get('new_password')
+        
+        try:
+            user = User.objects.filter(email__iexact=email).first()
+            if not user:
+                return Response({"error": "User not found."}, status=404)
+
+            reset_request = PasswordReset.objects.filter(user=user, code=code, is_used=False).last()
+            
+            if reset_request:
+                user.set_password(new_password)
+                user.save()
+                reset_request.is_used = True
+                reset_request.save()
+                return Response({"status": "password_reset_success"})
+            else:
+                return Response({"error": "Invalid or expired code."}, status=400)
+        except Exception as e:
+            return Response({"error": f"Server Error: {str(e)}"}, status=500)

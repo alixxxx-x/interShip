@@ -231,3 +231,13 @@ class Message(models.Model):
 
     def __str__(self):
         return f"From {self.sender.email} to {self.recipient.email} at {self.created_at}"
+
+class PasswordReset(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    code = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_used = models.BooleanField(default=False)
+
+    def is_valid(self):
+        # Temporarily simple check for testing
+        return not self.is_used

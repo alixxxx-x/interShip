@@ -5,12 +5,14 @@ import { useNavigate, Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import Threads from "@/components/ui/Threads";
 import premiumPhoto from "@/assets/premium_photo-1725534270555-84e4b39e6b90.avif";
+import ForgotPasswordModal from "@/pages/ForgotPassword";
 
 function Login() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
+    const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
@@ -127,6 +129,15 @@ function Login() {
                                     />
                                 </div>
                                 {errors.password && <p className="text-[10px] text-red-500 ml-1">{errors.password}</p>}
+                                <div className="flex justify-end px-1 mt-1">
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setIsForgotModalOpen(true)}
+                                        className="text-[11px] font-medium text-purple-600 hover:text-purple-700 transition-colors"
+                                    >
+                                        Forgot Password?
+                                    </button>
+                                </div>
                             </div>
 
                             <button
@@ -156,6 +167,11 @@ function Login() {
                     </div>
                 </div>
             </div>
+
+            <ForgotPasswordModal 
+                isOpen={isForgotModalOpen} 
+                onClose={() => setIsForgotModalOpen(false)} 
+            />
         </div>
     );
 }
