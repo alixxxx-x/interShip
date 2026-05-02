@@ -27,7 +27,11 @@ function Register() {
         } else {
             if (!username.trim()) EmptyErrors.username = "Username is required";
         }
-        if (!email.trim()) EmptyErrors.email = "Email is required";
+        if (!email.trim()) {
+            EmptyErrors.email = "Email is required";
+        } else if (role === "STUDENT" && !email.toLowerCase().endsWith("@univ.dz")) {
+            EmptyErrors.email = "Student email must end with @univ.dz";
+        }
         if (!password) EmptyErrors.password = "Password is required";
         if (!confirmPassword) {
             EmptyErrors.confirmPassword = "Please confirm your password";
@@ -177,7 +181,7 @@ function Register() {
                                 <div className="relative">
                                     <input
                                         type="email"
-                                        placeholder="m@example.com"
+                                        placeholder={role === "STUDENT" ? "name@univ.dz" : "m@example.com"}
                                         value={email}
                                         onChange={(e) => { setEmail(e.target.value); setErrors(prev => ({ ...prev, email: null })) }}
                                         className="w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans"
