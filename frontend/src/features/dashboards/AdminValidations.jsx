@@ -131,10 +131,39 @@ export default function AdminValidations() {
                       variant="outline" 
                       size="sm" 
                       className="gap-1"
+                      onClick={async () => {
+                        try {
+                          const res = await api.get(`/cv/generate/${app.student}/`, { 
+                            responseType: 'blob' 
+                          });
+                          const blob = new Blob([res.data], { type: 'application/pdf' });
+                          const url = window.URL.createObjectURL(blob);
+                          const link = document.createElement('a');
+                          link.href = url;
+                          link.setAttribute('download', `${app.candidate.replace(/\s+/g, '_')}_CV.pdf`);
+                          document.body.appendChild(link);
+                          link.click();
+                          link.remove();
+                          window.URL.revokeObjectURL(url);
+                        } catch (err) {
+                          if (app.cv) {
+                            window.open(app.cv, '_blank');
+                          } else {
+                            toast.warning('No CV available');
+                          }
+                        }
+                      }}
+                    >
+                      <FileDown className="h-3 w-3" /> CV
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="gap-1"
                       disabled={!app.is_validated_by_admin}
                       onClick={() => handleDownload(app.id)}
                     >
-                      <FileDown className="h-3 w-3" /> Convention PDF
+                      <FileDown className="h-3 w-3" /> Agreement
                     </Button>
                   </TableCell>
                 </TableRow>
