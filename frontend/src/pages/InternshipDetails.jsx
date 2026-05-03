@@ -120,14 +120,28 @@ export default function InternshipDetails() {
     try {
       setIsApplying(true);
       await api.post(`/applications/apply/${id}/`);
+      
       setApplied(true);
       setApplicationStatus('PENDING');
     } catch (err) {
       console.error("Error applying:", err);
-      const msg = err.response?.data?.non_field_errors?.[0] ||
-        err.response?.data?.detail ||
-        "Failed to submit application.";
-      alert(msg);
+      
+      const data = err.response?.data;
+      let msg = "Failed to submit application.";
+      
+      if (typeof data === 'string') {
+        msg = data;
+      } else if (data) {
+        msg = data[0] || data.detail || data.non_field_errors?.[0] || msg;
+      }
+      
+      // Handle "already applied" silently
+      if (msg.toLowerCase().includes("already applied")) {
+        setApplied(true);
+        setApplicationStatus('PENDING');
+      } else {
+        alert(msg);
+      }
     } finally {
       setIsApplying(false);
     }

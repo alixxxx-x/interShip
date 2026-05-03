@@ -111,14 +111,12 @@ export function AppSidebar({ ...props }) {
           const res = await api.get("/auth/profile/")
           setUserInfo(res.data)
 
-          // Fetch unread count
-          if (res.data?.role === 'COMPANY') {
-            try {
-              const notifsRes = await api.get("/notifications/")
-              setUnreadCount(notifsRes.data?.unreadCount || 0)
-            } catch (err) {
-              console.error("Failed to fetch notifications count:", err)
-            }
+          // Fetch unread count for all roles
+          try {
+            const notifsRes = await api.get("/notifications/")
+            setUnreadCount(notifsRes.data?.unreadCount || 0)
+          } catch (err) {
+            console.error("Failed to fetch notifications count:", err)
           }
         }
       } catch (error) {
@@ -126,6 +124,17 @@ export function AppSidebar({ ...props }) {
       }
     }
     fetchProfile()
+  }, [location.pathname])
+
+  // Listen for real-time notification updates
+  React.useEffect(() => {
+    const handleUpdate = (event) => {
+      if (event.detail && typeof event.detail.unreadCount === 'number') {
+        setUnreadCount(event.detail.unreadCount)
+      }
+    }
+    window.addEventListener('notificationsUpdated', handleUpdate)
+    return () => window.removeEventListener('notificationsUpdated', handleUpdate)
   }, [])
 
   const handleLogout = () => {

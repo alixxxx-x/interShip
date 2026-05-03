@@ -60,7 +60,11 @@ export function NavUser({
                 <div className="grid flex-1 text-left text-sm leading-tight overflow-hidden">
                   <div className="flex items-center gap-2">
                     <span className="truncate font-semibold">
-                      {user.role === 'COMPANY' ? (user.name || user.username) : user.username}
+                      {user.role === 'COMPANY'
+                        ? (user.name || user.username)
+                        : user.role === 'STUDENT' && (user.first_name || user.last_name)
+                          ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
+                          : user.username}
                     </span>
                     {unreadCount > 0 && (
                       <span className="h-2 w-2 rounded-full bg-primary shrink-0" />
@@ -91,7 +95,11 @@ export function NavUser({
                 <div className="grid flex-1 text-left text-sm leading-tight overflow-hidden">
                   <div className="flex items-center gap-2">
                     <span className="truncate font-semibold">
-                      {user.role === 'COMPANY' ? (user.name || user.username) : user.username}
+                      {user.role === 'COMPANY'
+                        ? (user.name || user.username)
+                        : user.role === 'STUDENT' && (user.first_name || user.last_name)
+                          ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
+                          : user.username}
                     </span>
                     {unreadCount > 0 && (
                       <span className="h-2 w-2 rounded-full bg-primary shrink-0" />

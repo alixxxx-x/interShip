@@ -139,26 +139,17 @@ class MessageCreateView(generics.CreateAPIView):
     def perform_create(self, serializer):
         serializer.save(sender=self.request.user)
 
-class ChangePasswordView(generics.UpdateAPIView):
-    queryset = User.objects.all()
+class ChangePasswordView(generics.GenericAPIView):
     serializer_class = ChangePasswordSerializer
     permission_classes = [IsAuthenticated]
 
-    def get_object(self):
-        return self.request.user
-
-    def update(self, request, *args, **kwargs):
-        self.object = self.get_object()
+    def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
-
         if serializer.is_valid():
-            if not self.object.check_password(serializer.data.get("old_password")):
-                return Response({"old_password": ["Wrong password."]}, status=status.HTTP_400_BAD_REQUEST)
-            
-            self.object.set_password(serializer.data.get("new_password"))
-            self.object.save()
-            return Response({"status": "success", "message": "Password updated successfully"}, status=status.HTTP_200_OK)
-
+            user = request.user
+            user.set_password(serializer.validated_data['new_password'])
+            user.save()
+            return Response({"message": "Password updated successfully"}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # internship views
@@ -295,6 +286,15 @@ class ApplicationUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
         
         # Notify candidate on status change (The model now handles the internship status)
         if old_status != application.status:
+            # First, remove any previous status notifications for this specific application to avoid duplicates
+            Notification.objects.filter(
+                application=application,
+                notification_type__in=[
+                    Notification.NotificationType.APPLICATION_ACCEPTED,
+                    Notification.NotificationType.APPLICATION_REJECTED
+                ]
+            ).delete()
+
             if application.status == Application.Status.ACCEPTED:
                 Notification.objects.create(
                     recipient=application.student,
@@ -556,8 +556,8 @@ class CompanyDashboardView(generics.GenericAPIView):
 
             # Try to get CV pdf URL
             cv_url = None
-            if hasattr(student, 'digital_cv') and student.digital_cv and student.digital_cv.cv_pdf:
-                cv_url = request.build_absolute_uri(student.digital_cv.cv_pdf.url)
+            if hasattr(student, 'digital_cv') and student.digital_cv and student.digital_cv.cv_file:
+                cv_url = request.build_absolute_uri(student.digital_cv.cv_file.url)
 
             recent_apps_data.append({
                 "id": app.id,
@@ -617,6 +617,13 @@ class NotificationMarkAllReadView(generics.GenericAPIView):
 
     def patch(self, request, *args, **kwargs):
         Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
+        return Response({"status": "ok"})
+
+class NotificationClearAllView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, *args, **kwargs):
+        Notification.objects.filter(recipient=request.user).delete()
         return Response({"status": "ok"})
 
 # Admin Views

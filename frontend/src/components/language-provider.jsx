@@ -21,6 +21,9 @@ const translations = {
     emailAddress: "Email Address",
     firstName: "First Name",
     lastName: "Last Name",
+    phoneNumber: "Phone Number",
+    universityID: "University ID",
+    wilaya: "Wilaya",
     updateProfile: "Update Profile",
     // Company Profile Fields
     companyName: "Company Name",
@@ -463,6 +466,9 @@ const translations = {
     emailAddress: "Adresse e-mail",
     firstName: "Prénom",
     lastName: "Nom de famille",
+    phoneNumber: "Numéro de téléphone",
+    universityID: "ID Universitaire",
+    wilaya: "Wilaya",
     updateProfile: "Mettre à jour le profil",
     // Company Profile Fields
     companyName: "Nom de l'entreprise",
@@ -896,6 +902,9 @@ const translations = {
     emailAddress: "البريد الإلكتروني",
     firstName: "الاسم الأول",
     lastName: "اسم العائلة",
+    phoneNumber: "رقم الهاتف",
+    universityID: "رقم الطالب",
+    wilaya: "الولاية",
     updateProfile: "تحديث الملف الشخصي",
     // Company Profile Fields
     companyName: "اسم الشركة",

@@ -26,6 +26,7 @@ export default function Navbar({ children }) {
     const [menuOpen, setMenuOpen] = useState(false);
     const [userInfo, setUserInfo] = useState(null);
     const [showNotifications, setShowNotifications] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
     const navigate = useNavigate();
     const location = useLocation();
     const { theme, setTheme } = useTheme();
@@ -63,8 +64,32 @@ export default function Navbar({ children }) {
                 setUserInfo(null);
             }
         };
+        const fetchUnreadCount = async () => {
+            try {
+                const token = localStorage.getItem(ACCESS_TOKEN);
+                if (token) {
+                    const res = await api.get('/notifications/');
+                    setUnreadCount(res.data.unreadCount || 0);
+                }
+            } catch (error) {
+                console.error("Failed to fetch unread count:", error);
+            }
+        };
+
         fetchProfile();
+        fetchUnreadCount();
     }, [location.pathname]);
+
+    // Listen for real-time notification updates
+    useEffect(() => {
+        const handleUpdate = (event) => {
+            if (event.detail && typeof event.detail.unreadCount === 'number') {
+                setUnreadCount(event.detail.unreadCount);
+            }
+        };
+        window.addEventListener('notificationsUpdated', handleUpdate);
+        return () => window.removeEventListener('notificationsUpdated', handleUpdate);
+    }, []);
 
     const handleLogout = () => {
         localStorage.clear();
@@ -129,15 +154,24 @@ export default function Navbar({ children }) {
                         {userInfo ? (
                             <DropdownMenu>
                                 <DropdownMenuTrigger className="relative h-10 w-auto flex items-center gap-2.5 pl-1 pr-3.5 hover:bg-accent rounded-full group transition-all duration-200 outline-none border border-transparent hover:border-border bg-transparent">
-                                    <Avatar className="h-8 w-8 border border-border shadow-sm ring-1 ring-border group-hover:ring-primary/20 transition-all shrink-0">
-                                        <AvatarImage src={userInfo.profile_picture} alt={userInfo.username} className="object-cover" />
-                                        <AvatarFallback className="bg-primary text-white text-[10px] font-medium uppercase">
-                                            {userInfo.username?.charAt(0).toUpperCase() || 'A'}
-                                        </AvatarFallback>
-                                    </Avatar>
+                                    <div className="relative">
+                                        <Avatar className="h-8 w-8 border border-border shadow-sm ring-1 ring-border group-hover:ring-primary/20 transition-all shrink-0">
+                                            <AvatarImage src={userInfo.profile_picture} alt={userInfo.username} className="object-cover" />
+                                            <AvatarFallback className="bg-primary text-white text-[10px] font-medium uppercase">
+                                                {userInfo.username?.charAt(0).toUpperCase() || 'A'}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        {unreadCount > 0 && (
+                                            <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-primary rounded-full border-2 border-background"></span>
+                                        )}
+                                    </div>
                                     <div className="text-left hidden lg:block pr-1 overflow-hidden">
                                         <p className="text-xs font-semibold text-slate-900 leading-none mb-1 truncate">
-                                            {userInfo.role === 'COMPANY' ? (userInfo.name || userInfo.username) : userInfo.username}
+                                            {userInfo.role === 'COMPANY'
+                                                ? (userInfo.name || userInfo.username)
+                                                : userInfo.role === 'STUDENT' && (userInfo.first_name || userInfo.last_name)
+                                                    ? `${userInfo.first_name || ''} ${userInfo.last_name || ''}`.trim()
+                                                    : userInfo.username}
                                         </p>
                                         <p className="text-[10px] text-primary font-medium">
                                             {userInfo.role === 'COMPANY' ? t('company') : t(userInfo.role?.toLowerCase()) || userInfo.role}
@@ -148,7 +182,11 @@ export default function Navbar({ children }) {
                                 <DropdownMenuContent className="w-56 mt-2 rounded-2xl p-2 shadow-2xl border border-border bg-popover text-popover-foreground" align="end">
                                     <div className="font-normal px-3 py-3">
                                         <div className="flex flex-col space-y-1">
-                                            <p className="text-sm font-bold text-foreground leading-none">{userInfo.username}</p>
+                                            <p className="text-sm font-bold text-foreground leading-none">
+                                                {userInfo.role === 'STUDENT' && (userInfo.first_name || userInfo.last_name)
+                                                    ? `${userInfo.first_name || ''} ${userInfo.last_name || ''}`.trim()
+                                                    : userInfo.username}
+                                            </p>
                                             <p className="text-xs text-muted-foreground truncate">{userInfo.email}</p>
                                         </div>
                                     </div>
@@ -162,8 +200,15 @@ export default function Navbar({ children }) {
                                         {t("navProfile")}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => setShowNotifications(true)} className="cursor-pointer font-medium text-sm text-slate-700 dark:text-slate-200 p-2.5 rounded-xl flex items-center hover:bg-accent transition-colors w-full">
-                                        <Bell className="mr-3 h-4 w-4 text-primary" />
-                                        {t("navNotifications")}
+                                        <div className="flex items-center flex-1">
+                                            <Bell className="mr-3 h-4 w-4 text-primary" />
+                                            {t("navNotifications")}
+                                        </div>
+                                        {unreadCount > 0 && (
+                                            <span className="w-5 h-5 bg-primary/10 text-primary text-[10px] flex items-center justify-center rounded-full font-bold">
+                                                {unreadCount}
+                                            </span>
+                                        )}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => navigate('/settings')} className="cursor-pointer font-medium text-sm text-slate-700 dark:text-slate-200 p-2.5 rounded-xl flex items-center hover:bg-accent transition-colors w-full">
                                         <Settings className="mr-3 h-4 w-4 text-primary" />
@@ -228,7 +273,11 @@ export default function Navbar({ children }) {
                                         <AvatarFallback className="bg-primary text-white font-medium">{userInfo.username?.charAt(0).toUpperCase() || 'A'}</AvatarFallback>
                                     </Avatar>
                                     <div>
-                                        <p className="text-sm font-semibold text-slate-900">{userInfo.username}</p>
+                                        <p className="text-sm font-semibold text-slate-900">
+                                            {userInfo.role === 'STUDENT' && (userInfo.first_name || userInfo.last_name)
+                                                ? `${userInfo.first_name || ''} ${userInfo.last_name || ''}`.trim()
+                                                : userInfo.username}
+                                        </p>
                                         <p className="text-xs text-primary font-medium">{userInfo.role?.replace('_', ' ')}</p>
                                     </div>
                                 </div>

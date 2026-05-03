@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Bell, BellOff, CheckCheck, User, Briefcase } from "lucide-react";
+import { Bell, BellOff, CheckCheck, User, Briefcase, Trash2 } from "lucide-react";
 import api from "@/api/api";
 
 export default function Notifications() {
@@ -30,6 +30,13 @@ export default function Notifications() {
     fetchNotifications();
   }, []);
 
+  // Sync unreadCount with Sidebar via custom event
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('notificationsUpdated', { 
+      detail: { unreadCount } 
+    }));
+  }, [unreadCount]);
+
   const markAsRead = async (id) => {
     try {
       await api.patch(`/notifications/${id}/read/`);
@@ -49,6 +56,16 @@ export default function Notifications() {
       setUnreadCount(0);
     } catch (err) {
       console.error("Failed to mark all as read:", err);
+    }
+  };
+
+  const clearAllNotifications = async () => {
+    try {
+      await api.delete("/notifications/clear-all/");
+      setNotifications([]);
+      setUnreadCount(0);
+    } catch (err) {
+      console.error("Failed to clear all notifications:", err);
     }
   };
 
@@ -118,17 +135,30 @@ export default function Notifications() {
           </p>
         </div>
 
-        {unreadCount > 0 && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={markAllAsRead}
-            className="flex items-center gap-2"
-          >
-            <CheckCheck className="h-4 w-4" />
-            Mark all as read
-          </Button>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {unreadCount > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={markAllAsRead}
+              className="flex items-center gap-2 h-9 text-primary hover:text-primary hover:bg-primary/5 border-primary/20"
+            >
+              <CheckCheck className="h-4 w-4" />
+              Mark all as read
+            </Button>
+          )}
+          {notifications.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearAllNotifications}
+              className="flex items-center gap-2 h-9 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-100"
+            >
+              <Trash2 className="h-4 w-4" />
+              Clear all
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Notifications List */}

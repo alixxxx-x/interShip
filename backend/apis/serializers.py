@@ -18,12 +18,13 @@ class UserSerializer(serializers.ModelSerializer):
     company_field = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
     founded_year = serializers.IntegerField(required=False, write_only=True, allow_null=True)
     department = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
+    major = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
 
     class Meta:
         model = User
         fields = [
             'id', 'username', 'email', 'role', 'profile_picture', 'password',
-            'first_name', 'last_name', 'is_active', 'university_id', 'wilaya', 'phone',
+            'first_name', 'last_name', 'is_active', 'university_id', 'wilaya', 'phone', 'major',
             'name', 'logo', 'description', 'location', 'website', 'company_field', 'founded_year', 'department'
         ]
         read_only_fields = ['id']
@@ -49,7 +50,7 @@ class UserSerializer(serializers.ModelSerializer):
         
         # Add role-specific profile fields to the output
         profile_map = {
-            User.Role.STUDENT: ('student', ['university_id', 'wilaya', 'phone']),
+            User.Role.STUDENT: ('student', ['university_id', 'wilaya', 'phone', 'major']),
             User.Role.COMPANY: ('company', ['name', 'logo', 'description', 'location', 'website', 'company_field', 'founded_year']),
             User.Role.ADMIN: ('administrator', ['department']),
         }
@@ -75,7 +76,7 @@ class UserSerializer(serializers.ModelSerializer):
                     # Multi-table inheritance: instance is a User, but getattr(instance, 'student') returns the Student profile
                     student = getattr(instance, 'student', None)
                     if student:
-                        data['has_cv'] = hasattr(student, 'digital_cv') and bool(student.digital_cv.cv_file)
+                        data['has_cv'] = hasattr(student, 'digital_cv')
                     else:
                         data['has_cv'] = False
                     
@@ -129,6 +130,8 @@ class UserSerializer(serializers.ModelSerializer):
                 student.wilaya = validated_data.get('wilaya')
             if 'phone' in validated_data:
                 student.phone = validated_data.get('phone')
+            if 'major' in validated_data:
+                student.major = validated_data.get('major')
             student.save()
             
         elif instance.role == User.Role.COMPANY and hasattr(instance, 'company'):
@@ -334,10 +337,10 @@ class ApplicationSerializer(serializers.ModelSerializer):
     def get_cv(self, obj):
         request = self.context.get('request')
         student = obj.student
-        if hasattr(student, 'digital_cv') and student.digital_cv and student.digital_cv.cv_pdf:
+        if hasattr(student, 'digital_cv') and student.digital_cv and student.digital_cv.cv_file:
             if request:
-                return request.build_absolute_uri(student.digital_cv.cv_pdf.url)
-            return student.digital_cv.cv_pdf.url
+                return request.build_absolute_uri(student.digital_cv.cv_file.url)
+            return student.digital_cv.cv_file.url
         return None
 
     def create(self, validated_data):
@@ -378,7 +381,7 @@ class ApplicationSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("This internship has reached its maximum number of accepted interns.")
             
             # 5. Check if student has a CV
-            has_cv = hasattr(student, 'digital_cv') and bool(student.digital_cv.cv_file)
+            has_cv = hasattr(student, 'digital_cv')
             if not has_cv:
                 raise serializers.ValidationError("You must upload a CV (PDF) to your profile before applying.")
         

@@ -37,7 +37,11 @@ export default function Settings() {
     location: "",
     website: "",
     company_field: "",
-    founded_year: ""
+    founded_year: "",
+    university_id: "",
+    wilaya: "",
+    phone: "",
+    major: ""
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -63,6 +67,10 @@ export default function Settings() {
           website: res.data.website || "",
           company_field: res.data.company_field || "",
           founded_year: res.data.founded_year || "",
+          university_id: res.data.university_id || "",
+          wilaya: res.data.wilaya || "",
+          phone: res.data.phone || "",
+          major: res.data.major || "",
         });
       } catch (error) {
         console.error("Failed to fetch profile:", error);
@@ -97,9 +105,12 @@ export default function Settings() {
         formData.append("company_field", profileData.company_field);
         formData.append("founded_year", profileData.founded_year);
       } else {
-        formData.append("username", profileData.username);
         formData.append("first_name", profileData.first_name);
         formData.append("last_name", profileData.last_name);
+        formData.append("university_id", profileData.university_id);
+        formData.append("wilaya", profileData.wilaya);
+        formData.append("phone", profileData.phone);
+        formData.append("major", profileData.major);
       }
 
       if (selectedFile) {
@@ -342,19 +353,6 @@ export default function Settings() {
                     ) : (
                       <>
                         <div className="space-y-2">
-                          <Label htmlFor="username">{t("username")}</Label>
-                          <Input
-                            id="username"
-                            value={profileData.username}
-                            onChange={(e) => setProfileData({ ...profileData, username: e.target.value })}
-                            className="bg-background/50"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="email">{t("emailAddress")}</Label>
-                          <Input id="email" value={profileData.email} disabled className="bg-muted/50 cursor-not-allowed" />
-                        </div>
-                        <div className="space-y-2">
                           <Label htmlFor="firstName">{t("firstName")}</Label>
                           <Input
                             id="firstName"
@@ -370,6 +368,48 @@ export default function Settings() {
                             value={profileData.last_name}
                             onChange={(e) => setProfileData({ ...profileData, last_name: e.target.value })}
                             className="bg-background/50"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="email">{t("emailAddress")}</Label>
+                          <Input id="email" value={profileData.email} disabled className="bg-muted/50 cursor-not-allowed" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="phone">{t("phoneNumber")}</Label>
+                          <Input
+                            id="phone"
+                            value={profileData.phone}
+                            onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                            className="bg-background/50"
+                            placeholder="05 / 06 / 07 ..."
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="wilaya">{t("wilaya")}</Label>
+                          <Input
+                            id="wilaya"
+                            value={profileData.wilaya}
+                            onChange={(e) => setProfileData({ ...profileData, wilaya: e.target.value })}
+                            className="bg-background/50"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="universityID">{t("universityID")}</Label>
+                          <Input
+                            id="universityID"
+                            value={profileData.university_id}
+                            onChange={(e) => setProfileData({ ...profileData, university_id: e.target.value })}
+                            className="bg-background/50"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="major">{t("majorField")}</Label>
+                          <Input
+                            id="major"
+                            value={profileData.major}
+                            onChange={(e) => setProfileData({ ...profileData, major: e.target.value })}
+                            className="bg-background/50"
+                            placeholder="Computer Science, Finance, etc."
                           />
                         </div>
                       </>

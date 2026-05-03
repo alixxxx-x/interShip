@@ -49,6 +49,7 @@ urlpatterns = [
     path('notifications/', NotificationListView.as_view(), name='notification-list'),
     path('notifications/<int:pk>/read/', NotificationMarkReadView.as_view(), name='notification-read'),
     path('notifications/read-all/', NotificationMarkAllReadView.as_view(), name='notification-read-all'),
+    path('notifications/clear-all/', NotificationClearAllView.as_view(), name='notification-clear-all'),
 
     # Admin Dashboard Functionalities
     path('admin/dashboard/stats/', AdminStatsView.as_view(), name='admin-stats'),

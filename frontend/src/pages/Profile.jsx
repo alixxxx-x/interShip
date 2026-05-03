@@ -88,7 +88,11 @@ export default function Profile() {
                         </Avatar>
                         <div className="text-center md:text-left flex-grow">
                             <h1 className="text-3xl font-bold text-slate-900 mb-2">
-                                {profile.role === 'COMPANY' ? (profile.company?.name || profile.username) : profile.username}
+                                {profile.role === 'COMPANY'
+                                    ? (profile.name || profile.username)
+                                    : (profile.first_name || profile.last_name)
+                                        ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim()
+                                        : profile.username}
                             </h1>
                             <div className="flex flex-wrap justify-center md:justify-start gap-3 items-center">
                                 <Badge className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-md font-medium text-xs px-3 py-1">
@@ -229,10 +233,28 @@ export default function Profile() {
                                     <>
                                         <div className="space-y-2">
                                             <span className="text-[11px] font-bold text-primary tracking-wider uppercase flex items-center gap-2">
-                                                <Building className="w-3.5 h-3.5" /> {t("institution")}
+                                                <Building className="w-3.5 h-3.5" /> {t("universityID")}
                                             </span>
                                             <div className="text-slate-800 font-semibold text-[15px] pt-1 ml-2">
-                                                {profile.institution || <span className="text-slate-400 italic font-medium">{t("notSpecified")}</span>}
+                                                {profile.university_id || <span className="text-slate-400 italic font-medium">{t("notSpecified")}</span>}
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <span className="text-[11px] font-bold text-primary tracking-wider uppercase flex items-center gap-2">
+                                                <Globe className="w-3.5 h-3.5" /> {t("wilaya")}
+                                            </span>
+                                            <div className="text-slate-800 font-semibold text-[15px] pt-1 ml-2">
+                                                {profile.wilaya || <span className="text-slate-400 italic font-medium">{t("notSpecified")}</span>}
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <span className="text-[11px] font-bold text-primary tracking-wider uppercase flex items-center gap-2">
+                                                <Mail className="w-3.5 h-3.5" /> {t("emailAddress")}
+                                            </span>
+                                            <div className="text-slate-800 font-semibold text-[15px] pt-1 ml-2">
+                                                {profile.email}
                                             </div>
                                         </div>
 
@@ -241,25 +263,7 @@ export default function Profile() {
                                                 <GraduationCap className="w-3.5 h-3.5" /> {t("majorField")}
                                             </span>
                                             <div className="text-slate-800 font-semibold text-[15px] pt-1 ml-2">
-                                                {profile.research_domain || <span className="text-slate-400 italic font-medium">{t("undeclared")}</span>}
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <span className="text-[11px] font-bold text-primary tracking-wider uppercase flex items-center gap-2">
-                                                <Globe className="w-3.5 h-3.5" /> {t("operationsRegion")}
-                                            </span>
-                                            <div className="text-slate-800 font-semibold text-[15px] pt-1 ml-2">
-                                                {profile.country || "Algiers, Algeria"}
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <span className="text-[11px] font-bold text-primary tracking-wider uppercase flex items-center gap-2">
-                                                <Award className="w-3.5 h-3.5" /> {t("experienceLevel")}
-                                            </span>
-                                            <div className="text-slate-800 font-semibold text-[15px] pt-1 ml-2">
-                                                {profile.role === 'company' ? t("verifiedEnterprise") : t("aspiringProfessional")}
+                                                {profile.major || <span className="text-slate-400 italic font-medium">{t("notSpecified")}</span>}
                                             </div>
                                         </div>
                                     </>
