@@ -11,6 +11,8 @@ import {
   FileText,
   Bell,
   AlertCircle,
+  CheckCircle,
+  MessageSquare,
 } from "lucide-react"
 
 import { NavMain } from "@/components/layout/nav-main"
@@ -176,6 +178,54 @@ export function AppSidebar({ ...props }) {
         ],
       },
       ]
+    } else if (userInfo?.role === "ADMIN") {
+        baseItems = [
+          {
+            title: "Dashboard",
+            url: "/admindashboard",
+            icon: LayoutDashboard,
+            isActive: location.pathname === "/admindashboard",
+            items: [
+              {
+                title: "Overview",
+                url: "/admindashboard",
+              },
+              {
+                title: "Analytics",
+                url: "/admindashboard/analytics",
+              },
+            ],
+          },
+          {
+            title: "User Management",
+            url: "/admindashboard/users",
+            icon: Users,
+            isActive: location.pathname.startsWith("/admindashboard/users"),
+          },
+          {
+            title: "Companies",
+            url: "/admindashboard/companies",
+            icon: SquareTerminal,
+            isActive: location.pathname.startsWith("/admindashboard/companies"),
+          },
+          {
+            title: "Validations",
+            url: "/admindashboard/validations",
+            icon: CheckCircle,
+            isActive: location.pathname.startsWith("/admindashboard/validations"),
+          },
+          {
+            title: "Messages",
+            url: "/admindashboard/messages",
+            icon: MessageSquare,
+            isActive: location.pathname.startsWith("/admindashboard/messages"),
+          },
+          {
+            title: "Settings",
+            url: "/settings",
+            icon: Settings2,
+          },
+        ]
     } else {
       baseItems = data.navMain.map(item => {
         const newItem = item.title === "Notifications" ? { ...item, badge: unreadCount > 0 } : item

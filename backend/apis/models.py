@@ -102,6 +102,8 @@ class Application(models.Model):
     internship = models.ForeignKey(InternshipOffer, on_delete=models.CASCADE)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     application_date = models.DateField(auto_now_add=True)
+    is_validated_by_admin = models.BooleanField(default=False)
+    admin_validation_date = models.DateTimeField(null=True, blank=True)
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
@@ -116,10 +118,11 @@ class Application(models.Model):
         if not internship:
             internship = self.internship
         
-        # Count only accepted applications
+        # Count only accepted AND admin-validated applications
         accepted_count = self.__class__.objects.filter(
             internship_id=internship.id,
-            status='ACCEPTED'
+            status='ACCEPTED',
+            is_validated_by_admin=True
         ).count()
         
         # If accepted count reaches the limit, close internship and reject the rest
@@ -201,6 +204,7 @@ class Notification(models.Model):
         NEW_APPLICATION = 'NEW_APPLICATION', 'New Application'
         APPLICATION_ACCEPTED = 'APPLICATION_ACCEPTED', 'Application Accepted'
         APPLICATION_REJECTED = 'APPLICATION_REJECTED', 'Application Rejected'
+        VALIDATION_REQUIRED = 'VALIDATION_REQUIRED', 'Validation Required'
 
     recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
     notification_type = models.CharField(max_length=30, choices=NotificationType.choices)
@@ -214,3 +218,16 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"Notification for {self.recipient.email}: {self.message[:50]}"
+
+class Message(models.Model):
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
+    recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_messages')
+    content = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"From {self.sender.email} to {self.recipient.email} at {self.created_at}"

@@ -101,6 +101,44 @@ class UserListView(generics.ListAPIView):
     search_fields = ['username', 'email']
     ordering_fields = ['id', 'username']
 
+class UserAdminUpdateView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [IsAdmin]
+    ordering_fields = ['id', 'username']
+
+class CompanyListView(generics.ListAPIView):
+    queryset = Company.objects.filter(role=User.Role.COMPANY)
+    serializer_class = CompanySerializer
+    permission_classes = [IsAuthenticated] # Allow all authenticated users to see companies
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['name', 'location', 'company_field']
+
+class MessageListView(generics.ListAPIView):
+    serializer_class = MessageSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        recipient_id = self.request.query_params.get('recipient_id')
+        if recipient_id:
+            # Get conversation between user and recipient
+            messages = Message.objects.filter(
+                (Q(sender=user) & Q(recipient_id=recipient_id)) |
+                (Q(sender_id=recipient_id) & Q(recipient=user))
+            )
+            # Mark received messages as read
+            messages.filter(recipient=user).update(is_read=True)
+            return messages
+        return Message.objects.filter(Q(sender=user) | Q(recipient=user))
+
+class MessageCreateView(generics.CreateAPIView):
+    serializer_class = MessageSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(sender=self.request.user)
+
 class ChangePasswordView(generics.UpdateAPIView):
     queryset = User.objects.all()
     serializer_class = ChangePasswordSerializer
@@ -264,6 +302,16 @@ class ApplicationUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
                     message=f"Your application for '{application.internship.title}' has been accepted!",
                     application=application
                 )
+                
+                # Notify all Admins that validation is required
+                admins = User.objects.filter(role=User.Role.ADMIN)
+                for admin in admins:
+                    Notification.objects.create(
+                        recipient=admin,
+                        notification_type=Notification.NotificationType.VALIDATION_REQUIRED,
+                        message=f"New internship validation required: {application.student.get_full_name()} at {application.internship.company.name}",
+                        application=application
+                    )
             elif application.status == Application.Status.REJECTED:
                 Notification.objects.create(
                     recipient=application.student,
@@ -570,3 +618,165 @@ class NotificationMarkAllReadView(generics.GenericAPIView):
     def patch(self, request, *args, **kwargs):
         Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
         return Response({"status": "ok"})
+
+# Admin Views
+class AdminPendingValidationsView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+    serializer_class = ApplicationSerializer
+
+    def get_queryset(self):
+        return Application.objects.filter(
+            status=Application.Status.ACCEPTED,
+            is_validated_by_admin=False
+        )
+
+class AdminValidateApplicationView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def post(self, request, pk):
+        application = get_object_or_404(Application, pk=pk, status=Application.Status.ACCEPTED)
+        application.is_validated_by_admin = True
+        application.admin_validation_date = timezone.now()
+        application.save()
+        
+        # Notify student
+        Notification.objects.create(
+            recipient=application.student,
+            notification_type=Notification.NotificationType.APPLICATION_ACCEPTED,
+            message=f"Your internship at {application.internship.company.name} has been validated by the administration! You can now download your agreement.",
+            application=application
+        )
+
+        # Notify company
+        Notification.objects.create(
+            recipient=application.internship.company,
+            notification_type=Notification.NotificationType.APPLICATION_ACCEPTED,
+            message=f"The internship for {application.student.first_name} {application.student.last_name} has been validated by the administration.",
+            application=application
+        )
+        
+        return Response({"status": "validated"})
+
+class AdminStatsView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get(self, request):
+        # Use User model to count by role to be more reliable
+        total_students = User.objects.filter(role=User.Role.STUDENT).count()
+        placed_students = Application.objects.filter(
+            status=Application.Status.ACCEPTED,
+            is_validated_by_admin=True
+        ).values('student').distinct().count()
+        
+        unplaced_students = total_students - placed_students
+        
+        # Prepare chart data with proper month names
+        import calendar
+        month_counts = Application.objects.filter(
+            application_date__year=timezone.now().year
+        ).values('application_date__month').annotate(count=Count('id')).order_by('application_date__month')
+
+        apps_by_month = []
+        for m in month_counts:
+            month_idx = m['application_date__month']
+            apps_by_month.append({
+                "month": calendar.month_name[month_idx][:3],
+                "count": m['count']
+            })
+
+        # Fill in missing months if needed for a better chart
+        all_months = [calendar.month_name[i][:3] for i in range(1, 13)]
+        final_chart_data = []
+        for month in all_months:
+            match = next((item for item in apps_by_month if item["month"] == month), None)
+            final_chart_data.append(match if match else {"month": month, "count": 0})
+
+        return Response({
+            "total_students": total_students,
+            "placed_students": placed_students,
+            "unplaced_students": unplaced_students,
+            "placement_rate": (placed_students / total_students * 100) if total_students > 0 else 0,
+            "apps_by_month": final_chart_data
+        })
+
+from io import BytesIO
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table as RLTable, TableStyle
+
+class GenerateInternshipAgreementView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        application = get_object_or_404(Application, pk=pk)
+        
+        # Check permissions: Student, Company, or Admin
+        if not (request.user.role == User.Role.ADMIN or 
+                request.user.id == application.student.id or 
+                request.user.id == application.internship.company.id):
+            raise PermissionDenied("You do not have permission to view this document.")
+
+        if not application.is_validated_by_admin:
+            return Response({"error": "This internship has not been validated by the administration yet."}, status=400)
+
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4)
+        styles = getSampleStyleSheet()
+        elements = []
+
+        # Title
+        elements.append(Paragraph("CONVENTION DE STAGE", styles['Title']))
+        elements.append(Spacer(1, 20))
+
+        # Participants
+        student = application.student
+        student_name = f"{student.first_name} {student.last_name}".strip()
+        if not student_name:
+            student_name = student.username or student.email
+
+        data = [
+            ["STUDENT:", student_name],
+            ["COMPANY:", application.internship.company.name],
+            ["INTERNSHIP:", application.internship.title],
+            ["DURATION:", f"{application.internship.internship_duration}"],
+            ["START DATE:", f"{application.internship.offer_start_date}"],
+            ["VALIDATED ON:", f"{application.admin_validation_date.strftime('%Y-%m-%d')}"],
+        ]
+        
+        t = RLTable(data, colWidths=[150, 300])
+        t.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
+            ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ]))
+        elements.append(t)
+        elements.append(Spacer(1, 40))
+
+        # Terms
+        terms = """
+        This agreement defines the relationship between the student, the host company, and the university.
+        The student commits to following the company's internal rules and completing the assigned tasks.
+        The company commits to providing a learning environment and supervising the student.
+        """
+        elements.append(Paragraph("Terms and Conditions", styles['Heading2']))
+        elements.append(Paragraph(terms, styles['Normal']))
+        elements.append(Spacer(1, 60))
+
+        # Signatures
+        sig_data = [
+            ["Student Signature", "Company Signature", "University Signature"],
+            ["\n\n\n________________", "\n\n\n________________", "\n\n\n________________"]
+        ]
+        sig_table = RLTable(sig_data, colWidths=[160, 160, 160])
+        elements.append(sig_table)
+
+        doc.build(elements)
+        buffer.seek(0)
+        
+        return FileResponse(buffer, as_attachment=True, filename=f"agreement_{application.id}.pdf")

@@ -22,7 +22,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'id', 'username', 'email', 'role', 'profile_picture', 'password',
-            'first_name', 'last_name', 'university_id', 'wilaya', 'phone',
+            'first_name', 'last_name', 'is_active', 'university_id', 'wilaya', 'phone',
             'name', 'logo', 'description', 'location', 'website', 'company_field', 'department'
         ]
         read_only_fields = ['id']
@@ -108,6 +108,19 @@ class ChangePasswordSerializer(serializers.Serializer):
             raise serializers.ValidationError("Old password is not correct")
         return value
 
+class CompanySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Company
+        fields = ['id', 'email', 'name', 'logo', 'description', 'location', 'website', 'company_field', 'is_active']
+        read_only_fields = ['id']
+
+class MessageSerializer(serializers.ModelSerializer):
+    sender_email = serializers.EmailField(source='sender.email', read_only=True)
+    class Meta:
+        model = Message
+        fields = ['id', 'sender', 'sender_email', 'recipient', 'content', 'is_read', 'created_at']
+        read_only_fields = ['id', 'sender', 'created_at']
+
 # internship serializers
 
 class InternshipSerializer(serializers.ModelSerializer):
@@ -142,7 +155,7 @@ class InternshipSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'internship_duration', 'company']
 
     def get_accepted_count(self, obj):
-        return obj.application_set.filter(status='ACCEPTED').count()
+        return obj.application_set.filter(status='ACCEPTED', is_validated_by_admin=True).count()
 
     def create(self, validated_data):
         # Map frontend fields to backend fields
@@ -195,13 +208,22 @@ class InternshipSerializer(serializers.ModelSerializer):
 class ApplicationSerializer(serializers.ModelSerializer):
     candidate = serializers.SerializerMethodField()
     offer = serializers.CharField(source='internship.title', read_only=True)
+    company_name = serializers.CharField(source='internship.company.name', read_only=True)
     email = serializers.EmailField(source='student.email', read_only=True)
     cv = serializers.SerializerMethodField()
 
     class Meta:
         model = Application
-        fields = ['id', 'student', 'internship', 'status', 'application_date', 'candidate', 'offer', 'email', 'cv']
-        read_only_fields = ['id', 'student', 'internship', 'application_date', 'candidate', 'offer', 'email', 'cv']
+        fields = [
+            'id', 'student', 'internship', 'status', 'application_date', 
+            'candidate', 'offer', 'company_name', 'email', 'cv', 
+            'is_validated_by_admin', 'admin_validation_date'
+        ]
+        read_only_fields = [
+            'id', 'student', 'internship', 'application_date', 
+            'candidate', 'offer', 'company_name', 'email', 'cv',
+            'is_validated_by_admin', 'admin_validation_date'
+        ]
 
     def get_candidate(self, obj):
         student = obj.student
