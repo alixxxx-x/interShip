@@ -29,6 +29,7 @@ import {
   GraduationCap,
   Code2,
   Globe,
+  MapPin,
 } from "lucide-react";
 import api from "@/api/api";
 import { useToast } from "@/components/ui/custom-toast";
@@ -59,7 +60,7 @@ export default function CreateCvModal({
       image: null,
       phone_number: "",
       email: "",
-      address: "",
+      wilaya: "",
       github_link: "",
       portfolio_link: "",
       education: "",
@@ -125,6 +126,7 @@ export default function CreateCvModal({
             first_name: prev.first_name || res.data.first_name || "",
             last_name: prev.last_name || res.data.last_name || "",
             email: res.data.email || "",
+            wilaya: prev.wilaya || res.data.wilaya || "",
           }));
         } catch (error) {
           console.error("Failed to fetch profile for CV pre-fill:", error);
@@ -149,7 +151,7 @@ export default function CreateCvModal({
       last_name: initialCv.last_name || "",
       phone_number: initialCv.phone_number || "",
       email: initialCv.email || "",
-      address: initialCv.address || "",
+      wilaya: initialCv.wilaya || "",
       github_link: initialCv.github_link || "",
       portfolio_link: initialCv.portfolio_link || "",
       education: initialCv.education || "",
@@ -441,15 +443,15 @@ export default function CreateCvModal({
         </div>
 
         <div className="grid gap-2 py-2">
-          <Label htmlFor="address" className="flex items-center gap-2">
-            <House className="h-4 w-4 text-muted-foreground" />
-            Address
+          <Label htmlFor="wilaya" className="flex items-center gap-2">
+            <MapPin className="h-4 w-4 text-muted-foreground" />
+            Location
           </Label>
           <Input
-            id="address"
-            value={formData.address}
+            id="wilaya"
+            value={formData.wilaya}
             onChange={handleChange}
-            placeholder="N° 123, Street Name, City, Country"
+            placeholder="e.g. Algiers, Algeria"
             className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
             required
           />

@@ -42,6 +42,7 @@ urlpatterns = [
     # CV
     path('cv/create/', DigitalCVCreateView.as_view(), name='cv-create'),
     path('cv/', DigitalCVRetrieveUpdateView.as_view(), name='cv-detail'),
+    path('cv/generate/<int:student_id>/', GenerateCVView.as_view(), name='generate-cv'),
     path('student/dashboard/', StudentDashboardView.as_view(), name='student-dashboard'),
     path('company/dashboard/', CompanyDashboardView.as_view(), name='company-dashboard'),
 

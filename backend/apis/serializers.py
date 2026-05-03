@@ -75,10 +75,12 @@ class UserSerializer(serializers.ModelSerializer):
                 if instance.role == User.Role.STUDENT:
                     # Multi-table inheritance: instance is a User, but getattr(instance, 'student') returns the Student profile
                     student = getattr(instance, 'student', None)
-                    if student:
-                        data['has_cv'] = hasattr(student, 'digital_cv')
+                    if student and hasattr(student, 'digital_cv'):
+                        data['has_cv'] = True
+                        data['bio'] = student.digital_cv.profile_summary
                     else:
                         data['has_cv'] = False
+                        data['bio'] = None
                     
         return data
 
@@ -423,9 +425,8 @@ class DigitalCVSerializer(serializers.ModelSerializer):
     github_link = serializers.URLField(source='github', required=False, allow_blank=True, allow_null=True)
     phone_number = serializers.CharField(source='phone', required=False, allow_blank=True)
     any_experience = serializers.CharField(source='experience', required=False, allow_blank=True)
-    profile_summary = serializers.CharField(required=False, allow_blank=True, write_only=True)
-    address = serializers.CharField(required=False, allow_blank=True, write_only=True)
-    languages = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    profile_summary = serializers.CharField(required=False, allow_blank=True)
+    languages = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = DigitalCV
@@ -438,12 +439,8 @@ class DigitalCVSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'student']
 
-    # Fields that exist on frontend but not on the model - strip before saving
-    NON_MODEL_FIELDS = ['profile_summary', 'address', 'languages']
-
+    # No fields to strip anymore since they exist in the model
     def _strip_non_model_fields(self, data):
-        for field in self.NON_MODEL_FIELDS:
-            data.pop(field, None)
         return data
 
     def validate(self, attrs):
@@ -456,11 +453,26 @@ class DigitalCVSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         self._strip_non_model_fields(validated_data)
-        return super().create(validated_data)
+        instance = super().create(validated_data)
+        
+        # Sync wilaya back to student profile
+        if 'wilaya' in validated_data:
+            student = instance.student
+            student.wilaya = validated_data['wilaya']
+            student.save(update_fields=['wilaya'])
+            
+        return instance
 
     def update(self, instance, validated_data):
         self._strip_non_model_fields(validated_data)
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
+        
+        # Sync wilaya back to student profile
+        if 'wilaya' in validated_data:
+            student = instance.student
+            student.wilaya = validated_data['wilaya']
+            student.save(update_fields=['wilaya'])
+            
         return instance

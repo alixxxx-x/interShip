@@ -103,11 +103,24 @@ export default function CompanyDashboard() {
     return variants[status] || "outline";
   };
 
-  const handleDownloadCV = (application) => {
-    if (application.cvUrl) {
-      window.open(application.cvUrl, "_blank");
-    } else {
-      toast.warning(`No CV available for ${application.candidate}`);
+  const handleDownloadCV = async (application) => {
+    try {
+      // First try to dynamically generate the PDF from database info
+      const res = await api.get(`/cv/generate/${application.studentId}/`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${application.candidate.replace(/\s+/g, '_')}_CV.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+    } catch (error) {
+      // Fallback: If no digital CV data exists, check if they uploaded a raw file
+      if (application.cvUrl) {
+        window.open(application.cvUrl, "_blank");
+      } else {
+        toast.warning(`No Digital CV or uploaded file available for ${application.candidate}`);
+      }
     }
   };
 

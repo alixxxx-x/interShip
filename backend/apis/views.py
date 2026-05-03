@@ -561,6 +561,7 @@ class CompanyDashboardView(generics.GenericAPIView):
 
             recent_apps_data.append({
                 "id": app.id,
+                "studentId": student.id,
                 "candidate": candidate_name,
                 "status": status_map.get(app.status, app.status),
                 "appliedDate": app.application_date.strftime("%Y-%m-%d"),
@@ -817,7 +818,102 @@ class GenerateInternshipAgreementView(generics.GenericAPIView):
         doc.build(elements)
         buffer.seek(0)
         
-        return FileResponse(buffer, as_attachment=True, filename=f"agreement_{application.id}.pdf")
+        return FileResponse(buffer, as_attachment=True, filename=f"Convention_{application.student.first_name}.pdf")
+
+class GenerateCVView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, student_id):
+        student = get_object_or_404(Student, pk=student_id)
+        
+        user = request.user
+        if user.role == User.Role.STUDENT and user.id != student.id:
+            raise PermissionDenied("You can only download your own CV.")
+        elif user.role == User.Role.COMPANY:
+            has_applied = Application.objects.filter(student=student, internship__company_id=user.id).exists()
+            if not has_applied:
+                raise PermissionDenied("You can only download CVs of students who applied to your internships.")
+        
+        try:
+            cv = student.digital_cv
+        except Exception:
+            return Response({"error": "This student has not created a digital CV yet."}, status=404)
+
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4)
+        styles = getSampleStyleSheet()
+        elements = []
+
+        elements.append(Paragraph(f"Curriculum Vitae: {cv.first_name} {cv.last_name}", styles['Title']))
+        elements.append(Spacer(1, 20))
+
+        info_data = [
+            ["Email:", cv.email],
+            ["Phone:", cv.phone],
+            ["Location:", cv.address or cv.wilaya or "N/A"],
+            ["University ID:", cv.university_id or "N/A"],
+        ]
+        if cv.linkedin:
+            info_data.append(["LinkedIn:", cv.linkedin])
+        if cv.github:
+            info_data.append(["GitHub:", cv.github])
+        if cv.portfolio_link:
+            info_data.append(["Portfolio:", cv.portfolio_link])
+        
+        t = RLTable(info_data, colWidths=[100, 350])
+        t.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
+            ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ]))
+        elements.append(t)
+        elements.append(Spacer(1, 20))
+
+        if cv.profile_summary:
+            elements.append(Paragraph("Profile Summary", styles['Heading2']))
+            elements.append(Paragraph(cv.profile_summary.replace('\n', '<br/>'), styles['Normal']))
+            elements.append(Spacer(1, 10))
+
+        if cv.education:
+            elements.append(Paragraph("Education", styles['Heading2']))
+            elements.append(Paragraph(cv.education.replace('\n', '<br/>'), styles['Normal']))
+            elements.append(Spacer(1, 10))
+
+        if cv.experience:
+            elements.append(Paragraph("Experience", styles['Heading2']))
+            elements.append(Paragraph(cv.experience.replace('\n', '<br/>'), styles['Normal']))
+            elements.append(Spacer(1, 10))
+
+        if cv.skills:
+            elements.append(Paragraph("Skills", styles['Heading2']))
+            # skills might be a JSON array string if submitted from frontend, or just text
+            import json
+            try:
+                skills_list = json.loads(cv.skills)
+                skills_text = ", ".join(skills_list) if isinstance(skills_list, list) else cv.skills
+            except Exception:
+                skills_text = cv.skills
+            elements.append(Paragraph(skills_text.replace('\n', '<br/>'), styles['Normal']))
+            elements.append(Spacer(1, 10))
+
+        if cv.languages:
+            elements.append(Paragraph("Languages", styles['Heading2']))
+            try:
+                langs_list = json.loads(cv.languages)
+                langs_text = ", ".join(langs_list) if isinstance(langs_list, list) else cv.languages
+            except Exception:
+                langs_text = cv.languages
+            elements.append(Paragraph(langs_text.replace('\n', '<br/>'), styles['Normal']))
+            elements.append(Spacer(1, 10))
+
+        doc.build(elements)
+        buffer.seek(0)
+        return FileResponse(buffer, as_attachment=True, filename=f"{cv.first_name}_{cv.last_name}_CV.pdf")
+
 
 # forgot password and reset password
 import random
