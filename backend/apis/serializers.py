@@ -455,11 +455,20 @@ class DigitalCVSerializer(serializers.ModelSerializer):
         self._strip_non_model_fields(validated_data)
         instance = super().create(validated_data)
         
-        # Sync wilaya back to student profile
+        # Sync fields back to student profile
+        update_fields = []
+        student = instance.student
+        
         if 'wilaya' in validated_data:
-            student = instance.student
             student.wilaya = validated_data['wilaya']
-            student.save(update_fields=['wilaya'])
+            update_fields.append('wilaya')
+            
+        if 'university_id' in validated_data:
+            student.university_id = validated_data['university_id']
+            update_fields.append('university_id')
+            
+        if update_fields:
+            student.save(update_fields=update_fields)
             
         return instance
 
@@ -469,10 +478,19 @@ class DigitalCVSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
         instance.save()
         
-        # Sync wilaya back to student profile
+        # Sync fields back to student profile
+        update_fields = []
+        student = instance.student
+        
         if 'wilaya' in validated_data:
-            student = instance.student
             student.wilaya = validated_data['wilaya']
-            student.save(update_fields=['wilaya'])
+            update_fields.append('wilaya')
+            
+        if 'university_id' in validated_data:
+            student.university_id = validated_data['university_id']
+            update_fields.append('university_id')
+            
+        if update_fields:
+            student.save(update_fields=update_fields)
             
         return instance

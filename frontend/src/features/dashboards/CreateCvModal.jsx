@@ -30,6 +30,7 @@ import {
   Code2,
   Globe,
   MapPin,
+  IdCard,
 } from "lucide-react";
 import api from "@/api/api";
 import { useToast } from "@/components/ui/custom-toast";
@@ -61,6 +62,7 @@ export default function CreateCvModal({
       phone_number: "",
       email: "",
       wilaya: "",
+      university_id: "",
       github_link: "",
       portfolio_link: "",
       education: "",
@@ -127,6 +129,7 @@ export default function CreateCvModal({
             last_name: prev.last_name || res.data.last_name || "",
             email: res.data.email || "",
             wilaya: prev.wilaya || res.data.wilaya || "",
+            university_id: prev.university_id || res.data.university_id || "",
           }));
         } catch (error) {
           console.error("Failed to fetch profile for CV pre-fill:", error);
@@ -152,6 +155,7 @@ export default function CreateCvModal({
       phone_number: initialCv.phone_number || "",
       email: initialCv.email || "",
       wilaya: initialCv.wilaya || "",
+      university_id: initialCv.university_id || "",
       github_link: initialCv.github_link || "",
       portfolio_link: initialCv.portfolio_link || "",
       education: initialCv.education || "",
@@ -452,6 +456,21 @@ export default function CreateCvModal({
             value={formData.wilaya}
             onChange={handleChange}
             placeholder="e.g. Algiers, Algeria"
+            className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+            required
+          />
+        </div>
+
+        <div className="grid gap-2 py-2">
+          <Label htmlFor="university_id" className="flex items-center gap-2">
+            <IdCard className="h-4 w-4 text-muted-foreground" />
+            University ID
+          </Label>
+          <Input
+            id="university_id"
+            value={formData.university_id}
+            onChange={handleChange}
+            placeholder="e.g. 2121330..."
             className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
             required
           />

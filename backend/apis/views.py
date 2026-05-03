@@ -840,75 +840,98 @@ class GenerateCVView(generics.GenericAPIView):
             return Response({"error": "This student has not created a digital CV yet."}, status=404)
 
         buffer = BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=A4)
+        doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
+        from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+        from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
+        
         styles = getSampleStyleSheet()
+        
+        name_style = ParagraphStyle(
+            'NameStyle', 
+            parent=styles['Normal'], 
+            fontName='Helvetica-Bold', 
+            fontSize=16, 
+            alignment=TA_CENTER, 
+            spaceAfter=5
+        )
+        contact_style = ParagraphStyle(
+            'ContactStyle', 
+            parent=styles['Normal'], 
+            fontName='Helvetica', 
+            fontSize=10, 
+            alignment=TA_CENTER, 
+            spaceAfter=2
+        )
+        body_style = ParagraphStyle(
+            'BodyStyle',
+            parent=styles['Normal'],
+            fontName='Helvetica',
+            fontSize=10,
+            leading=14,
+            alignment=TA_JUSTIFY,
+            spaceAfter=10
+        )
+        
         elements = []
 
-        elements.append(Paragraph(f"Curriculum Vitae: {cv.first_name} {cv.last_name}", styles['Title']))
-        elements.append(Spacer(1, 20))
-
-        info_data = [
-            ["Email:", cv.email],
-            ["Phone:", cv.phone],
-            ["Location:", cv.address or cv.wilaya or "N/A"],
-            ["University ID:", cv.university_id or "N/A"],
-        ]
-        if cv.linkedin:
-            info_data.append(["LinkedIn:", cv.linkedin])
-        if cv.github:
-            info_data.append(["GitHub:", cv.github])
-        if cv.portfolio_link:
-            info_data.append(["Portfolio:", cv.portfolio_link])
+        # Header - Name
+        elements.append(Paragraph(f"{cv.first_name} {cv.last_name}", name_style))
         
-        t = RLTable(info_data, colWidths=[100, 350])
-        t.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
-            ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
-            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, -1), 10),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black)
-        ]))
-        elements.append(t)
-        elements.append(Spacer(1, 20))
+        # Contact Info Line 1
+        contact_parts = []
+        if cv.email: contact_parts.append(cv.email)
+        if cv.phone: contact_parts.append(cv.phone)
+        loc = cv.address or cv.wilaya
+        if loc: contact_parts.append(loc)
+        
+        if contact_parts:
+            elements.append(Paragraph(" &nbsp;&nbsp;|&nbsp;&nbsp; ".join(contact_parts), contact_style))
+        
+        # Contact Info Line 2 (Links & ID)
+        links_parts = []
+        if cv.linkedin: links_parts.append(cv.linkedin)
+        if cv.github: links_parts.append(cv.github)
+        if cv.portfolio_link: links_parts.append(cv.portfolio_link)
+        uid = cv.university_id or student.university_id
+        if uid: links_parts.append(f"Univ ID: {uid}")
+        
+        if links_parts:
+            elements.append(Paragraph(" &nbsp;&nbsp;|&nbsp;&nbsp; ".join(links_parts), contact_style))
+            
+        elements.append(Spacer(1, 15))
 
-        if cv.profile_summary:
-            elements.append(Paragraph("Profile Summary", styles['Heading2']))
-            elements.append(Paragraph(cv.profile_summary.replace('\n', '<br/>'), styles['Normal']))
-            elements.append(Spacer(1, 10))
-
-        if cv.education:
-            elements.append(Paragraph("Education", styles['Heading2']))
-            elements.append(Paragraph(cv.education.replace('\n', '<br/>'), styles['Normal']))
-            elements.append(Spacer(1, 10))
-
-        if cv.experience:
-            elements.append(Paragraph("Experience", styles['Heading2']))
-            elements.append(Paragraph(cv.experience.replace('\n', '<br/>'), styles['Normal']))
-            elements.append(Spacer(1, 10))
-
-        if cv.skills:
-            elements.append(Paragraph("Skills", styles['Heading2']))
-            # skills might be a JSON array string if submitted from frontend, or just text
+        def add_section(title, content):
+            if not content: return
+            
+            # Section Header with line below
+            t = RLTable([[title.upper()]], colWidths=['100%'])
+            t.setStyle(TableStyle([
+                ('FONTNAME', (0,0), (-1,-1), 'Helvetica-Bold'),
+                ('FONTSIZE', (0,0), (-1,-1), 11),
+                ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+                ('TOPPADDING', (0,0), (-1,-1), 10),
+                ('LINEBELOW', (0,0), (-1,-1), 1, colors.black),
+            ]))
+            elements.append(t)
+            elements.append(Spacer(1, 5))
+            
+            # Content
             import json
             try:
-                skills_list = json.loads(cv.skills)
-                skills_text = ", ".join(skills_list) if isinstance(skills_list, list) else cv.skills
+                parsed = json.loads(content)
+                if isinstance(parsed, list):
+                    content = " • ".join(parsed)
             except Exception:
-                skills_text = cv.skills
-            elements.append(Paragraph(skills_text.replace('\n', '<br/>'), styles['Normal']))
-            elements.append(Spacer(1, 10))
+                pass
+                
+            elements.append(Paragraph(content.replace('\n', '<br/>'), body_style))
 
-        if cv.languages:
-            elements.append(Paragraph("Languages", styles['Heading2']))
-            try:
-                langs_list = json.loads(cv.languages)
-                langs_text = ", ".join(langs_list) if isinstance(langs_list, list) else cv.languages
-            except Exception:
-                langs_text = cv.languages
-            elements.append(Paragraph(langs_text.replace('\n', '<br/>'), styles['Normal']))
-            elements.append(Spacer(1, 10))
+        add_section("Summary", cv.profile_summary)
+        add_section("Education", cv.education)
+        add_section("Professional Experience", cv.experience)
+        add_section("Skills", cv.skills)
+        add_section("Languages", cv.languages)
 
         doc.build(elements)
         buffer.seek(0)
