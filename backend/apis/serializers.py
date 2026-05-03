@@ -109,10 +109,18 @@ class ChangePasswordSerializer(serializers.Serializer):
         return value
 
 class CompanySerializer(serializers.ModelSerializer):
+    open_positions_count = serializers.SerializerMethodField()
+
     class Meta:
         model = Company
-        fields = ['id', 'email', 'name', 'logo', 'description', 'location', 'website', 'company_field', 'is_active']
+        fields = ['id', 'email', 'name', 'logo', 'description', 'location', 'website', 'company_field', 'is_active', 'open_positions_count']
         read_only_fields = ['id']
+
+    def get_open_positions_count(self, obj):
+        return InternshipOffer.objects.filter(
+            company=obj,
+            status=InternshipOffer.Status.OPEN_FOR_APPLICATION
+        ).count()
 
 class MessageSerializer(serializers.ModelSerializer):
     sender_email = serializers.EmailField(source='sender.email', read_only=True)
@@ -149,6 +157,7 @@ class InternshipSerializer(serializers.ModelSerializer):
             'internship_salary',
             'internship_skills',
             'internship_image',
+            'wilaya',
             'required_skills',
             'banner_image',
         ]
@@ -187,6 +196,7 @@ class InternshipSerializer(serializers.ModelSerializer):
             instance.internship_duration = instance.offer_end_date - instance.offer_start_date
             
         instance.internship_salary = validated_data.get('internship_salary', instance.internship_salary)
+        instance.wilaya = validated_data.get('wilaya', instance.wilaya)
         instance.save()
         return instance
 

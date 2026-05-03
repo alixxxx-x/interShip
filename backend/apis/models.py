@@ -88,6 +88,7 @@ class InternshipOffer(models.Model):
     internship_salary = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     internship_skills = models.TextField(blank=True, null=True)
     internship_image = models.ImageField(upload_to='internship_images/', blank=True, null=True)
+    wilaya = models.CharField(max_length=100, blank=True, null=True)
 
 
 # application model

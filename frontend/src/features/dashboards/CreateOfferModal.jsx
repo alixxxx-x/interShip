@@ -39,6 +39,15 @@ const SUGGESTED_SKILLS = [
   "Project Management", "Social Media", "SEO", "Excel"
 ];
 
+const ALGERIAN_WILAYAS = [
+  "Adrar", "Chlef", "Laghouat", "Oum El Bouaghi", "Batna", "Béjaïa", "Biskra", "Béchar", "Blida", "Bouira",
+  "Tamanrasset", "Tébessa", "Tlemcen", "Tiaret", "Tizi Ouzou", "Algiers", "Djelfa", "Jijel", "Sétif", "Saïda",
+  "Skikda", "Sidi Bel Abbès", "Annabba", "Guelma", "Constantine", "Médéa", "Mostaganem", "M'Sila", "Mascara", "Ouargla",
+  "Oran", "El Bayadh", "Illizi", "Bordj Bou Arréridj", "Boumerdès", "El Tarf", "Tindouf", "Tissemsilt", "El Oued", "Khenchela",
+  "Souk Ahras", "Tipaza", "Mila", "Aïn Defla", "Naâma", "Aïn Témouchent", "Ghardaïa", "Relizane", "Timimoun", "Bordj Badji Mokhtar",
+  "Ouled Djellal", "Béni Abbès", "In Salah", "In Guezzam", "Touggourt", "Djanet", "M'Ghair", "El Meniaa"
+];
+
 export default function CreateOfferModal({
   open,
   onOpenChange,
@@ -55,6 +64,7 @@ export default function CreateOfferModal({
     internship_type: initialData?.internship_type || "FULL_TIME",
     internship_structure: initialData?.internship_structure || "FOR_CREDIT",
     number_of_places: initialData?.number_of_places || 1,
+    wilaya: initialData?.wilaya || "Algiers",
     skills: initialData?.tech || initialData?.required_skills || [],
     image: null,
   });
@@ -70,6 +80,7 @@ export default function CreateOfferModal({
         internship_type: initialData.internship_type || "FULL_TIME",
         internship_structure: initialData.internship_structure || "FOR_CREDIT",
         number_of_places: initialData.number_of_places || 1,
+        wilaya: initialData.wilaya || "Algiers",
         skills: initialData.tech || initialData.required_skills || [],
         image: null,
       });
@@ -146,6 +157,7 @@ export default function CreateOfferModal({
       data.append("internship_type", formData.internship_type);
       data.append("internship_structure", formData.internship_structure);
       data.append("number_of_places", formData.number_of_places);
+      data.append("wilaya", formData.wilaya);
       // Send skills as JSON string
       data.append("required_skills", JSON.stringify(formData.skills));
 
@@ -176,6 +188,7 @@ export default function CreateOfferModal({
           internship_type: "FULL_TIME",
           internship_structure: "FOR_CREDIT",
           number_of_places: 1,
+          wilaya: "Algiers",
           skills: [],
           image: null,
         });
@@ -340,6 +353,25 @@ export default function CreateOfferModal({
               </select>
             </div>
             <div className="grid gap-2">
+              <Label htmlFor="wilaya" className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-muted-foreground" />
+                Wilaya
+              </Label>
+              <select
+                id="wilaya"
+                value={formData.wilaya}
+                onChange={handleChange}
+                className="flex h-9 w-full items-center justify-between whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {ALGERIAN_WILAYAS.map(w => (
+                  <option key={w} value={w}>{w}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
               <Label htmlFor="internship_type" className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-muted-foreground" />
                 Internship Type
@@ -354,9 +386,6 @@ export default function CreateOfferModal({
                 <option value="PART_TIME">Part Time</option>
               </select>
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="internship_structure" className="flex items-center gap-2">
                 <GraduationCap className="h-4 w-4 text-muted-foreground" />
@@ -373,6 +402,9 @@ export default function CreateOfferModal({
                 <option value="FELLOWSHIP">Fellowship</option>
               </select>
             </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="number_of_places" className="flex items-center gap-2">
                 <Users className="h-4 w-4 text-muted-foreground" />

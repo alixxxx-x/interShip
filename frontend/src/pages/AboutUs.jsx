@@ -9,30 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { useLanguage } from "@/components/language-provider";
 
-const team = [
-    {
-        name: "Dr. Alix Dev",
-        role: "President & Founder",
-        initials: "AD",
-        bio: "Specializing in student career development with 10+ years of educational technology experience.",
-        tag: "Founder"
-    },
-    {
-        name: "Karim Belkacemi",
-        role: "Tech Lead",
-        initials: "KB",
-        bio: "Passionate about building scalable platforms that connect students with industry leaders.",
-        tag: "Lead Architect"
-    },
-    {
-        name: "Lydia Mensouri",
-        role: "Partnerships Manager",
-        initials: "LM",
-        bio: "Ensuring world-class connections between top companies and Algerian universities.",
-        tag: "Operations"
-    }
-];
 
 const stats = [
     { label: "Active Internships", value: "250+", icon: Briefcase },
@@ -42,6 +20,32 @@ const stats = [
 ];
 
 export default function AboutUs() {
+    const { t } = useLanguage();
+
+    const team = [
+        {
+            name: "Dr. Alix Dev",
+            role: t("roleFounder"),
+            initials: "AD",
+            bio: t("bioFounder"),
+            tag: t("tagFounder")
+        },
+        {
+            name: "Karim Belkacemi",
+            role: t("roleTech"),
+            initials: "KB",
+            bio: t("bioTech"),
+            tag: t("tagTech")
+        },
+        {
+            name: "Lydia Mensouri",
+            role: t("rolePartnerships"),
+            initials: "LM",
+            bio: t("bioPartnerships"),
+            tag: t("tagPartnerships")
+        }
+    ];
+
     return (
         <div className="flex flex-col min-h-screen bg-white">
             {/* Hero Section */}
@@ -49,15 +53,14 @@ export default function AboutUs() {
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(124,58,237,0.1),transparent)]" />
                 <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
                     <Badge variant="outline" className="text-primary border-primary/30 mb-6 px-4 py-1 bg-primary/10">
-                        Our Story
+                        {t("ourStory")}
                     </Badge>
                     <h1 className="text-4xl md:text-6xl font-black text-white mb-8 tracking-tight">
-                        Empowering the next <br />
-                        <span className="text-primary italic">Professionals.</span>
+                        {t("empoweringNext")} <br />
+                        <span className="text-primary italic">{t("professionals")}</span>
                     </h1>
                     <p className="text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
-                        Inter.Ship is more than just a platform—it's a bridge between ambition and achievement,
-                        connecting Algeria's brightest students with the nation's leading enterprises.
+                        {t("aboutDesc")}
                     </p>
                 </div>
             </section>
@@ -74,7 +77,7 @@ export default function AboutUs() {
                                     </div>
                                 </div>
                                 <div className="text-3xl font-black text-white mb-1 tracking-tighter">{stat.value}</div>
-                                <div className="text-primary-foreground/70 text-[10px] font-bold uppercase tracking-widest">{stat.label}</div>
+                                <div className="text-primary-foreground/70 text-[10px] font-bold uppercase tracking-widest">{t(stat.label === "Active Internships" ? "activeInternships" : stat.label === "Verified Students" ? "verifiedStudents" : stat.label === "Partner Companies" ? "partnerCompanies" : "matchRate")}</div>
                             </div>
                         ))}
                     </div>
@@ -88,24 +91,22 @@ export default function AboutUs() {
                         <div className="space-y-6">
                             <h2 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
                                 <Target className="text-primary" />
-                                Our Mission
+                                {t("ourMission")}
                             </h2>
                             <p className="text-lg text-slate-600 leading-relaxed font-medium">
-                                Inter.Ship was founded in 2025 with a singular focus: to modernize how students
-                                start their professional journey in Algeria. We provide a centralized, smart platform
-                                for students to discover high-value internships and for companies to find the next generation of leaders.
+                                {t("missionDesc")}
                             </p>
                             <Separator className="bg-slate-200" />
                             <div className="grid grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <div className="h-2 w-12 bg-primary rounded-full" />
-                                    <p className="font-black text-slate-900 uppercase text-xs tracking-widest">Accessibility</p>
-                                    <p className="text-sm text-slate-500">Connecting talent from all 58 provinces to top enterprises.</p>
+                                    <p className="font-black text-slate-900 uppercase text-xs tracking-widest">{t("accessibility")}</p>
+                                    <p className="text-sm text-slate-500">{t("accessibilityDesc")}</p>
                                 </div>
                                 <div className="space-y-2">
                                     <div className="h-2 w-12 bg-slate-400 rounded-full" />
-                                    <p className="font-black text-slate-900 uppercase text-xs tracking-widest">Innovation</p>
-                                    <p className="text-sm text-slate-500">Using smart algorithms to ensure the perfect candidate-role match.</p>
+                                    <p className="font-black text-slate-900 uppercase text-xs tracking-widest">{t("innovation")}</p>
+                                    <p className="text-sm text-slate-500">{t("innovationDesc")}</p>
                                 </div>
                             </div>
                         </div>
@@ -114,17 +115,15 @@ export default function AboutUs() {
                             <div className="absolute top-0 right-0 p-8 opacity-10">
                                 <Rocket size={120} className="text-primary" />
                             </div>
-                            <h2 className="text-3xl font-black mb-6 tracking-tight">Our Vision</h2>
+                            <h2 className="text-3xl font-black mb-6 tracking-tight">{t("ourVision")}</h2>
                             <p className="text-lg text-slate-400 mb-8 leading-relaxed italic">
-                                "To become the definitive career launchpad for the African Mediterranean region, 
-                                ensuring every motivated student has a clear path to professional excellence 
-                                through impactful real-world experience."
+                                {t("visionDesc")}
                             </p>
                             <div className="flex items-center gap-4">
                                 <div className="h-10 w-10 rounded-full border border-white/20 flex items-center justify-center">
                                     <Heart className="text-primary h-5 w-5 fill-primary" />
                                 </div>
-                                <span className="font-bold text-sm tracking-widest uppercase">Driven by Growth</span>
+                                <span className="font-bold text-sm tracking-widest uppercase">{t("drivenByGrowth")}</span>
                             </div>
                         </div>
                     </div>
@@ -136,14 +135,13 @@ export default function AboutUs() {
                 <div className="max-w-7xl mx-auto px-6">
                     <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
                         <div className="space-y-4">
-                            <h2 className="text-4xl font-black text-slate-900 tracking-tight">The Makers of Inter.Ship</h2>
+                            <h2 className="text-4xl font-black text-slate-900 tracking-tight">{t("makersOf")}</h2>
                             <p className="text-slate-500 text-lg max-w-xl font-medium">
-                                Our diverse team combines educational expertise with world-class engineering
-                                to build a platform that truly serves the future of Algerian talent.
+                                {t("makersDesc")}
                             </p>
                         </div>
                         <Button variant="outline" className="rounded-full font-bold px-8 group border-slate-200 shadow-none">
-                            Join Our Mission
+                            {t("joinOurMission")}
                             <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                         </Button>
                     </div>
@@ -186,20 +184,20 @@ export default function AboutUs() {
                         <div className="absolute -top-1/2 -left-1/4 w-full h-full bg-primary rounded-full blur-[140px]" />
                     </div>
                     <h2 className="text-4xl md:text-5xl font-black mb-8 relative z-10 tracking-tighter">
-                        Ready to launch your career?
+                        {t("readyToLaunch")}
                     </h2>
                     <p className="text-slate-400 text-xl mb-12 max-w-2xl mx-auto relative z-10 leading-relaxed font-medium">
-                        Join the fastest-growing professional community in Algeria and start your journey today.
+                        {t("readyToLaunchDesc")}
                     </p>
                     <div className="flex flex-wrap justify-center gap-6 relative z-10">
                         <Link to="/register">
                             <Button size="lg" className="bg-primary hover:bg-primary/90 text-white px-10 h-14 rounded-full font-black text-lg shadow-xl shadow-primary/30 transition-all active:scale-95 border-none">
-                                Get Started Now
+                                {t("getStartedNow")}
                             </Button>
                         </Link>
                         <Link to="/contact">
                             <Button variant="outline" size="lg" className="border-white/20 bg-transparent text-white hover:bg-white/10 px-10 h-14 rounded-full font-black text-lg transition-all active:scale-95">
-                                Contact Us
+                                {t("contactUs")}
                             </Button>
                         </Link>
                     </div>

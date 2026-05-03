@@ -19,8 +19,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import api from '@/api/api';
 import { ACCESS_TOKEN } from '@/constants';
+import { useLanguage } from '@/components/language-provider';
 
 export default function InternshipDetails() {
+  const { t } = useLanguage();
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -99,7 +101,7 @@ export default function InternshipDetails() {
         }
       } catch (err) {
         console.error("Error fetching details:", err);
-        setError("Could not find this internship opportunity.");
+        setError(t("couldNotFindInternship"));
       } finally {
         setLoading(false);
       }
@@ -150,7 +152,7 @@ export default function InternshipDetails() {
     return (
       <div className="container mx-auto py-24 px-4 max-w-4xl flex flex-col items-center text-center">
         <div className="h-16 w-16 border-4 border-primary border-t-transparent rounded-full animate-spin mb-6"></div>
-        <p className="text-xl font-bold text-slate-800 dark:text-slate-200 animate-pulse">Gathering internship info...</p>
+        <p className="text-xl font-bold text-slate-800 dark:text-slate-200 animate-pulse">{t("gatheringInfo")}</p>
       </div>
     );
   }
@@ -164,7 +166,7 @@ export default function InternshipDetails() {
         <h2 className="text-3xl font-bold mb-4 tracking-tight">Not Found</h2>
         <p className="text-muted-foreground mb-10 max-w-md mx-auto">{error}</p>
         <Button onClick={() => navigate(-1)} size="lg" className="rounded-2xl px-8">
-          <ChevronLeft className="mr-2 h-4 w-4" /> Go Back
+          <ChevronLeft className="mr-2 h-4 w-4" /> {t("goBack")}
         </Button>
       </div>
     );
@@ -180,7 +182,7 @@ export default function InternshipDetails() {
             className="flex items-center gap-1.5 text-sm font-bold text-slate-500 hover:text-primary transition-all group"
           >
             <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-            <span className="group-hover:underline underline-offset-4">Go Back</span>
+            <span className="group-hover:underline underline-offset-4">{t("goBack")}</span>
           </button>
           <div className="flex gap-2">
             <Button
@@ -263,7 +265,7 @@ export default function InternshipDetails() {
                       <div className="h-8 w-8 rounded-lg bg-white dark:bg-slate-800 border flex items-center justify-center">
                         <Users className="h-4 w-4 text-primary" />
                       </div>
-                      {internship.number_of_places} Positions
+                      {internship.number_of_places} {t("positions")}
                     </div>
                   </div>
                 </div>
@@ -275,7 +277,7 @@ export default function InternshipDetails() {
               <section>
                 <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
                   <AlertCircle className="h-5 w-5 text-primary" />
-                  Opportunity Overview
+                  {t("opportunityOverview")}
                 </h2>
                 <div className="text-slate-600 dark:text-slate-400 leading-relaxed text-lg space-y-4">
                   {internship.description.split('\n').map((para, i) => (
@@ -285,7 +287,7 @@ export default function InternshipDetails() {
               </section>
 
               <section className="pt-8 border-t">
-                <h2 className="text-xl font-bold mb-6">Required Skills</h2>
+                <h2 className="text-xl font-bold mb-6">{t("requiredSkills")}</h2>
                 <div className="flex flex-wrap gap-2">
                   {internship.required_skills.map(skill => (
                     <Badge
@@ -303,23 +305,23 @@ export default function InternshipDetails() {
           {/* Right Column (Sidebar) */}
           <div className="lg:col-span-4 space-y-6">
             <div className="bg-white dark:bg-slate-950 rounded-3xl p-6 sm:p-8 border shadow-sm">
-              <h3 className="text-lg font-bold mb-8">Key Details</h3>
+              <h3 className="text-lg font-bold mb-8">{t("keyDetails")}</h3>
               <div className="space-y-6">
-                <SidebarItem icon={Calendar} label="Starts on" value={internship.offer_start_date} />
-                <SidebarItem icon={Calendar} label="Ends on" value={internship.offer_end_date} />
-                <SidebarItem icon={Clock} label="Time Left" value={(() => {
+                <SidebarItem icon={Calendar} label={t("startsOn")} value={internship.offer_start_date} />
+                <SidebarItem icon={Calendar} label={t("endsOn")} value={internship.offer_end_date} />
+                <SidebarItem icon={Clock} label={t("timeLeft")} value={(() => {
                   const now = new Date();
                   const start = new Date(internship.offer_start_date);
                   const diff = start - now;
-                  if (diff <= 0) return "Started";
+                  if (diff <= 0) return t("started");
                   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                  if (days > 0) return `${days} ${days === 1 ? 'day' : 'days'} left`;
+                  if (days > 0) return `${days} ${days === 1 ? t("dayLeft") : t("daysLeft")}`;
                   const hours = Math.floor(diff / (1000 * 60 * 60));
-                  return `${hours} hours left`;
+                  return `${hours} ${t("hoursLeft")}`;
                 })()} />
-                <SidebarItem icon={Clock} label="Duration" value={internship.internship_duration || "Flexible"} />
-                <SidebarItem icon={Users} label="Spots Filled" value={`${internship.accepted_count || 0}/${internship.number_of_places}`} />
-                <SidebarItem icon={MapPin} label="Work Mode" value={internship.internship_location} />
+                <SidebarItem icon={Clock} label={t("duration")} value={internship.internship_duration || t("flexible")} />
+                <SidebarItem icon={Users} label={t("spotsFilled")} value={`${internship.accepted_count || 0}/${internship.number_of_places}`} />
+                <SidebarItem icon={MapPin} label={t("workMode")} value={internship.internship_location} />
               </div>
 
               <div className="mt-10 pt-8 border-t">
@@ -340,10 +342,10 @@ export default function InternshipDetails() {
                           : 'text-green-800 dark:text-green-400'
                       }`}>
                         {applicationStatus === 'REJECTED' 
-                          ? 'Application Rejected' 
+                          ? t("applicationRejected") 
                           : applicationStatus === 'ACCEPTED'
-                          ? 'Application Accepted'
-                          : 'Application Received'}
+                          ? t("applicationAccepted")
+                          : t("applicationReceived")}
                       </p>
                     </div>
                     
@@ -354,13 +356,13 @@ export default function InternshipDetails() {
                         onClick={handleCancel}
                         disabled={isApplying}
                       >
-                        {isApplying ? "Wait..." : "Cancel Application"}
+                        {isApplying ? t("wait") : t("cancelApplication")}
                       </Button>
                     )}
 
                     {applicationStatus === 'REJECTED' && (
                       <p className="text-center text-xs text-gray-500 italic px-2">
-                        You cannot apply again for this specific internship.
+                        {t("cannotApplyAgain")}
                       </p>
                     )}
                   </div>
@@ -369,7 +371,7 @@ export default function InternshipDetails() {
                     className="w-full h-10 text-base font-bold rounded-xl cursor-not-allowed bg-red-200 text-white shadow-none hover:bg-red-300 disabled:opacity-100 disabled:pointer-events-auto"
                     disabled
                   >
-                    Closed
+                    {t("closed")}
                   </Button>
                 ) : userRole === 'STUDENT' && !hasCV ? (
                   <div className="space-y-4">
@@ -377,20 +379,20 @@ export default function InternshipDetails() {
                       className="w-full h-12 text-base font-bold rounded-xl bg-slate-200 text-slate-500 cursor-not-allowed shadow-none"
                       disabled
                     >
-                      Apply Now
+                      {t("applyNow")}
                     </Button>
                     <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800/50 rounded-2xl p-4 flex items-start gap-3">
                       <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                       <div className="space-y-1">
-                        <p className="text-xs font-bold text-amber-800 dark:text-amber-300">CV Required</p>
+                        <p className="text-xs font-bold text-amber-800 dark:text-amber-300">{t("cvRequired")}</p>
                         <p className="text-[11px] text-amber-700/80 dark:text-amber-400/80 font-medium leading-relaxed">
-                          Please upload your CV in your dashboard to unlock applications.
+                          {t("uploadCvUnlock")}
                         </p>
                         <button 
                           onClick={() => navigate('/studentdashboard/cv')}
                           className="text-[11px] font-bold text-primary hover:underline flex items-center gap-1 mt-1"
                         >
-                          Go to CV Manager <ArrowRight className="h-3 w-3" />
+                          {t("goToCvManager")} <ArrowRight className="h-3 w-3" />
                         </button>
                       </div>
                     </div>
@@ -401,7 +403,7 @@ export default function InternshipDetails() {
                     onClick={handleApply}
                     disabled={isApplying}
                   >
-                    {isApplying ? "Sending..." : "Apply Now"}
+                    {isApplying ? t("sending") : t("applyNow")}
                     {!isApplying && <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />}
                   </Button>
                 )}

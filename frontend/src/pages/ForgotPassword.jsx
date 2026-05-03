@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import api from "@/api/api";
 import axios from "axios";
+import { useLanguage } from "@/components/language-provider";
 
 /* ─── Icons ─── */
 const EyeIcon = ({ open }) =>
@@ -75,6 +76,7 @@ const StepDots = ({ current, total = 3 }) => (
 */
 
 function ForgotPasswordModal({ isOpen, onClose }) {
+    const { t } = useLanguage();
     const [step, setStep] = useState(0);
     const [email, setEmail] = useState("");
     const [otp, setOtp] = useState(["", "", "", "", "", ""]);
@@ -136,8 +138,8 @@ function ForgotPasswordModal({ isOpen, onClose }) {
     /* ─── Step 1: Submit Email ─── */
     const handleEmailSubmit = async (e) => {
         e.preventDefault();
-        if (!email.trim()) { setErrors({ email: "Please enter your email address." }); return; }
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setErrors({ email: "Please enter a valid email." }); return; }
+        if (!email.trim()) { setErrors({ email: t("enterEmailError") }); return; }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setErrors({ email: t("validEmailError") }); return; }
         setErrors({});
         setLoading(true);
         try {
@@ -145,7 +147,7 @@ function ForgotPasswordModal({ isOpen, onClose }) {
             setStep(1);
             startResendTimer();
         } catch (error) {
-            setErrors({ email: error.response?.status === 404 ? "No account found with this email." : "Something went wrong." });
+            setErrors({ email: error.response?.status === 404 ? t("noAccountFound") : t("somethingWentWrong") });
         } finally { setLoading(false); }
     };
 
@@ -179,14 +181,14 @@ function ForgotPasswordModal({ isOpen, onClose }) {
     const handleOtpSubmit = async (e) => {
         e.preventDefault();
         const code = otp.join("");
-        if (code.length !== 6) { setErrors({ otp: "Please enter the 6-digit code." }); return; }
+        if (code.length !== 6) { setErrors({ otp: t("enter6Digit") }); return; }
         setErrors({});
         setLoading(true);
         try {
             await axios.post("http://127.0.0.1:8000/api/auth/verify-reset-code/", { email, code });
             setStep(2);
         } catch (error) { 
-            const msg = error.response?.data?.error || "Connection error or invalid code.";
+            const msg = error.response?.data?.error || t("invalidCode");
             setErrors({ otp: msg }); 
         }
         finally { setLoading(false); }
@@ -196,17 +198,17 @@ function ForgotPasswordModal({ isOpen, onClose }) {
     const handlePasswordSubmit = async (e) => {
         e.preventDefault();
         let newErrors = {};
-        if (!newPassword) newErrors.newPassword = "Please enter a new password.";
-        else if (newPassword.length < 8) newErrors.newPassword = "Must be at least 8 characters.";
-        if (!confirmPassword) newErrors.confirmPassword = "Please confirm your password.";
-        else if (newPassword !== confirmPassword) newErrors.confirmPassword = "Passwords do not match.";
+        if (!newPassword) newErrors.newPassword = t("enterNewPassword");
+        else if (newPassword.length < 8) newErrors.newPassword = t("passwordLength");
+        if (!confirmPassword) newErrors.confirmPassword = t("confirmYourPassword");
+        else if (newPassword !== confirmPassword) newErrors.confirmPassword = t("passwordsDoNotMatch");
         if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
         setErrors({});
         setLoading(true);
         try {
             await axios.post("http://127.0.0.1:8000/api/auth/reset-password/", { email, code: otp.join(""), new_password: newPassword });
             setStep(3);
-        } catch { setErrors({ newPassword: "Failed to reset password." }); }
+        } catch { setErrors({ newPassword: t("failedToReset") }); }
         finally { setLoading(false); }
     };
 
@@ -217,16 +219,16 @@ function ForgotPasswordModal({ isOpen, onClose }) {
             await api.post("auth/forgot-password/", { email });
             startResendTimer();
             setOtp(["", "", "", "", "", ""]);
-        } catch { setErrors({ otp: "Failed to resend." }); }
+        } catch { setErrors({ otp: t("failedToResend") }); }
         finally { setLoading(false); }
     };
 
     const stepIcons = [<MailIcon />, <ShieldIcon />, <LockIcon />];
-    const stepTitles = ["Forgot Password?", "Verify Code", "New Password"];
+    const stepTitles = [t("forgotPasswordTitle"), t("verifyCode"), t("newPasswordTitle")];
     const stepSubtitles = [
-        "No worries! Enter your email and we'll send you a reset code.",
-        <>We sent a 6-digit code to <strong className="text-indigo-950">{email}</strong></>,
-        "Create a strong new password for your account.",
+        t("forgotSubtitle1"),
+        <>{t("forgotSubtitle2")} <strong className="text-indigo-950">{email}</strong></>,
+        t("forgotSubtitle3"),
     ];
 
     return (
@@ -289,7 +291,7 @@ function ForgotPasswordModal({ isOpen, onClose }) {
                             <form onSubmit={handleEmailSubmit} className="flex flex-col gap-3.5" noValidate>
                                 <div className="flex flex-col gap-1">
                                     <label htmlFor="forgot-email" className="text-xs font-semibold text-indigo-900">
-                                        Email Address
+                                        {t("emailAddress")}
                                     </label>
                                     <input
                                         id="forgot-email"
@@ -314,7 +316,7 @@ function ForgotPasswordModal({ isOpen, onClose }) {
                                     disabled={loading}
                                     className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-sm font-semibold transition-all shadow-md active:scale-[0.98] flex items-center justify-center min-h-[42px] disabled:opacity-70 disabled:cursor-not-allowed"
                                 >
-                                    {loading ? <span className="w-5 h-5 border-[2.5px] border-white/30 border-t-white rounded-full animate-spin" /> : "Send Reset Code"}
+                                    {loading ? <span className="w-5 h-5 border-[2.5px] border-white/30 border-t-white rounded-full animate-spin" /> : t("sendResetCode")}
                                 </button>
                             </form>
                         )}
@@ -356,16 +358,16 @@ function ForgotPasswordModal({ isOpen, onClose }) {
                                     disabled={loading}
                                     className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-sm font-semibold transition-all shadow-md active:scale-[0.98] flex items-center justify-center min-h-[42px] disabled:opacity-70 disabled:cursor-not-allowed"
                                 >
-                                    {loading ? <span className="w-5 h-5 border-[2.5px] border-white/30 border-t-white rounded-full animate-spin" /> : "Verify Code"}
+                                    {loading ? <span className="w-5 h-5 border-[2.5px] border-white/30 border-t-white rounded-full animate-spin" /> : t("verifyCodeBtn")}
                                 </button>
                                 <p className="text-center text-[13px] text-gray-400">
-                                    Didn't receive it?{" "}
+                                    {t("didntReceive")}{" "}
                                     {resendTimer > 0 ? (
-                                        <span className="text-indigo-300 font-medium">Resend in {resendTimer}s</span>
+                                        <span className="text-indigo-300 font-medium">{t("resendIn")} {resendTimer}s</span>
                                     ) : (
                                         <button type="button" onClick={handleResend} disabled={loading}
                                             className="bg-transparent border-none text-purple-600 font-semibold cursor-pointer hover:text-purple-800 hover:underline p-0 text-[13px]">
-                                            Resend Code
+                                            {t("resendCode")}
                                         </button>
                                     )}
                                 </p>
@@ -376,7 +378,7 @@ function ForgotPasswordModal({ isOpen, onClose }) {
                         {step === 2 && (
                             <form onSubmit={handlePasswordSubmit} className="flex flex-col gap-3.5" noValidate>
                                 <div className="flex flex-col gap-1">
-                                    <label htmlFor="new-password" className="text-xs font-semibold text-indigo-900">New Password</label>
+                                    <label htmlFor="new-password" className="text-xs font-semibold text-indigo-900">{t("newPasswordLabel")}</label>
                                     <div className="relative">
                                         <input
                                             id="new-password"
@@ -402,7 +404,7 @@ function ForgotPasswordModal({ isOpen, onClose }) {
                                 </div>
 
                                 <div className="flex flex-col gap-1">
-                                    <label htmlFor="confirm-password" className="text-xs font-semibold text-indigo-900">Confirm Password</label>
+                                    <label htmlFor="confirm-password" className="text-xs font-semibold text-indigo-900">{t("confirmPasswordLabel")}</label>
                                     <div className="relative">
                                         <input
                                             id="confirm-password"
@@ -439,7 +441,7 @@ function ForgotPasswordModal({ isOpen, onClose }) {
                                         ))}
                                     </div>
                                     <span className="text-[10px] text-gray-400 w-14">
-                                        {newPassword.length === 0 ? "" : newPassword.length < 4 ? "Weak" : newPassword.length < 8 ? "Fair" : newPassword.length < 12 ? "Strong" : "Very Strong"}
+                                        {newPassword.length === 0 ? "" : newPassword.length < 4 ? t("weak") : newPassword.length < 8 ? t("fair") : newPassword.length < 12 ? t("strong") : t("veryStrong")}
                                     </span>
                                 </div>
 
@@ -448,7 +450,7 @@ function ForgotPasswordModal({ isOpen, onClose }) {
                                     disabled={loading}
                                     className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-sm font-semibold transition-all shadow-md active:scale-[0.98] flex items-center justify-center min-h-[42px] disabled:opacity-70 disabled:cursor-not-allowed"
                                 >
-                                    {loading ? <span className="w-5 h-5 border-[2.5px] border-white/30 border-t-white rounded-full animate-spin" /> : "Reset Password"}
+                                    {loading ? <span className="w-5 h-5 border-[2.5px] border-white/30 border-t-white rounded-full animate-spin" /> : t("resetPasswordBtn")}
                                 </button>
                             </form>
                         )}
@@ -459,16 +461,15 @@ function ForgotPasswordModal({ isOpen, onClose }) {
                                 <div className="animate-[scaleIn_0.4s_cubic-bezier(0.22,1,0.36,1)_forwards]">
                                     <CheckCircleIcon />
                                 </div>
-                                <h2 className="text-lg font-bold text-indigo-950">Password Reset!</h2>
+                                <h2 className="text-lg font-bold text-indigo-950">{t("passwordReset")}</h2>
                                 <p className="text-[13px] text-gray-400 text-center leading-relaxed">
-                                    Your password has been reset successfully.<br />
-                                    You can now sign in with your new password.
+                                    {t("passwordResetSuccess")}
                                 </p>
                                 <button
                                     onClick={handleClose}
                                     className="mt-1 w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-sm font-semibold transition-all shadow-lg shadow-purple-200 active:scale-[0.98] flex items-center justify-center min-h-[42px]"
                                 >
-                                    Back to Sign In
+                                    {t("backToSignIn")}
                                 </button>
                             </div>
                         )}

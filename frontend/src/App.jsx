@@ -38,6 +38,8 @@ import AdminMessages from "@/features/dashboards/AdminMessages";
 import Notifications from "@/features/dashboards/Notifications";
 import Settings from "@/pages/Settings";
 
+import { LanguageProvider } from "@/components/language-provider";
+
 function ScrollToTop() {
   const { pathname } = useLocation();
 
@@ -51,6 +53,7 @@ function ScrollToTop() {
 function App() {
   return (
     <ThemeProvider defaultTheme="light" storageKey="intership-theme">
+      <LanguageProvider>
       <TooltipProvider>
         <ScrollToTop />
         <Routes>
@@ -133,6 +136,7 @@ function App() {
           </Route>
         </Routes>
       </TooltipProvider>
+      </LanguageProvider>
     </ThemeProvider>
   );
 }

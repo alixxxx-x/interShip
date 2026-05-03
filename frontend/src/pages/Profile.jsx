@@ -23,8 +23,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useLanguage } from "@/components/language-provider";
 
 export default function Profile() {
+    const { t } = useLanguage();
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
@@ -53,7 +55,7 @@ export default function Profile() {
             <div className="flex h-[60vh] items-center justify-center bg-slate-50">
                 <div className="flex flex-col items-center gap-4">
                     <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                    <p className="text-sm font-medium text-slate-500">Loading your profile...</p>
+                    <p className="text-sm font-medium text-slate-500">{t("loadingProfile")}</p>
                 </div>
             </div>
         );
@@ -62,9 +64,9 @@ export default function Profile() {
     if (!profile) {
         return (
             <div className="min-h-[60vh] flex flex-col items-center justify-center bg-slate-50 text-center px-4">
-                <p className="text-lg text-slate-500 mb-6 font-medium">Unable to load profile data.</p>
+                <p className="text-lg text-slate-500 mb-6 font-medium">{t("unableToLoad")}</p>
                 <Button variant="default" onClick={() => navigate('/')} className="rounded-lg h-11 px-8 font-semibold shadow-sm">
-                    Return Home
+                    {t("returnHome")}
                 </Button>
             </div>
         );
@@ -88,14 +90,14 @@ export default function Profile() {
                             <h1 className="text-3xl font-medium text-slate-900 mb-2">{profile.username}</h1>
                             <div className="flex flex-wrap justify-center md:justify-start gap-3 items-center">
                                 <Badge className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-md font-medium text-xs px-3 py-1">
-                                    {profile.role === 'company' ? 'Company' : profile.role?.replace('_', ' ')}
+                                    {profile.role === 'company' ? t("company") : profile.role === 'STUDENT' ? t("student") : profile.role?.replace('_', ' ')}
                                 </Badge>
                                 <div className="flex items-center gap-2 text-slate-400 text-sm font-medium">
                                     <Calendar className="w-4 h-4" />
                                     <span>
                                         {profile.created_at
-                                            ? `Joined ${new Date(profile.created_at).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}`
-                                            : 'Member since 2025'
+                                            ? `${t("joined")} ${new Date(profile.created_at).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}`
+                                            : t("memberSince")
                                         }
                                     </span>
                                 </div>
@@ -107,7 +109,7 @@ export default function Profile() {
                             className="rounded-lg h-11 px-6 font-medium border-slate-200 hover:bg-slate-50 text-slate-700 flex items-center gap-2 shadow-none"
                         >
                             <Settings className="w-4 h-4" />
-                            Settings
+                            {t("settings")}
                         </Button>
                     </div>
                 </div>
@@ -117,21 +119,21 @@ export default function Profile() {
                     <div className="space-y-6">
                         <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden">
                             <CardHeader className="bg-slate-50/50 pb-1">
-                                <CardTitle className="text-xs font-medium text-slate-400">Contact Information</CardTitle>
+                                <CardTitle className="text-xs font-medium text-slate-400">{t("contactInformation")}</CardTitle>
                             </CardHeader>
                             <CardContent className="pt-2 space-y-4">
                                 <div className="flex flex-col">
-                                    <span className="text-xs font-medium text-slate-500 mb-1">Email Address</span>
+                                    <span className="text-xs font-medium text-slate-500 mb-1">{t("emailAddress")}</span>
                                     <span className="text-sm font-medium text-slate-900 break-all flex items-center gap-2">
                                         <Mail className="w-3.5 h-3.5 text-primary" />
                                         {profile.email}
                                     </span>
                                 </div>
                                 <div className="flex flex-col">
-                                    <span className="text-xs font-medium text-slate-500 mb-1">Phone Number</span>
+                                    <span className="text-xs font-medium text-slate-500 mb-1">{t("phoneNumber")}</span>
                                     <span className="text-sm font-medium text-slate-900 flex items-center gap-2">
                                         <Phone className="w-3.5 h-3.5 text-primary" />
-                                        {profile.phone || <span className="text-slate-400 italic font-medium">Not provided</span>}
+                                        {profile.phone || <span className="text-slate-400 italic font-medium">{t("notProvided")}</span>}
                                     </span>
                                 </div>
                             </CardContent>
@@ -148,11 +150,11 @@ export default function Profile() {
                                     <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
                                         <CheckCircle2 className="w-6 h-6 text-white" />
                                     </div>
-                                    <h4 className="font-semibold text-lg text-white">Verified Status</h4>
+                                    <h4 className="font-semibold text-lg text-white">{t("verifiedStatus")}</h4>
                                 </div>
                                 <Separator className="bg-primary-foreground/20 mb-3" />
                                 <p className="text-primary-foreground/90 text-sm leading-relaxed font-medium">
-                                    Your account is fully certified and prioritized for top-tier internship matches.
+                                    {t("verifiedStatusDesc")}
                                 </p>
                             </div>
                         </div>
@@ -167,9 +169,9 @@ export default function Profile() {
                                         <Briefcase className="w-6 h-6" />
                                     </div>
                                     <div>
-                                        <CardTitle className="text-xl font-bold text-slate-800">Professional Overview</CardTitle>
+                                        <CardTitle className="text-xl font-bold text-slate-800">{t("professionalOverview")}</CardTitle>
                                         <CardDescription className="text-sm font-medium mt-1">
-                                            Your academic and career positioning
+                                            {t("professionalOverviewDesc")}
                                         </CardDescription>
                                     </div>
                                 </div>
@@ -177,25 +179,25 @@ export default function Profile() {
                             <CardContent className="p-8 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-10">
                                 <div className="space-y-2">
                                     <span className="text-[11px] font-bold text-primary tracking-wider uppercase flex items-center gap-2">
-                                        <Building className="w-3.5 h-3.5" /> Institution
+                                        <Building className="w-3.5 h-3.5" /> {t("institution")}
                                     </span>
                                     <div className="text-slate-800 font-semibold text-[15px] pt-1 ml-2">
-                                        {profile.institution || <span className="text-slate-400 italic font-medium">Not specified</span>}
+                                        {profile.institution || <span className="text-slate-400 italic font-medium">{t("notSpecified")}</span>}
                                     </div>
                                 </div>
 
                                 <div className="space-y-2">
                                     <span className="text-[11px] font-bold text-primary tracking-wider uppercase flex items-center gap-2">
-                                        <GraduationCap className="w-3.5 h-3.5" /> Major / Field
+                                        <GraduationCap className="w-3.5 h-3.5" /> {t("majorField")}
                                     </span>
                                     <div className="text-slate-800 font-semibold text-[15px] pt-1 ml-2">
-                                        {profile.research_domain || <span className="text-slate-400 italic font-medium">Undeclared</span>}
+                                        {profile.research_domain || <span className="text-slate-400 italic font-medium">{t("undeclared")}</span>}
                                     </div>
                                 </div>
 
                                 <div className="space-y-2">
                                     <span className="text-[11px] font-bold text-primary tracking-wider uppercase flex items-center gap-2">
-                                        <Globe className="w-3.5 h-3.5" /> Operations Region
+                                        <Globe className="w-3.5 h-3.5" /> {t("operationsRegion")}
                                     </span>
                                     <div className="text-slate-800 font-semibold text-[15px] pt-1 ml-2">
                                         {profile.country || "Algiers, Algeria"}
@@ -204,10 +206,10 @@ export default function Profile() {
 
                                 <div className="space-y-2">
                                     <span className="text-[11px] font-bold text-primary tracking-wider uppercase flex items-center gap-2">
-                                        <Award className="w-3.5 h-3.5" /> Experience Level
+                                        <Award className="w-3.5 h-3.5" /> {t("experienceLevel")}
                                     </span>
                                     <div className="text-slate-800 font-semibold text-[15px] pt-1 ml-2">
-                                        {profile.role === 'company' ? 'Verified Enterprise' : 'Aspiring Professional'}
+                                        {profile.role === 'company' ? t("verifiedEnterprise") : t("aspiringProfessional")}
                                     </div>
                                 </div>
                             </CardContent>
@@ -219,7 +221,7 @@ export default function Profile() {
 
                             <div className="relative z-10">
                                 <h3 className="text-[11px] font-bold text-slate-400 mb-5 border-l-[3px] border-primary pl-3 uppercase tracking-wider">
-                                    About Me
+                                    {t("aboutMe")}
                                 </h3>
 
                                 {profile.bio ? (
@@ -228,7 +230,7 @@ export default function Profile() {
                                     </p>
                                 ) : (
                                     <p className="text-slate-500 leading-relaxed text-[15px] italic font-medium">
-                                        "No biography provided. A dedicated member of the Inter.Ship community looking forward to new professional opportunities."
+                                        "{t("noBioProvided")}"
                                     </p>
                                 )}
                             </div>

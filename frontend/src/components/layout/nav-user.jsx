@@ -7,6 +7,7 @@ import {
   LogOut,
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
+import { useLanguage } from "@/components/language-provider"
 
 import {
   Avatar,
@@ -35,6 +36,7 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar()
   const navigate = useNavigate()
+  const { t } = useLanguage()
 
   if (!user) return null;
 
@@ -97,7 +99,7 @@ export function NavUser({
             <DropdownMenuGroup>
               <DropdownMenuItem onClick={() => navigate('/profile')}>
                 <BadgeCheck className="mr-2" />
-                Account
+                {t("account")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => {
                 const notificationUrl = user?.role === "STUDENT"
@@ -111,13 +113,13 @@ export function NavUser({
                     <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-primary border border-background" />
                   )}
                 </div>
-                Notifications
+                {t("navNotifications")}
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
               <LogOut className="mr-2" />
-              Log out
+              {t("logout")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

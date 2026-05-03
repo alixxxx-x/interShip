@@ -4,8 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import api from "@/api/api";
 import { ACCESS_TOKEN } from "@/constants";
+import { useLanguage } from "@/components/language-provider";
 
 export default function ContactUs() {
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -48,10 +50,10 @@ export default function ContactUs() {
         {/* Header Section */}
         <div className="space-y-6">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground">
-            Contact Us
+            {t("contactUs")}
           </h1>
           <p className="text-slate-400 dark:text-slate-500 max-w-xl mx-auto text-base">
-            If you have any questions about internships or applications, feel free to contact us. Our support team is here to help you.
+            {t("getInTouchDesc")}
           </p>
         </div>
 
@@ -61,14 +63,14 @@ export default function ContactUs() {
         {/* Contact Form */}
         <div className="mt-12 max-w-lg mx-auto text-left w-full">
           <div className="mb-8 text-center">
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Send us a message</h2>
-            <p className="text-slate-500 mt-2">Fill out the form below and we'll reply as soon as possible.</p>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{t("sendAMessage")}</h2>
+            <p className="text-slate-500 mt-2">{t("getInTouchDesc")}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <label htmlFor="email" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                Email Address
+                {t("emailAddress")}
               </label>
               <Input
                 id="email"
@@ -85,7 +87,7 @@ export default function ContactUs() {
 
             <div className="space-y-2">
               <label htmlFor="message" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                How can we help?
+                {t("yourMessage")}
               </label>
               <textarea
                 id="message"
@@ -103,7 +105,7 @@ export default function ContactUs() {
               className="w-full h-11 font-bold shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
               disabled={loading}
             >
-              {loading ? "Sending..." : "Send Message"}
+              {loading ? t("loadingCompanies") : t("sendMessage")}
               {!loading && <Send className="w-4 h-4 ml-2" />}
             </Button>
           </form>
@@ -119,7 +121,7 @@ export default function ContactUs() {
             </div>
             <div className="space-y-3">
               <h3 className="text-sm font-bold tracking-[0.25em] text-slate-400 uppercase">
-                Address
+                {t("ourOffice")}
               </h3>
               <p className="text-slate-800 dark:text-slate-300 font-medium">
                 Algiers, Algeria
@@ -134,7 +136,7 @@ export default function ContactUs() {
             </div>
             <div className="space-y-3">
               <h3 className="text-sm font-bold tracking-[0.25em] text-slate-400 uppercase">
-                Phone
+                {t("callUs")}
               </h3>
               <p className="text-slate-800 dark:text-slate-300 font-medium">
                 +213 779 53 12 93
@@ -149,7 +151,7 @@ export default function ContactUs() {
             </div>
             <div className="space-y-3">
               <h3 className="text-sm font-bold tracking-[0.25em] text-slate-400 uppercase">
-                Email
+                {t("emailUs")}
               </h3>
               <p className="text-slate-800 dark:text-slate-300 font-medium">
                 support@intership.com

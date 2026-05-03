@@ -1,22 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import {
-  Building2,
-  MapPin,
-  Briefcase,
-  Calendar,
-  Users,
-  Globe,
-  ChevronLeft,
-  Share2,
-  Heart,
-  Award,
-  AlertCircle,
-  ExternalLink,
-  Mail
-} from 'lucide-react';
+import { AlertCircle, Award, Briefcase, Building2, Calendar, ChevronLeft, ExternalLink, Globe, Heart, Mail, MapPin, Share2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import api from '@/api/api';
+import { useLanguage } from '@/components/language-provider';
 
 // Using the same mock data as in Companies.jsx
 const MOCK_COMPANIES = [
@@ -101,6 +89,7 @@ const MOCK_COMPANIES = [
 ];
 
 export default function CompaniesDetails() {
+  const { t } = useLanguage();
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -113,9 +102,7 @@ export default function CompaniesDetails() {
     const fetchCompanyDetails = async () => {
       try {
         setLoading(true);
-        const res = await api.get(`/users/`); // Or a specific company detail endpoint if you have one
-        // Since /users/ returns a list, we find the company here or ideally use a detail endpoint
-        // Assuming your backend has or should have a way to get company by ID
+        const res = await api.get(`/companies/`);
         const companies = res.data.results || res.data;
         const foundCompany = companies.find(u => u.id === parseInt(id));
         
@@ -139,7 +126,7 @@ export default function CompaniesDetails() {
     return (
       <div className="container mx-auto py-24 px-4 max-w-4xl flex flex-col items-center text-center">
         <div className="h-16 w-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-6"></div>
-        <p className="text-xl font-bold text-gray-800 dark:text-gray-200 animate-pulse">Loading company details...</p>
+        <p className="text-xl font-bold text-gray-800 dark:text-gray-200 animate-pulse">{t("loadingCompanyDetails")}</p>
       </div>
     );
   }
@@ -151,9 +138,9 @@ export default function CompaniesDetails() {
           <AlertCircle className="h-10 w-10 text-red-500" />
         </div>
         <h2 className="text-3xl font-bold mb-4 tracking-tight text-gray-900 dark:text-white">Not Found</h2>
-        <p className="text-gray-500 mb-10 max-w-md mx-auto">{error}</p>
+        <p className="text-gray-500 mb-10 max-w-md mx-auto">{t("companyNotFound")}</p>
         <Button onClick={() => navigate('/companies', { state: location.state })} size="lg" className="rounded-2xl px-8 bg-gray-900 text-white hover:bg-gray-800">
-          <ChevronLeft className="mr-2 h-4 w-4" /> Back to Companies
+          <ChevronLeft className="mr-2 h-4 w-4" /> {t("backToCompanies")}
         </Button>
       </div>
     );
@@ -169,7 +156,7 @@ export default function CompaniesDetails() {
             className="flex items-center gap-1.5 text-sm font-bold text-gray-500 hover:text-indigo-600 transition-all group"
           >
             <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-            <span className="group-hover:underline underline-offset-4">Back to Companies</span>
+            <span className="group-hover:underline underline-offset-4">{t("backToCompanies")}</span>
           </button>
           <div className="flex gap-2">
             <Button
@@ -212,7 +199,7 @@ export default function CompaniesDetails() {
                     className={`rounded-xl px-6 font-bold shadow-sm ${isFollowing ? 'bg-gray-100 text-gray-900 hover:bg-gray-200' : 'bg-gray-900 text-white hover:bg-gray-800'}`}
                     onClick={() => setIsFollowing(!isFollowing)}
                   >
-                    {isFollowing ? 'Following' : 'Follow Company'}
+                    {isFollowing ? t("following") : t("followCompany")}
                   </Button>
                 </div>
 
@@ -222,7 +209,7 @@ export default function CompaniesDetails() {
                       {company.name}
                     </h1>
                     <p className="text-lg text-gray-500 dark:text-gray-400 font-medium mt-1">
-                      {company.industry}
+                      {company.company_field || t("corporatePartner")}
                     </p>
                   </div>
 
@@ -244,7 +231,7 @@ export default function CompaniesDetails() {
                         <Globe className="h-4 w-4 text-indigo-500" />
                       </div>
                       <a href={company.website} target="_blank" rel="noreferrer" className="hover:text-indigo-600 hover:underline transition-all">
-                        Website
+                        {t("website")}
                       </a>
                     </div>
                   </div>
@@ -257,7 +244,7 @@ export default function CompaniesDetails() {
               <section>
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
                   <Building2 className="h-5 w-5 text-indigo-500" />
-                  About Us
+                  {t("aboutUs")}
                 </h2>
                 <div className="text-gray-600 dark:text-gray-400 leading-relaxed text-base space-y-4">
                   {company.description.split('\n').map((para, i) => (
@@ -269,10 +256,10 @@ export default function CompaniesDetails() {
               <section className="pt-8 border-t border-gray-100 dark:border-slate-800">
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
                   <Award className="h-5 w-5 text-indigo-500" />
-                  Benefits & Perks
+                  {t("benefitsPerks")}
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {company.benefits && company.benefits.map((benefit, index) => (
+                  {(company.benefits || ["Health Insurance", "Flexible Hours", "Professional Development"]).map((benefit, index) => (
                     <div key={index} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-slate-800/50 border border-gray-100 dark:border-slate-700/50">
                       <div className="h-2 w-2 rounded-full bg-indigo-500"></div>
                       <span className="font-medium text-gray-700 dark:text-gray-300">{benefit}</span>
@@ -286,23 +273,23 @@ export default function CompaniesDetails() {
           {/* Right Column (Sidebar) */}
           <div className="lg:col-span-4 space-y-6">
             <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-gray-100 dark:border-slate-800 shadow-sm">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-8">Company Snapshot</h3>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-8">{t("companySnapshot")}</h3>
               <div className="space-y-6">
-                <SidebarItem icon={Calendar} label="Founded" value={company.foundedYear.toString()} />
-                <SidebarItem icon={Briefcase} label="Industry" value={company.industry} />
-                <SidebarItem icon={Users} label="Company Size" value={company.size} />
-                <SidebarItem icon={Building2} label="Headquarters" value={company.location} />
+                <SidebarItem icon={Calendar} label={t("founded")} value={company.foundedYear?.toString() || t("notAvailable")} />
+                <SidebarItem icon={Briefcase} label={t("field")} value={company.company_field || t("notAvailable")} />
+                <SidebarItem icon={Users} label={t("companySize")} value={company.size || "10-50 Employees"} />
+                <SidebarItem icon={Building2} label={t("headquarters")} value={company.location || t("notAvailable")} />
               </div>
 
               <div className="mt-8 pt-8 border-t border-gray-100 dark:border-slate-800">
                 <a href={company.website} target="_blank" rel="noreferrer" className="w-full">
                   <Button variant="outline" className="w-full h-12 rounded-xl text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300 transition-all font-bold group">
-                    Visit Website
+                    {t("visitWebsite")}
                     <ExternalLink className="ml-2 h-4 w-4 group-hover:scale-110 transition-transform" />
                   </Button>
                 </a>
                 <Button className="w-full h-12 mt-3 rounded-xl bg-gray-900 hover:bg-gray-800 text-white font-bold group shadow-md shadow-gray-900/10">
-                  <Mail className="mr-2 h-4 w-4" /> Contact Us
+                  <Mail className="mr-2 h-4 w-4" /> {t("contactUs")}
                 </Button>
               </div>
             </div>
@@ -313,19 +300,19 @@ export default function CompaniesDetails() {
                 <Briefcase className="h-32 w-32" />
               </div>
               <div className="relative z-10">
-                <h3 className="text-lg font-bold mb-2">We are hiring!</h3>
-                <p className="text-indigo-100 mb-6 text-sm">Join our team and help us build the future.</p>
+                <h3 className="text-lg font-bold mb-2">{t("weAreHiring")}</h3>
+                <p className="text-indigo-100 mb-6 text-sm">{t("joinOurTeam")}</p>
                 <div className="flex items-center justify-between bg-white/10 rounded-2xl p-4 backdrop-blur-sm border border-white/20 mb-6">
                   <div>
-                    <p className="text-3xl font-black">{company.openPositions}</p>
-                    <p className="text-indigo-200 text-xs font-semibold uppercase tracking-wider">Open Roles</p>
+                    <p className="text-3xl font-black">{company.open_positions_count || 0}</p>
+                    <p className="text-indigo-200 text-xs font-semibold uppercase tracking-wider">{t("openRoles")}</p>
                   </div>
                 </div>
                 <Button 
                   onClick={() => navigate('/internships')} 
                   className="w-full h-11 bg-white text-indigo-600 hover:bg-gray-50 rounded-xl font-bold shadow-sm"
                 >
-                  View Opportunities
+                  {t("viewOpportunities")}
                 </Button>
               </div>
             </div>

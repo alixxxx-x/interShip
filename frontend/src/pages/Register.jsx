@@ -4,8 +4,10 @@ import { useNavigate, Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import Threads from "@/components/ui/Threads";
 import premiumPhoto from "@/assets/premium_photo-1725534270555-84e4b39e6b90.avif";
+import { useLanguage } from "@/components/language-provider";
 
 function Register() {
+    const { t } = useLanguage();
     const [username, setUsername] = useState("");
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
@@ -129,16 +131,16 @@ function Register() {
                             <ChevronLeft className="w-3.5 h-3.5 text-purple-600" />
                         </button>
 
-                        <h1 className="text-[22px] font-semibold text-black mb-1.5 tracking-tighter font-sans">Create an account</h1>
+                        <h1 className="text-[22px] font-semibold text-black mb-1.5 tracking-tighter font-sans">{t("createAccount")}</h1>
                         <p className="text-slate-500 text-[13px] mb-4 leading-relaxed font-light font-sans">
-                            Enter your details below to create your InterShip account.
+                            {t("createAccountDesc")}
                         </p>
 
                         <form onSubmit={handleSubmit} className="space-y-3">
                             {role === "STUDENT" ? (
                                 <div className="flex gap-3">
                                     <div className="space-y-1 flex-1">
-                                        <label className="text-[11px] font-semibold text-black ml-1">First Name</label>
+                                        <label className="text-[11px] font-semibold text-black ml-1">{t("firstName")}</label>
                                         <input
                                             type="text"
                                             placeholder="John"
@@ -149,7 +151,7 @@ function Register() {
                                         {errors.firstName && <p className="text-[10px] text-red-500 ml-1">{errors.firstName}</p>}
                                     </div>
                                     <div className="space-y-1 flex-1">
-                                        <label className="text-[11px] font-semibold text-black ml-1">Last Name</label>
+                                        <label className="text-[11px] font-semibold text-black ml-1">{t("lastName")}</label>
                                         <input
                                             type="text"
                                             placeholder="Doe"
@@ -162,7 +164,7 @@ function Register() {
                                 </div>
                             ) : (
                                 <div className="space-y-1">
-                                    <label className="text-[11px] font-semibold text-black ml-1">Username</label>
+                                    <label className="text-[11px] font-semibold text-black ml-1">{t("username")}</label>
                                     <div className="relative">
                                         <input
                                             type="text"
@@ -177,7 +179,7 @@ function Register() {
                             )}
 
                             <div className="space-y-1">
-                                <label className="text-[11px] font-semibold text-black ml-1">Email address</label>
+                                <label className="text-[11px] font-semibold text-black ml-1">{t("email")}</label>
                                 <div className="relative">
                                     <input
                                         type="email"
@@ -191,7 +193,7 @@ function Register() {
                             </div>
 
                             <div className="space-y-1">
-                                <label className="text-[11px] font-semibold text-black ml-1">Password</label>
+                                <label className="text-[11px] font-semibold text-black ml-1">{t("password")}</label>
                                 <div className="relative">
                                     <input
                                         type="password"
@@ -205,7 +207,7 @@ function Register() {
                             </div>
 
                             <div className="space-y-1">
-                                <label className="text-[11px] font-semibold text-black ml-1">Confirm Password</label>
+                                <label className="text-[11px] font-semibold text-black ml-1">{t("confirmPassword")}</label>
                                 <div className="relative">
                                     <input
                                         type="password"
@@ -219,21 +221,21 @@ function Register() {
                             </div>
 
                             <div className="space-y-1 pt-1">
-                                <label className="text-[11px] font-semibold text-black ml-1">Register as</label>
+                                <label className="text-[11px] font-semibold text-black ml-1">{t("registerAs")}</label>
                                 <div className="flex items-center gap-2 mt-1">
                                     <button
                                         type="button"
                                         onClick={() => setRole("STUDENT")}
                                         className={`h-[36px] rounded-[12px] text-[12px] font-medium transition-all flex-1 ${role === 'STUDENT' ? 'bg-purple-50 text-purple-600 border border-purple-100 shadow-sm' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                                     >
-                                        Student
+                                        {t("student")}
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => setRole("COMPANY")}
                                         className={`h-[36px] rounded-[12px] text-[12px] font-medium transition-all flex-1 ${role === 'COMPANY' ? 'bg-purple-50 text-purple-600 border border-purple-100 shadow-sm' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                                     >
-                                        Company
+                                        {t("company")}
                                     </button>
                                 </div>
                             </div>
@@ -246,10 +248,10 @@ function Register() {
                                 {loading ? (
                                     <div className="flex items-center gap-2">
                                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                        <span>Creating account...</span>
+                                        <span>{t("creatingAccount")}</span>
                                     </div>
                                 ) : (
-                                    "Sign Up"
+                                    t("signUp")
                                 )}
                             </button>
                         </form>
@@ -257,9 +259,9 @@ function Register() {
 
                     <div className="mt-auto pt-4 flex justify-center md:justify-start">
                         <p className="text-[12px] font-medium text-slate-500">
-                            Already have an account?{" "}
+                            {t("alreadyHaveAccount")}{" "}
                             <Link to="/login" className="font-semibold text-purple-600 hover:text-purple-700 transition-colors">
-                                Sign in
+                                {t("login")}
                             </Link>
                         </p>
                     </div>

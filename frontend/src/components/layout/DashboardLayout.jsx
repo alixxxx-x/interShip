@@ -12,8 +12,10 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { Outlet, useLocation } from "react-router-dom"
+import { useLanguage } from "@/components/language-provider"
 
 export default function DashboardLayout() {
+  const { t } = useLanguage()
   const location = useLocation()
   const pathSegments = location.pathname.split("/").filter(Boolean)
 
@@ -28,12 +30,12 @@ export default function DashboardLayout() {
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="/">Home</BreadcrumbLink>
+                  <BreadcrumbLink href="/">{t("navHome")}</BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>
                   <BreadcrumbPage className="capitalize">
-                      {pathSegments[pathSegments.length - 1]?.replace(/-/g, " ") || "Dashboard"}
+                      {pathSegments[pathSegments.length - 1]?.replace(/-/g, " ") || t("sidebarDashboard")}
                   </BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>

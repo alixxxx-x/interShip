@@ -3,9 +3,11 @@ import logoGif from "@/assets/logo.gif";
 import { useEffect, useState } from "react";
 import api from "@/api/api";
 import { ACCESS_TOKEN } from "@/constants";
+import { useLanguage } from "@/components/language-provider";
 
 export default function Footer() {
     const [userInfo, setUserInfo] = useState(null);
+    const { t } = useLanguage();
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -34,14 +36,14 @@ export default function Footer() {
                             </span>
                         </Link>
                         <p className="leading-relaxed text-muted-foreground">
-                            Connecting students with top companies for smarter internships. We streamline the matching and validation process for everyone.
+                            {t("footerDesc")}
                         </p>
                     </div>
                     <div>
-                        <h3 className="font-semibold uppercase tracking-wider mb-6 text-xs text-foreground">Explore</h3>
+                        <h3 className="font-semibold uppercase tracking-wider mb-6 text-xs text-foreground">{t("footerExplore")}</h3>
                         <ul className="space-y-3 text-muted-foreground">
-                            <li><Link to="/internships" className="hover:text-primary transition-colors">Browse Internships</Link></li>
-                            <li><Link to="/companies" className="hover:text-primary transition-colors">Companies</Link></li>
+                            <li><Link to="/internships" className="hover:text-primary transition-colors">{t("footerBrowse")}</Link></li>
+                            <li><Link to="/companies" className="hover:text-primary transition-colors">{t("footerCompanies")}</Link></li>
                             <li>
                                 <Link to="/#how-it-works"
                                     onClick={(e) => {
@@ -52,7 +54,7 @@ export default function Footer() {
                                     }}
                                     className="hover:text-primary transition-colors"
                                 >
-                                    How it Works
+                                    {t("footerHowItWorks")}
                                 </Link>
                             </li>
                             <li>
@@ -65,24 +67,24 @@ export default function Footer() {
                                         : "text-slate-500 hover:text-cyan-500 font-semibold"
                                     }`}
                                 >
-                                    Join Now
+                                    {t("footerJoinNow")}
                                 </Link>
                             </li>
                         </ul>
                     </div>
 
                     <div>
-                        <h3 className="font-semibold uppercase tracking-wider mb-6 text-xs text-foreground">Resources</h3>
+                        <h3 className="font-semibold uppercase tracking-wider mb-6 text-xs text-foreground">{t("footerResources")}</h3>
                         <ul className="space-y-3 text-muted-foreground">
-                            <li><Link to="/guidelines" className="hover:text-primary transition-colors">Student Guidelines</Link></li>
-                            <li><Link to="/faq" className="hover:text-primary transition-colors">FAQs</Link></li>
-                            <li><Link to="/support" className="hover:text-primary transition-colors">Support Center</Link></li>
-                            <li><Link to="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
+                            <li><Link to="/guidelines" className="hover:text-primary transition-colors">{t("footerGuidelines")}</Link></li>
+                            <li><Link to="/faq" className="hover:text-primary transition-colors">{t("footerFAQs")}</Link></li>
+                            <li><Link to="/support" className="hover:text-primary transition-colors">{t("footerSupport")}</Link></li>
+                            <li><Link to="/privacy" className="hover:text-primary transition-colors">{t("footerPrivacy")}</Link></li>
                         </ul>
                     </div>
 
                     <div id="contact-us">
-                        <h3 className="font-semibold uppercase tracking-wider mb-6 text-xs text-foreground">Contact Us</h3>
+                        <h3 className="font-semibold uppercase tracking-wider mb-6 text-xs text-foreground">{t("footerContact")}</h3>
                         <ul className="space-y-3 text-muted-foreground">
                             <li>Email: <a href="mailto:support@intership.com" className="hover:text-primary transition-colors">support@intership.com</a></li>
                             <li>Phone: <span>+213 123 456 789</span></li>
@@ -92,7 +94,7 @@ export default function Footer() {
                 </div>
 
                 <div className="mt-16 pt-8 border-t text-center text-xs text-muted-foreground">
-                    <p>© 2026 Inter.Ship Platform. All rights reserved.</p>
+                    <p>{t("footerRights")}</p>
                 </div>
             </div>
         </footer>
