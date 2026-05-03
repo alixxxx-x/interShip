@@ -373,7 +373,10 @@ class ApplicationListView(generics.ListAPIView):
     serializer_class = ApplicationSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['student','internship','status']
+    search_fields = [
+        'student__first_name', 'student__last_name', 'student__email',
+        'internship__title', 'internship__company__name', 'status'
+    ]
     ordering_fields = ['id', 'application_date']
     
     def get_queryset(self):
@@ -384,6 +387,13 @@ class ApplicationListView(generics.ListAPIView):
             else:
                 queryset = queryset.filter(student=self.request.user.student)
         return queryset
+
+    @property
+    def pagination_class(self):
+        # Disable pagination for admins to avoid missing candidates
+        if self.request.user.role == User.Role.ADMIN:
+            return None
+        return super().pagination_class
 
 # skills views
 

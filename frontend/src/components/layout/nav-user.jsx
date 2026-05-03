@@ -120,7 +120,9 @@ export function NavUser({
               <DropdownMenuItem onClick={() => {
                 const notificationUrl = user?.role === "STUDENT"
                   ? '/studentdashboard/notifications'
-                  : '/companydashboard/notifications';
+                  : user?.role === "ADMIN"
+                    ? '/admindashboard/notifications'
+                    : '/companydashboard/notifications';
                 navigate(notificationUrl);
               }}>
                 <div className="relative mr-2">

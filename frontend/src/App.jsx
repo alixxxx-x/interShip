@@ -107,6 +107,7 @@ function App() {
             <Route path="validations" element={<AdminValidations />} />
             <Route path="analytics" element={<AdminAnalytics />} />
             <Route path="messages" element={<AdminMessages />} />
+            <Route path="notifications" element={<Notifications />} />
           </Route>
 
           <Route

@@ -15,7 +15,7 @@ export default function AdminValidations() {
   const fetchValidations = async () => {
     try {
       setLoading(true);
-      const res = await api.get("/applications/"); 
+      const res = await api.get("/applications/");
       const allApps = res.data.results || res.data;
       // Show both Accepted (pending/validated) and Rejected applications
       const filtered = allApps.filter(app => app.status === 'ACCEPTED' || app.status === 'REJECTED');
@@ -117,9 +117,9 @@ export default function AdminValidations() {
                         <Button size="sm" onClick={() => handleValidate(app.id)}>
                           Validate
                         </Button>
-                        <Button 
-                          size="sm" 
-                          variant="destructive" 
+                        <Button
+                          size="sm"
+                          variant="destructive"
                           onClick={() => handleReject(app.id)}
                           className="bg-red-500 hover:bg-red-600 text-white"
                         >
@@ -127,14 +127,14 @@ export default function AdminValidations() {
                         </Button>
                       </>
                     )}
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       className="gap-1"
                       onClick={async () => {
                         try {
-                          const res = await api.get(`/cv/generate/${app.student}/`, { 
-                            responseType: 'blob' 
+                          const res = await api.get(`/cv/generate/${app.student}/`, {
+                            responseType: 'blob'
                           });
                           const blob = new Blob([res.data], { type: 'application/pdf' });
                           const url = window.URL.createObjectURL(blob);
@@ -156,9 +156,9 @@ export default function AdminValidations() {
                     >
                       <FileDown className="h-3 w-3" /> CV
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       className="gap-1"
                       disabled={!app.is_validated_by_admin}
                       onClick={() => handleDownload(app.id)}
