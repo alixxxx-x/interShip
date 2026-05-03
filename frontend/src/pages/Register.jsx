@@ -1,17 +1,23 @@
 import { useState } from "react";
 import api from "@/api/api";
 import { useNavigate, Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, Eye, EyeOff } from "lucide-react";
 import Threads from "@/components/ui/Threads";
 import premiumPhoto from "@/assets/premium_photo-1725534270555-84e4b39e6b90.avif";
+import { useLanguage } from "@/components/language-provider";
+import { useToast } from "@/components/ui/custom-toast";
 
 function Register() {
+    const { t } = useLanguage();
+    const toast = useToast();
     const [username, setUsername] = useState("");
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [role, setRole] = useState("STUDENT");
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
@@ -51,8 +57,8 @@ function Register() {
                 email,
                 password,
                 role,
-                ...(role === "STUDENT" 
-                    ? { first_name: firstName, last_name: lastName } 
+                ...(role === "STUDENT"
+                    ? { first_name: firstName, last_name: lastName }
                     : { username, name: username })
             };
             await api.post("/auth/register/", payload);
@@ -66,7 +72,7 @@ function Register() {
                 }
                 setErrors(newErrors);
             } else {
-                alert("Registration failed. Please check your connection and try again.");
+                toast.error("Registration failed. Please check your connection and try again.");
             }
         } finally {
             setLoading(false);
@@ -86,26 +92,26 @@ function Register() {
             </div>
 
             <div className="relative z-10 w-full max-w-[850px] bg-white rounded-[24px] flex flex-col md:flex-row overflow-hidden p-2 min-h-[500px] md:min-h-[550px] gap-3 md:gap-4 shadow-2xl">
-                
+
                 {/* Left Side - Image & Quote */}
                 <div className="hidden md:flex md:w-[50%] relative rounded-[18px] overflow-hidden">
-                    <img 
+                    <img
                         src={premiumPhoto}
-                        alt="Professional" 
+                        alt="Professional"
                         className="absolute inset-0 w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                    
+
                     <div className="absolute bottom-0 left-0 right-0 p-6 text-white flex flex-col justify-end">
                         <h2 className="text-[20px] md:text-[22px] font-semibold leading-[1.3] mb-4 tracking-tight font-sans">
                             "InterShip has streamlined our hiring process. Our platform connects top talent with the best companies seamlessly."
                         </h2>
-                        
+
                         <div className="mb-3">
                             <p className="font-semibold text-sm">John Doe</p>
                             <p className="text-white/80 text-[11px]">HR Manager</p>
                         </div>
-                        
+
                         <div className="flex gap-2 mt-1">
                             <button className="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center backdrop-blur-sm hover:bg-white/15 transition-colors">
                                 <ChevronLeft className="w-3.5 h-3.5 text-white/80" strokeWidth={1.5} />
@@ -119,8 +125,8 @@ function Register() {
 
                 {/* Right Side - Form */}
                 <div className="w-full md:w-[50%] flex flex-col pt-5 pb-5 px-4 md:px-6 md:pr-8">
-                    <span className="text-lg font-semibold tracking-tight text-black font-sans">
-                        InterShip.
+                    <span className="text-lg font-semibold tracking-tight text-purple-600 font-sans">
+                        Stag<span className="text-purple-400">.Io</span>
                     </span>
 
                     <div className="flex-1 flex flex-col justify-center max-w-[360px] mx-auto w-full">
@@ -129,19 +135,19 @@ function Register() {
                             <ChevronLeft className="w-3.5 h-3.5 text-purple-600" />
                         </button>
 
-                        <h1 className="text-[22px] font-semibold text-black mb-1.5 tracking-tighter font-sans">Create an account</h1>
+                        <h1 className="text-[22px] font-semibold text-black mb-1.5 tracking-tighter font-sans">{t("createAccount")}</h1>
                         <p className="text-slate-500 text-[13px] mb-4 leading-relaxed font-light font-sans">
-                            Enter your details below to create your InterShip account.
+                            {t("createAccountDesc")}
                         </p>
 
                         <form onSubmit={handleSubmit} className="space-y-3">
                             {role === "STUDENT" ? (
                                 <div className="flex gap-3">
                                     <div className="space-y-1 flex-1">
-                                        <label className="text-[11px] font-semibold text-black ml-1">First Name</label>
+                                        <label className="text-[11px] font-semibold text-black ml-1">{t("firstName")}</label>
                                         <input
                                             type="text"
-                                            placeholder="John"
+                                            placeholder={t("firstName")}
                                             value={firstName}
                                             onChange={(e) => { setFirstName(e.target.value); setErrors(prev => ({ ...prev, firstName: null })) }}
                                             className="w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans"
@@ -149,10 +155,10 @@ function Register() {
                                         {errors.firstName && <p className="text-[10px] text-red-500 ml-1">{errors.firstName}</p>}
                                     </div>
                                     <div className="space-y-1 flex-1">
-                                        <label className="text-[11px] font-semibold text-black ml-1">Last Name</label>
+                                        <label className="text-[11px] font-semibold text-black ml-1">{t("lastName")}</label>
                                         <input
                                             type="text"
-                                            placeholder="Doe"
+                                            placeholder={t("lastName")}
                                             value={lastName}
                                             onChange={(e) => { setLastName(e.target.value); setErrors(prev => ({ ...prev, lastName: null })) }}
                                             className="w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans"
@@ -162,11 +168,11 @@ function Register() {
                                 </div>
                             ) : (
                                 <div className="space-y-1">
-                                    <label className="text-[11px] font-semibold text-black ml-1">Username</label>
+                                    <label className="text-[11px] font-semibold text-black ml-1">{role === "COMPANY" ? (t("companyName") || "Company Name") : t("username")}</label>
                                     <div className="relative">
                                         <input
                                             type="text"
-                                            placeholder="johndoe"
+                                            placeholder={role === "COMPANY" ? "Name of Company" : "johndoe"}
                                             value={username}
                                             onChange={(e) => { setUsername(e.target.value); setErrors(prev => ({ ...prev, username: null })) }}
                                             className="w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans"
@@ -177,7 +183,7 @@ function Register() {
                             )}
 
                             <div className="space-y-1">
-                                <label className="text-[11px] font-semibold text-black ml-1">Email address</label>
+                                <label className="text-[11px] font-semibold text-black ml-1">{t("email")}</label>
                                 <div className="relative">
                                     <input
                                         type="email"
@@ -191,49 +197,63 @@ function Register() {
                             </div>
 
                             <div className="space-y-1">
-                                <label className="text-[11px] font-semibold text-black ml-1">Password</label>
+                                <label className="text-[11px] font-semibold text-black ml-1">{t("password")}</label>
                                 <div className="relative">
                                     <input
-                                        type="password"
+                                        type={showPassword ? "text" : "password"}
                                         placeholder="••••••••"
                                         value={password}
                                         onChange={(e) => { setPassword(e.target.value); setErrors(prev => ({ ...prev, password: null })) }}
-                                        className="w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans"
+                                        className="w-full h-[40px] px-3.5 pr-10 rounded-[12px] border border-slate-200 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans"
                                     />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors focus:outline-none"
+                                    >
+                                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    </button>
                                 </div>
                                 {errors.password && <p className="text-[10px] text-red-500 ml-1">{errors.password}</p>}
                             </div>
 
                             <div className="space-y-1">
-                                <label className="text-[11px] font-semibold text-black ml-1">Confirm Password</label>
+                                <label className="text-[11px] font-semibold text-black ml-1">{t("confirmPassword")}</label>
                                 <div className="relative">
                                     <input
-                                        type="password"
+                                        type={showConfirmPassword ? "text" : "password"}
                                         placeholder="••••••••"
                                         value={confirmPassword}
                                         onChange={(e) => { setConfirmPassword(e.target.value); setErrors(prev => ({ ...prev, confirmPassword: null })) }}
-                                        className="w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans"
+                                        className="w-full h-[40px] px-3.5 pr-10 rounded-[12px] border border-slate-200 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans"
                                     />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors focus:outline-none"
+                                    >
+                                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    </button>
                                 </div>
                                 {errors.confirmPassword && <p className="text-[10px] text-red-500 ml-1">{errors.confirmPassword}</p>}
                             </div>
 
                             <div className="space-y-1 pt-1">
-                                <label className="text-[11px] font-semibold text-black ml-1">Register as</label>
+                                <label className="text-[11px] font-semibold text-black ml-1">{t("registerAs")}</label>
                                 <div className="flex items-center gap-2 mt-1">
                                     <button
                                         type="button"
                                         onClick={() => setRole("STUDENT")}
                                         className={`h-[36px] rounded-[12px] text-[12px] font-medium transition-all flex-1 ${role === 'STUDENT' ? 'bg-purple-50 text-purple-600 border border-purple-100 shadow-sm' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                                     >
-                                        Student
+                                        {t("student")}
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => setRole("COMPANY")}
                                         className={`h-[36px] rounded-[12px] text-[12px] font-medium transition-all flex-1 ${role === 'COMPANY' ? 'bg-purple-50 text-purple-600 border border-purple-100 shadow-sm' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                                     >
-                                        Company
+                                        {t("company")}
                                     </button>
                                 </div>
                             </div>
@@ -246,10 +266,10 @@ function Register() {
                                 {loading ? (
                                     <div className="flex items-center gap-2">
                                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                        <span>Creating account...</span>
+                                        <span>{t("creatingAccount")}</span>
                                     </div>
                                 ) : (
-                                    "Sign Up"
+                                    t("signUp")
                                 )}
                             </button>
                         </form>
@@ -257,9 +277,9 @@ function Register() {
 
                     <div className="mt-auto pt-4 flex justify-center md:justify-start">
                         <p className="text-[12px] font-medium text-slate-500">
-                            Already have an account?{" "}
+                            {t("alreadyHaveAccount")}{" "}
                             <Link to="/login" className="font-semibold text-purple-600 hover:text-purple-700 transition-colors">
-                                Sign in
+                                {t("login")}
                             </Link>
                         </p>
                     </div>

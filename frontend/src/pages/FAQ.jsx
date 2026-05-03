@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Send, User, Bot, Loader2 } from 'lucide-react';
+import { useLanguage } from '@/components/language-provider';
 
 export default function FAQ() {
+  const { t } = useLanguage();
   const [openIndex, setOpenIndex] = useState(null);
   {/* save chat msgs, they dispear once refreshing 
       is chat replying?
@@ -55,28 +57,28 @@ export default function FAQ() {
 
   const faqs = [
     {
-      question: "What is this platform about?",
-      answer: "This is a centralized University-Enterprise matching platform designed to automate the internship process. It connects students looking for internships with companies searching for the right profiles, completely digitizing the workflow."
+      question: t("faqQ1") || "What is this platform about?",
+      answer: t("faqA1") || "This is a centralized University-Enterprise matching platform designed to automate the internship process. It connects students looking for internships with companies searching for the right profiles, completely digitizing the workflow."
     },
     {
-      question: "How do I create a student account?",
-      answer: "You can register securely on the platform. We strongly recommend using your official University Email. Once registered, you must fill out your Digital CV with your technical skills, GitHub/Portfolio links, and personal details."
+      question: t("faqQ2") || "How do I create a student account?",
+      answer: t("faqA2") || "You can register securely on the platform. We strongly recommend using your official University Email. Once registered, you must fill out your Digital CV with your technical skills, GitHub/Portfolio links, and personal details."
     },
     {
-      question: "How do I apply for an internship?",
-      answer: "After completing your Digital CV, use the search tool to find internships based on your Wilaya, preferred technologies, or internship type. Click 'Apply' to send your profile directly to the recruiter."
+      question: t("faqQ3") || "How do I apply for an internship?",
+      answer: t("faqA3") || "After completing your Digital CV, use the search tool to find internships based on your Wilaya, preferred technologies, or internship type. Click 'Apply' to send your profile directly to the recruiter."
     },
     {
-      question: "What happens after a company accepts me?",
-      answer: "When a company accepts your application, the University Administration (Internship Office) receives an automatic notification to validate your placement. You don't need to do any manual paperwork!"
+      question: t("faqQ4") || "What happens after a company accepts me?",
+      answer: t("faqA4") || "When a company accepts your application, the University Administration (Internship Office) receives an automatic notification to validate your placement. You don't need to do any manual paperwork!"
     },
     {
-      question: "How do I get my 'Convention de Stage' (Internship Agreement)?",
-      answer: "Once the University Administration validates your placement, the system automatically generates your official 'Convention de Stage' in PDF format. It will be pre-filled with all necessary data from you, the company, and the university, ready to be downloaded."
+      question: t("faqQ5") || "How do I get my 'Convention de Stage' (Internship Agreement)?",
+      answer: t("faqA5") || "Once the University Administration validates your placement, the system automatically generates your official 'Convention de Stage' in PDF format. It will be pre-filled with all necessary data from you, the company, and the university, ready to be downloaded."
     },
     {
-      question: "Can companies create multiple internship offers?",
-      answer: "Yes, recruiters can create, modify, and delete as many internship offers as they need from their dedicated Company Space."
+      question: t("faqQ6") || "Can companies create multiple internship offers?",
+      answer: t("faqA6") || "Yes, recruiters can create, modify, and delete as many internship offers as they need from their dedicated Company Space."
     }
   ];
 
@@ -85,10 +87,10 @@ export default function FAQ() {
 
       <div className="max-w-3xl mx-auto px-6 text-center mb-16">
         <h1 className="text-4xl font-bold text-slate-900 mb-4 tracking-tight">
-          Frequently Asked Questions
+          {t("faqTitle")}
         </h1>
         <p className="text-lg text-slate-500">
-          Find answers to the most common questions about finding internships and managing your 'Convention de Stage'.
+          {t("faqDesc")}
         </p>
       </div>
 
@@ -128,9 +130,9 @@ export default function FAQ() {
       {/* Ask a Question Section */}
       <div className="mt-32 pb-12">
         <div className="max-w-3xl mx-auto px-6 text-center">
-          <h2 className="text-3xl font-bold text-slate-900 mb-4 tracking-tight">Still have questions?</h2>
+          <h2 className="text-3xl font-bold text-slate-900 mb-4 tracking-tight">{t("stillHaveQuestions")}</h2>
           <p className="text-slate-500 text-lg mb-10 max-w-2xl mx-auto">
-            If you cannot find the answer to your question in our FAQ, you can always ask us directly.
+            {t("stillHaveQuestionsDesc")}
           </p>
           {/* Chat History */}
           {chatHistory.length > 0 && (
@@ -159,7 +161,7 @@ export default function FAQ() {
                   </div>
                   <div className="px-4 py-2 rounded-2xl bg-white border border-slate-200 text-slate-700 rounded-tl-sm flex items-center gap-2">
                     <Loader2 size={16} className="animate-spin text-slate-400" />
-                    <span className="text-sm text-slate-400">Thinking...</span>
+                    <span className="text-sm text-slate-400">{t("thinking")}</span>
                   </div>
                 </div>
               )}
@@ -175,7 +177,7 @@ export default function FAQ() {
               type="text"
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
-              placeholder="Type your question here..."
+              placeholder={t("typeQuestion")}
               required
               disabled={isTyping}
               className="flex-1 px-5 py-4 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent bg-white text-slate-800 placeholder-slate-400 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -185,7 +187,7 @@ export default function FAQ() {
               disabled={isTyping}
               className="bg-slate-900 text-white px-8 py-4 rounded-xl font-bold hover:bg-slate-800 transition-colors flex items-center justify-center whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isTyping ? <Loader2 size={20} className="animate-spin" /> : <><Send size={18} className="mr-2" /> Send</>}
+              {isTyping ? <Loader2 size={20} className="animate-spin" /> : <><Send size={18} className="mr-2" /> {t("send")}</>}
             </button>
           </form>
         </div>

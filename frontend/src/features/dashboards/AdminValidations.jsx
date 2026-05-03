@@ -3,10 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileDown, CheckCircle, Clock } from "lucide-react";
+import { FileDown, CheckCircle, Clock, XCircle } from "lucide-react";
 import api from "@/api/api";
+import { useToast } from "@/components/ui/custom-toast";
 
 export default function AdminValidations() {
+  const toast = useToast();
   const [validations, setValidations] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -15,7 +17,8 @@ export default function AdminValidations() {
       setLoading(true);
       const res = await api.get("/applications/"); 
       const allApps = res.data.results || res.data;
-      const filtered = allApps.filter(app => app.status === 'ACCEPTED');
+      // Show both Accepted (pending/validated) and Rejected applications
+      const filtered = allApps.filter(app => app.status === 'ACCEPTED' || app.status === 'REJECTED');
       setValidations(filtered);
     } catch (error) {
       console.error("Failed to fetch validations:", error);
@@ -37,6 +40,17 @@ export default function AdminValidations() {
     }
   };
 
+  const handleReject = async (id) => {
+    if (window.confirm("Are you sure you want to reject this application?")) {
+      try {
+        await api.post(`/admin/applications/${id}/reject/`);
+        fetchValidations();
+      } catch (error) {
+        console.error("Rejection failed:", error);
+      }
+    }
+  };
+
   const handleDownload = async (id) => {
     try {
       const response = await api.get(`/admin/applications/${id}/agreement/`, {
@@ -50,7 +64,7 @@ export default function AdminValidations() {
       link.click();
       link.remove();
     } catch (error) {
-      alert("Agreement not available or internship not yet validated.");
+      toast.error("Agreement not available or internship not yet validated.");
     }
   };
 
@@ -83,7 +97,11 @@ export default function AdminValidations() {
                   <TableCell className="font-medium">{app.candidate}</TableCell>
                   <TableCell>{app.company_name}</TableCell>
                   <TableCell>
-                    {app.is_validated_by_admin ? (
+                    {app.status === 'REJECTED' ? (
+                      <Badge variant="destructive" className="gap-1 bg-red-100 text-red-700 border-red-200">
+                        <XCircle className="h-3 w-3" /> Rejected by Admin
+                      </Badge>
+                    ) : app.is_validated_by_admin ? (
                       <Badge variant="success" className="gap-1">
                         <CheckCircle className="h-3 w-3" /> Validated
                       </Badge>
@@ -94,10 +112,20 @@ export default function AdminValidations() {
                     )}
                   </TableCell>
                   <TableCell className="text-right space-x-2">
-                    {!app.is_validated_by_admin && (
-                      <Button size="sm" onClick={() => handleValidate(app.id)}>
-                        Validate
-                      </Button>
+                    {app.status === 'ACCEPTED' && !app.is_validated_by_admin && (
+                      <>
+                        <Button size="sm" onClick={() => handleValidate(app.id)}>
+                          Validate
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="destructive" 
+                          onClick={() => handleReject(app.id)}
+                          className="bg-red-500 hover:bg-red-600 text-white"
+                        >
+                          Reject
+                        </Button>
+                      </>
                     )}
                     <Button 
                       variant="outline" 

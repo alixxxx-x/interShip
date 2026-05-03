@@ -2,15 +2,22 @@ import { useState } from "react";
 import api from "@/api/api";
 import { ACCESS_TOKEN, REFRESH_TOKEN } from "@/constants";
 import { useNavigate, Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, Eye, EyeOff } from "lucide-react";
 import Threads from "@/components/ui/Threads";
 import premiumPhoto from "@/assets/premium_photo-1725534270555-84e4b39e6b90.avif";
+import ForgotPasswordModal from "@/pages/ForgotPassword";
+import { useLanguage } from "@/components/language-provider";
+import { useToast } from "@/components/ui/custom-toast";
 
 function Login() {
+    const { t } = useLanguage();
+    const toast = useToast();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
+    const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
@@ -33,7 +40,7 @@ function Login() {
             localStorage.setItem(REFRESH_TOKEN, res.data.refresh);
             navigate("/");
         } catch (error) {
-            alert("Login failed. Please check your credentials.");
+            toast.error("Login failed. Please check your credentials.");
         } finally {
             setLoading(false);
         }
@@ -85,8 +92,8 @@ function Login() {
 
                 {/* Right Side - Login Form */}
                 <div className="w-full md:w-[50%] flex flex-col pt-5 pb-5 px-4 md:px-6 md:pr-8">
-                    <span className="text-lg font-semibold tracking-tight text-black font-sans">
-                        InterShip.
+                    <span className="text-lg font-semibold tracking-tight text-purple-600 font-sans">
+                        Stag<span className="text-purple-400">.Io</span>
                     </span>
 
                     <div className="flex-1 flex flex-col justify-center max-w-[360px] mx-auto w-full">
@@ -95,18 +102,18 @@ function Login() {
                             <ChevronLeft className="w-3.5 h-3.5 text-purple-600" />
                         </button>
 
-                        <h1 className="text-[22px] font-semibold text-black mb-1.5 tracking-tighter font-sans">Let's join with us</h1>
+                        <h1 className="text-[22px] font-semibold text-black mb-1.5 tracking-tighter font-sans">{t("letsJoinUs")}</h1>
                         <p className="text-slate-500 text-[13px] mb-5 leading-relaxed font-light font-sans">
-                            You can sign in or join with us if you're new to InterShip.
+                            {t("signInJoin")}
                         </p>
 
                         <form onSubmit={handleSubmit} className="space-y-3.5">
                             <div className="space-y-1">
-                                <label className="text-[11px] font-semibold text-black ml-1">Email</label>
+                                <label className="text-[11px] font-semibold text-black ml-1">{t("email")}</label>
                                 <div className="relative">
                                     <input
                                         type="text"
-                                        placeholder="Enter your email"
+                                        placeholder={t("enterEmail")}
                                         value={email}
                                         onChange={(e) => { setEmail(e.target.value); setErrors(prev => ({ ...prev, email: null })) }}
                                         className="w-full h-[42px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans"
@@ -116,17 +123,33 @@ function Login() {
                             </div>
 
                             <div className="space-y-1">
-                                <label className="text-[11px] font-semibold text-black ml-1">Password</label>
+                                <label className="text-[11px] font-semibold text-black ml-1">{t("password")}</label>
                                 <div className="relative">
                                     <input
-                                        type="password"
+                                        type={showPassword ? "text" : "password"}
                                         placeholder="••••••••"
                                         value={password}
                                         onChange={(e) => { setPassword(e.target.value); setErrors(prev => ({ ...prev, password: null })) }}
-                                        className="w-full h-[42px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans"
+                                        className="w-full h-[42px] px-3.5 pr-10 rounded-[12px] border border-slate-200 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans"
                                     />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors focus:outline-none"
+                                    >
+                                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    </button>
                                 </div>
                                 {errors.password && <p className="text-[10px] text-red-500 ml-1">{errors.password}</p>}
+                                <div className="flex justify-end px-1 mt-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsForgotModalOpen(true)}
+                                        className="text-[11px] font-medium text-purple-600 hover:text-purple-700 transition-colors"
+                                    >
+                                        {t("forgotPassword")}
+                                    </button>
+                                </div>
                             </div>
 
                             <button
@@ -137,10 +160,10 @@ function Login() {
                                 {loading ? (
                                     <div className="flex items-center gap-2">
                                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                        <span>Logging in...</span>
+                                        <span>{t("loggingIn")}</span>
                                     </div>
                                 ) : (
-                                    "Login"
+                                    t("login")
                                 )}
                             </button>
                         </form>
@@ -148,14 +171,19 @@ function Login() {
 
                     <div className="mt-auto pt-4 flex justify-center md:justify-start">
                         <p className="text-[12px] font-medium text-slate-500">
-                            Don't have an account?{" "}
+                            {t("noAccount")}{" "}
                             <Link to="/register" className="font-semibold text-purple-600 hover:text-purple-700 transition-colors">
-                                Sign up
+                                {t("signUp")}
                             </Link>
                         </p>
                     </div>
                 </div>
             </div>
+
+            <ForgotPasswordModal
+                isOpen={isForgotModalOpen}
+                onClose={() => setIsForgotModalOpen(false)}
+            />
         </div>
     );
 }
