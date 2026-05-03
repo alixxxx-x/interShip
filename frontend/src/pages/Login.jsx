@@ -2,7 +2,7 @@ import { useState } from "react";
 import api from "@/api/api";
 import { ACCESS_TOKEN, REFRESH_TOKEN } from "@/constants";
 import { useNavigate, Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, Eye, EyeOff } from "lucide-react";
 import Threads from "@/components/ui/Threads";
 import premiumPhoto from "@/assets/premium_photo-1725534270555-84e4b39e6b90.avif";
 import ForgotPasswordModal from "@/pages/ForgotPassword";
@@ -14,6 +14,7 @@ function Login() {
     const toast = useToast();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
     const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
@@ -125,12 +126,19 @@ function Login() {
                                 <label className="text-[11px] font-semibold text-black ml-1">{t("password")}</label>
                                 <div className="relative">
                                     <input
-                                        type="password"
+                                        type={showPassword ? "text" : "password"}
                                         placeholder="••••••••"
                                         value={password}
                                         onChange={(e) => { setPassword(e.target.value); setErrors(prev => ({ ...prev, password: null })) }}
-                                        className="w-full h-[42px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans"
+                                        className="w-full h-[42px] px-3.5 pr-10 rounded-[12px] border border-slate-200 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans"
                                     />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors focus:outline-none"
+                                    >
+                                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    </button>
                                 </div>
                                 {errors.password && <p className="text-[10px] text-red-500 ml-1">{errors.password}</p>}
                                 <div className="flex justify-end px-1 mt-1">

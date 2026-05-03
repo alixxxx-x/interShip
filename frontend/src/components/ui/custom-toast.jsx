@@ -76,7 +76,7 @@ const ToastItem = ({ toast, onClose }) => {
   return (
     <div
       className={`
-        pointer-events-auto flex items-center gap-3 min-w-[300px] max-w-md p-4 rounded-2xl border shadow-xl transition-all duration-500 transform
+        pointer-events-auto flex items-center gap-3 min-w-[300px] max-w-md p-4 rounded-2xl border shadow-xl transition-all duration-200 ease-out transform
         ${isVisible ? 'translate-x-0 opacity-100' : 'translate-x-[120%] opacity-0'}
         ${styles[toast.type]}
       `}

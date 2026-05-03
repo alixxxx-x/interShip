@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { User, Lock, Palette, Camera, Loader2, CheckCircle2, AlertCircle, Languages, LogOut, Globe, ShieldCheck, HelpCircle, ArrowLeft } from "lucide-react";
+import { User, Lock, Palette, Camera, Loader2, CheckCircle2, AlertCircle, Languages, LogOut, Globe, ShieldCheck, HelpCircle, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "@/api/api";
 import { useTheme } from "@/components/theme-provider";
@@ -49,6 +49,9 @@ export default function Settings() {
     new_password: "",
     confirm_password: ""
   });
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -437,37 +440,64 @@ export default function Settings() {
                 <form onSubmit={handleChangePassword} className="space-y-6 max-w-md">
                   <div className="space-y-2">
                     <Label htmlFor="oldPass">{t("currentPassword")}</Label>
-                    <Input
-                      id="oldPass"
-                      type="password"
-                      value={passwordData.old_password}
-                      onChange={(e) => setPasswordData({ ...passwordData, old_password: e.target.value })}
-                      className="bg-background/50"
-                      required
-                    />
+                    <div className="relative">
+                      <Input
+                        id="oldPass"
+                        type={showOldPassword ? "text" : "password"}
+                        value={passwordData.old_password}
+                        onChange={(e) => setPasswordData({ ...passwordData, old_password: e.target.value })}
+                        className="bg-background/50 pr-10"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowOldPassword(!showOldPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors focus:outline-none"
+                      >
+                        {showOldPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
                   <Separator />
                   <div className="space-y-2">
                     <Label htmlFor="newPass">{t("newPassword")}</Label>
-                    <Input
-                      id="newPass"
-                      type="password"
-                      value={passwordData.new_password}
-                      onChange={(e) => setPasswordData({ ...passwordData, new_password: e.target.value })}
-                      className="bg-background/50"
-                      required
-                    />
+                    <div className="relative">
+                      <Input
+                        id="newPass"
+                        type={showNewPassword ? "text" : "password"}
+                        value={passwordData.new_password}
+                        onChange={(e) => setPasswordData({ ...passwordData, new_password: e.target.value })}
+                        className="bg-background/50 pr-10"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors focus:outline-none"
+                      >
+                        {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="confirmPass">{t("confirmPassword")}</Label>
-                    <Input
-                      id="confirmPass"
-                      type="password"
-                      value={passwordData.confirm_password}
-                      onChange={(e) => setPasswordData({ ...passwordData, confirm_password: e.target.value })}
-                      className="bg-background/50"
-                      required
-                    />
+                    <div className="relative">
+                      <Input
+                        id="confirmPass"
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={passwordData.confirm_password}
+                        onChange={(e) => setPasswordData({ ...passwordData, confirm_password: e.target.value })}
+                        className="bg-background/50 pr-10"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors focus:outline-none"
+                      >
+                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
                   <div className="pt-4 flex justify-end">
                     <Button type="submit" disabled={loading} className="px-8 shadow-lg shadow-primary/20">
