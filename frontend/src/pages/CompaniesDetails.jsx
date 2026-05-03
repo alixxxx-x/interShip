@@ -358,8 +358,8 @@ export default function CompaniesDetails() {
                 <p className="text-indigo-100 mb-6 text-sm">{t("joinOurTeam")}</p>
                 <div className="flex items-center justify-between bg-white/10 rounded-2xl p-4 backdrop-blur-sm border border-white/20 mb-6">
                   <div>
-                    <p className="text-3xl font-black">{company.open_positions_count || 0}</p>
-                    <p className="text-indigo-200 text-xs font-semibold uppercase tracking-wider">{t("openRoles")}</p>
+                    <p className="text-3xl font-black">{company.total_internships_count || 0}</p>
+                    <p className="text-indigo-200 text-xs font-semibold uppercase tracking-wider">{t("totalInternships")}</p>
                   </div>
                 </div>
                 <Button

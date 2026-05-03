@@ -64,10 +64,17 @@ class UserSerializer(serializers.ModelSerializer):
                     val = getattr(profile, field, None)
                     
                     # Safely handle ImageField/FileField serialization
-                    # In Django, boolean check on a FieldFile returns False if no file is present
                     from django.db.models.fields.files import FieldFile
                     if isinstance(val, FieldFile):
-                        data[field] = val.url if val else None
+                        if val:
+                            request = self.context.get('request')
+                            url = val.url
+                            if request:
+                                data[field] = request.build_absolute_uri(url)
+                            else:
+                                data[field] = url
+                        else:
+                            data[field] = None
                     else:
                         data[field] = val
                     
