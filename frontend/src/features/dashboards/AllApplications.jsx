@@ -12,8 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, X, Pencil } from "lucide-react";
 import api from "@/api/api";
+import { useToast } from "@/components/ui/custom-toast";
 
 export default function AllApplications() {
+  const toast = useToast();
   const [applicationsByOffer, setApplicationsByOffer] = useState({});
   const [loading, setLoading] = useState(true);
 
@@ -117,8 +119,28 @@ export default function AllApplications() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => application.cv ? window.open(application.cv, '_blank') : alert('No CV available')}
-                          disabled={!application.cv}
+                          onClick={async () => {
+                            try {
+                              const res = await api.get(`/cv/generate/${application.student}/`, { 
+                                responseType: 'blob' 
+                              });
+                              const blob = new Blob([res.data], { type: 'application/pdf' });
+                              const url = window.URL.createObjectURL(blob);
+                              const link = document.createElement('a');
+                              link.href = url;
+                              link.setAttribute('download', `${application.candidate.replace(/\s+/g, '_')}_CV.pdf`);
+                              document.body.appendChild(link);
+                              link.click();
+                              link.remove();
+                              window.URL.revokeObjectURL(url);
+                            } catch (err) {
+                              if (application.cv) {
+                                window.open(application.cv, '_blank');
+                              } else {
+                                toast.warning('No CV available');
+                              }
+                            }
+                          }}
                         >
                           Download
                         </Button>

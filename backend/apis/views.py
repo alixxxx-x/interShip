@@ -12,6 +12,10 @@ from django.http import FileResponse
 from .models import *
 from .serializers import *
 from .permissions import *
+
+class MyTokenObtainPairView(TokenObtainPairView):
+    serializer_class = MyTokenObtainPairSerializer
+
 # gemini ai
 from google import genai
 from django.http import JsonResponse
@@ -94,12 +98,18 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
 
 
 class UserListView(generics.ListAPIView):
-    queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsAdmin]
+    permission_classes = [IsAdmin | IsCompany | IsStudent]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['username', 'email']
     ordering_fields = ['id', 'username']
+
+    def get_queryset(self):
+        queryset = User.objects.all()
+        role = self.request.query_params.get('role')
+        if role:
+            queryset = queryset.filter(role=role)
+        return queryset
 
 class UserAdminUpdateView(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
@@ -110,7 +120,7 @@ class UserAdminUpdateView(generics.RetrieveUpdateDestroyAPIView):
 class CompanyListView(generics.ListAPIView):
     queryset = Company.objects.filter(role=User.Role.COMPANY)
     serializer_class = CompanySerializer
-    permission_classes = [IsAuthenticated] # Allow all authenticated users to see companies
+    permission_classes = [AllowAny] # Allow all users to see companies
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name', 'location', 'company_field']
 
@@ -139,26 +149,17 @@ class MessageCreateView(generics.CreateAPIView):
     def perform_create(self, serializer):
         serializer.save(sender=self.request.user)
 
-class ChangePasswordView(generics.UpdateAPIView):
-    queryset = User.objects.all()
+class ChangePasswordView(generics.GenericAPIView):
     serializer_class = ChangePasswordSerializer
     permission_classes = [IsAuthenticated]
 
-    def get_object(self):
-        return self.request.user
-
-    def update(self, request, *args, **kwargs):
-        self.object = self.get_object()
+    def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
-
         if serializer.is_valid():
-            if not self.object.check_password(serializer.data.get("old_password")):
-                return Response({"old_password": ["Wrong password."]}, status=status.HTTP_400_BAD_REQUEST)
-            
-            self.object.set_password(serializer.data.get("new_password"))
-            self.object.save()
-            return Response({"status": "success", "message": "Password updated successfully"}, status=status.HTTP_200_OK)
-
+            user = request.user
+            user.set_password(serializer.validated_data['new_password'])
+            user.save()
+            return Response({"message": "Password updated successfully"}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # internship views
@@ -295,6 +296,15 @@ class ApplicationUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
         
         # Notify candidate on status change (The model now handles the internship status)
         if old_status != application.status:
+            # First, remove any previous status notifications for this specific application to avoid duplicates
+            Notification.objects.filter(
+                application=application,
+                notification_type__in=[
+                    Notification.NotificationType.APPLICATION_ACCEPTED,
+                    Notification.NotificationType.APPLICATION_REJECTED
+                ]
+            ).delete()
+
             if application.status == Application.Status.ACCEPTED:
                 Notification.objects.create(
                     recipient=application.student,
@@ -373,7 +383,10 @@ class ApplicationListView(generics.ListAPIView):
     serializer_class = ApplicationSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['student','internship','status']
+    search_fields = [
+        'student__first_name', 'student__last_name', 'student__email',
+        'internship__title', 'internship__company__name', 'status'
+    ]
     ordering_fields = ['id', 'application_date']
     
     def get_queryset(self):
@@ -384,6 +397,13 @@ class ApplicationListView(generics.ListAPIView):
             else:
                 queryset = queryset.filter(student=self.request.user.student)
         return queryset
+
+    @property
+    def pagination_class(self):
+        # Disable pagination for admins to avoid missing candidates
+        if self.request.user.role == User.Role.ADMIN:
+            return None
+        return super().pagination_class
 
 # skills views
 
@@ -486,7 +506,7 @@ class StudentDashboardView(generics.GenericAPIView):
         
         stats = {
             "pendingAplications": applications.filter(status=Application.Status.PENDING).count(),
-            "acceptedApplications": applications.filter(status=Application.Status.ACCEPTED).count(),
+            "acceptedApplications": applications.filter(status=Application.Status.ACCEPTED, is_validated_by_admin=True).count(),
             "totalApplications": applications.count(),
         }
         
@@ -530,7 +550,7 @@ class CompanyDashboardView(generics.GenericAPIView):
 
         stats = {
             "pendingApplications": applications.filter(status=Application.Status.PENDING).count(),
-            "acceptedApplications": applications.filter(status=Application.Status.ACCEPTED).count(),
+            "acceptedApplications": applications.filter(status=Application.Status.ACCEPTED, is_validated_by_admin=True).count(),
             "totalInternships": internships.count(),
         }
 
@@ -556,11 +576,12 @@ class CompanyDashboardView(generics.GenericAPIView):
 
             # Try to get CV pdf URL
             cv_url = None
-            if hasattr(student, 'digital_cv') and student.digital_cv and student.digital_cv.cv_pdf:
-                cv_url = request.build_absolute_uri(student.digital_cv.cv_pdf.url)
+            if hasattr(student, 'digital_cv') and student.digital_cv and student.digital_cv.cv_file:
+                cv_url = request.build_absolute_uri(student.digital_cv.cv_file.url)
 
             recent_apps_data.append({
                 "id": app.id,
+                "studentId": student.id,
                 "candidate": candidate_name,
                 "status": status_map.get(app.status, app.status),
                 "appliedDate": app.application_date.strftime("%Y-%m-%d"),
@@ -619,6 +640,13 @@ class NotificationMarkAllReadView(generics.GenericAPIView):
         Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
         return Response({"status": "ok"})
 
+class NotificationClearAllView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, *args, **kwargs):
+        Notification.objects.filter(recipient=request.user).delete()
+        return Response({"status": "ok"})
+
 # Admin Views
 class AdminPendingValidationsView(generics.ListAPIView):
     permission_classes = [IsAuthenticated, IsAdmin]
@@ -640,22 +668,53 @@ class AdminValidateApplicationView(generics.GenericAPIView):
         application.save()
         
         # Notify student
-        Notification.objects.create(
+        Notification.objects.get_or_create(
             recipient=application.student,
             notification_type=Notification.NotificationType.APPLICATION_ACCEPTED,
-            message=f"Your internship at {application.internship.company.name} has been validated by the administration! You can now download your agreement.",
+            application=application,
+            defaults={
+                "message": f"Your internship at {application.internship.company.name} has been validated by the administration! You can now download your agreement."
+            }
+        )
+
+        # Notify company
+        Notification.objects.get_or_create(
+            recipient=application.internship.company,
+            notification_type=Notification.NotificationType.APPLICATION_ACCEPTED,
+            application=application,
+            defaults={
+                "message": f"The internship for {application.student.first_name} {application.student.last_name} has been validated by the administration."
+            }
+        )
+        
+        return Response({"status": "validated"})
+
+class AdminRejectApplicationView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def post(self, request, pk):
+        application = get_object_or_404(Application, pk=pk, status=Application.Status.ACCEPTED)
+        application.status = Application.Status.REJECTED
+        application.is_validated_by_admin = False
+        application.save()
+        
+        # Notify student
+        Notification.objects.create(
+            recipient=application.student,
+            notification_type=Notification.NotificationType.APPLICATION_REJECTED,
+            message=f"Your internship validation for '{application.internship.title}' has been rejected by the administration.",
             application=application
         )
 
         # Notify company
         Notification.objects.create(
             recipient=application.internship.company,
-            notification_type=Notification.NotificationType.APPLICATION_ACCEPTED,
-            message=f"The internship for {application.student.first_name} {application.student.last_name} has been validated by the administration.",
+            notification_type=Notification.NotificationType.APPLICATION_REJECTED,
+            message=f"The internship validation for {application.student.get_full_name()} has been rejected by the administration.",
             application=application
         )
         
-        return Response({"status": "validated"})
+        return Response({"status": "rejected"})
 
 class AdminStatsView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated, IsAdmin]
@@ -779,4 +838,215 @@ class GenerateInternshipAgreementView(generics.GenericAPIView):
         doc.build(elements)
         buffer.seek(0)
         
-        return FileResponse(buffer, as_attachment=True, filename=f"agreement_{application.id}.pdf")
+        return FileResponse(buffer, as_attachment=True, filename=f"Convention_{application.student.first_name}.pdf")
+
+class GenerateCVView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, student_id):
+        student = get_object_or_404(Student, pk=student_id)
+        
+        user = request.user
+        if user.role == User.Role.STUDENT and user.id != student.id:
+            raise PermissionDenied("You can only download your own CV.")
+        elif user.role == User.Role.COMPANY:
+            has_applied = Application.objects.filter(student=student, internship__company_id=user.id).exists()
+            if not has_applied:
+                raise PermissionDenied("You can only download CVs of students who applied to your internships.")
+        
+        try:
+            cv = student.digital_cv
+        except Exception:
+            return Response({"error": "This student has not created a digital CV yet."}, status=404)
+
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
+        from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+        from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
+        
+        styles = getSampleStyleSheet()
+        
+        name_style = ParagraphStyle(
+            'NameStyle', 
+            parent=styles['Normal'], 
+            fontName='Helvetica-Bold', 
+            fontSize=16, 
+            alignment=TA_CENTER, 
+            spaceAfter=5
+        )
+        contact_style = ParagraphStyle(
+            'ContactStyle', 
+            parent=styles['Normal'], 
+            fontName='Helvetica', 
+            fontSize=10, 
+            alignment=TA_CENTER, 
+            spaceAfter=2
+        )
+        body_style = ParagraphStyle(
+            'BodyStyle',
+            parent=styles['Normal'],
+            fontName='Helvetica',
+            fontSize=10,
+            leading=14,
+            alignment=TA_JUSTIFY,
+            spaceAfter=10
+        )
+        
+        elements = []
+
+        # Header - Name
+        elements.append(Paragraph(f"{cv.first_name} {cv.last_name}".upper(), name_style))
+        
+        # Contact Info Styles
+        contact_style_left = ParagraphStyle('ContactLeft', parent=styles['Normal'], fontName='Helvetica', fontSize=9, alignment=0) # TA_LEFT
+        contact_style_right = ParagraphStyle('ContactRight', parent=styles['Normal'], fontName='Helvetica', fontSize=9, alignment=2) # TA_RIGHT
+
+        # Contact Info Table Data
+        left_data = []
+        if cv.email: left_data.append(f"<b>Email:</b> {cv.email}")
+        if cv.phone: left_data.append(f"<b>Phone:</b> {cv.phone}")
+        
+        right_data = []
+        loc = cv.address or cv.wilaya
+        if loc: right_data.append(f"<b>Location:</b> {loc}")
+        uid = cv.university_id or student.university_id
+        if uid: right_data.append(f"<b>Student ID:</b> {uid}")
+
+        # Construct table rows
+        table_rows = []
+        for i in range(max(len(left_data), len(right_data))):
+            l = left_data[i] if i < len(left_data) else ""
+            r = right_data[i] if i < len(right_data) else ""
+            table_rows.append([Paragraph(l, contact_style_left), Paragraph(r, contact_style_right)])
+
+        if table_rows:
+            t = RLTable(table_rows, colWidths=['50%', '50%'])
+            t.setStyle(TableStyle([
+                ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                ('LEFTPADDING', (0,0), (-1,-1), 0),
+                ('RIGHTPADDING', (0,0), (-1,-1), 0),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+            ]))
+            elements.append(t)
+            
+        elements.append(Spacer(1, 15))
+
+        def add_section(title, content):
+            if not content: return
+            
+            # Section Header with line below
+            t = RLTable([[title.upper()]], colWidths=['100%'])
+            t.setStyle(TableStyle([
+                ('FONTNAME', (0,0), (-1,-1), 'Helvetica-Bold'),
+                ('FONTSIZE', (0,0), (-1,-1), 11),
+                ('TEXTCOLOR', (0,0), (-1,-1), colors.HexColor("#4c1d95")), # Purple-900
+                ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+                ('TOPPADDING', (0,0), (-1,-1), 12),
+                ('LINEBELOW', (0,0), (-1,-1), 1.5, colors.HexColor("#7c3aed")), # Purple-600
+            ]))
+            elements.append(t)
+            elements.append(Spacer(1, 8))
+            
+            # Content
+            import json
+            try:
+                parsed = json.loads(content)
+                if isinstance(parsed, list):
+                    # For list-like content, use bullet points
+                    for item in parsed:
+                        if item.strip():
+                            elements.append(Paragraph(f"• {item.strip()}", body_style))
+                    return
+            except Exception:
+                pass
+                
+            elements.append(Paragraph(content.replace('\n', '<br/>'), body_style))
+
+        add_section("Summary", cv.profile_summary)
+        add_section("Education", cv.education)
+        add_section("Professional Experience", cv.experience)
+        add_section("Skills", cv.skills)
+        add_section("Languages", cv.languages)
+
+        # Move links to the bottom in a nice "Links & Portfolio" section
+        links_content = []
+        if cv.linkedin: links_content.append(f"<b>LinkedIn:</b> {cv.linkedin}")
+        if cv.github: links_content.append(f"<b>GitHub:</b> {cv.github}")
+        if cv.portfolio_link: links_content.append(f"<b>Portfolio:</b> {cv.portfolio_link}")
+        
+        if links_content:
+            add_section("Links & Portfolio", "<br/>".join(links_content))
+
+        doc.build(elements)
+        buffer.seek(0)
+        return FileResponse(buffer, as_attachment=True, filename=f"{cv.first_name}_{cv.last_name}_CV.pdf")
+
+
+# forgot password and reset password
+import random
+from rest_framework.views import APIView
+
+class ForgotPasswordView(APIView):
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        email = request.data.get('email')
+        try:
+            user = User.objects.get(email=email)
+            # Generate a random 6-digit OTP
+            otp = str(random.randint(100000, 999999))
+            PasswordReset.objects.create(user=user, code=otp)
+            
+            # Print to console so you can see the code during development
+            print(f"\n[OTP] Code for {email}: {otp}\n")
+            
+            return Response({"status": "code_sent"})
+        except User.DoesNotExist:
+            return Response({"error": "No account found with this email."}, status=404)
+
+class VerifyResetCodeView(APIView):
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        email = request.data.get('email')
+        code = str(request.data.get('code', '')).strip()
+        
+        try:
+            user = User.objects.filter(email__iexact=email).first()
+            if not user:
+                return Response({"error": "User not found."}, status=404)
+            
+            reset_request = PasswordReset.objects.filter(user=user, code=code, is_used=False).last()
+            if reset_request:
+                return Response({"status": "code_verified"})
+            else:
+                return Response({"error": "Invalid code."}, status=400)
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
+
+class ResetPasswordView(APIView):
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        email = request.data.get('email')
+        code = str(request.data.get('code', '')).strip()
+        new_password = request.data.get('new_password')
+        
+        try:
+            user = User.objects.filter(email__iexact=email).first()
+            if not user:
+                return Response({"error": "User not found."}, status=404)
+
+            reset_request = PasswordReset.objects.filter(user=user, code=code, is_used=False).last()
+            
+            if reset_request:
+                user.set_password(new_password)
+                user.save()
+                reset_request.is_used = True
+                reset_request.save()
+                return Response({"status": "password_reset_success"})
+            else:
+                return Response({"error": "Invalid or expired code."}, status=400)
+        except Exception as e:
+            return Response({"error": f"Server Error: {str(e)}"}, status=500)

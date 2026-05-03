@@ -108,6 +108,7 @@ export default function MyApplications() {
                   <TableHead>Offer</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Applied Date</TableHead>
+                  <TableHead className="text-right">Agreement</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -128,6 +129,34 @@ export default function MyApplications() {
                         <Badge variant={getStatusBadge(statusText)}>{statusText}</Badge>
                       </TableCell>
                       <TableCell>{appliedDate}</TableCell>
+                      <TableCell className="text-right">
+                        {application.status === 'ACCEPTED' && application.is_validated_by_admin && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-1 h-8 px-2"
+                            onClick={async () => {
+                              try {
+                                const res = await api.get(`/admin/applications/${application.id}/agreement/`, { 
+                                  responseType: 'blob' 
+                                });
+                                const url = window.URL.createObjectURL(new Blob([res.data]));
+                                const link = document.createElement('a');
+                                link.href = url;
+                                link.setAttribute('download', `Agreement_${application.id}.pdf`);
+                                document.body.appendChild(link);
+                                link.click();
+                                link.remove();
+                                window.URL.revokeObjectURL(url);
+                              } catch (err) {
+                                console.error("Failed to download agreement:", err);
+                              }
+                            }}
+                          >
+                            PDF
+                          </Button>
+                        )}
+                      </TableCell>
                     </TableRow>
                   );
                 })}

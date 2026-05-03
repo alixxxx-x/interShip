@@ -7,6 +7,7 @@ import {
   LogOut,
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
+import { useLanguage } from "@/components/language-provider"
 
 import {
   Avatar,
@@ -35,6 +36,7 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar()
   const navigate = useNavigate()
+  const { t } = useLanguage()
 
   if (!user) return null;
 
@@ -49,20 +51,28 @@ export function NavUser({
                 size="lg"
                 className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground w-full"
               >
-                <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.profile_picture} alt={user.username} />
+                <Avatar className="h-8 w-8 rounded-lg shrink-0">
+                  <AvatarImage src={user.profile_picture} alt={user.username} className="object-cover" />
                   <AvatarFallback className="rounded-lg uppercase">
                     {user.username?.charAt(0) || 'U'}
                   </AvatarFallback>
                 </Avatar>
-                <div className="grid flex-1 text-left text-sm leading-tight">
+                <div className="grid flex-1 text-left text-sm leading-tight overflow-hidden">
                   <div className="flex items-center gap-2">
-                    <span className="truncate font-semibold">{user.username}</span>
+                    <span className="truncate font-semibold">
+                      {user.role === 'COMPANY'
+                        ? (user.name || user.username)
+                        : user.role === 'STUDENT' && (user.first_name || user.last_name)
+                          ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
+                          : user.username}
+                    </span>
                     {unreadCount > 0 && (
                       <span className="h-2 w-2 rounded-full bg-primary shrink-0" />
                     )}
                   </div>
-                  <span className="truncate text-xs">{user.email}</span>
+                  <span className="truncate text-xs text-muted-foreground">
+                    {user.role === 'COMPANY' ? t('company') : t(user.role?.toLowerCase()) || user.role}
+                  </span>
                 </div>
                 <ChevronsUpDown className="ml-auto size-4" />
               </SidebarMenuButton>
@@ -76,20 +86,28 @@ export function NavUser({
           >
             <div className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.profile_picture} alt={user.username} />
+                <Avatar className="h-8 w-8 rounded-lg shrink-0">
+                  <AvatarImage src={user.profile_picture} alt={user.username} className="object-cover" />
                   <AvatarFallback className="rounded-lg uppercase">
                     {user.username?.charAt(0) || 'U'}
                   </AvatarFallback>
                 </Avatar>
-                <div className="grid flex-1 text-left text-sm leading-tight">
+                <div className="grid flex-1 text-left text-sm leading-tight overflow-hidden">
                   <div className="flex items-center gap-2">
-                    <span className="truncate font-semibold">{user.username}</span>
+                    <span className="truncate font-semibold">
+                      {user.role === 'COMPANY'
+                        ? (user.name || user.username)
+                        : user.role === 'STUDENT' && (user.first_name || user.last_name)
+                          ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
+                          : user.username}
+                    </span>
                     {unreadCount > 0 && (
                       <span className="h-2 w-2 rounded-full bg-primary shrink-0" />
                     )}
                   </div>
-                  <span className="truncate text-xs">{user.email}</span>
+                  <span className="truncate text-xs text-muted-foreground">
+                    {user.role === 'COMPANY' ? t('company') : t(user.role?.toLowerCase()) || user.role}
+                  </span>
                 </div>
               </div>
             </div>
@@ -97,12 +115,14 @@ export function NavUser({
             <DropdownMenuGroup>
               <DropdownMenuItem onClick={() => navigate('/profile')}>
                 <BadgeCheck className="mr-2" />
-                Account
+                {t("account")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => {
                 const notificationUrl = user?.role === "STUDENT"
                   ? '/studentdashboard/notifications'
-                  : '/companydashboard/notifications';
+                  : user?.role === "ADMIN"
+                    ? '/admindashboard/notifications'
+                    : '/companydashboard/notifications';
                 navigate(notificationUrl);
               }}>
                 <div className="relative mr-2">
@@ -111,13 +131,13 @@ export function NavUser({
                     <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-primary border border-background" />
                   )}
                 </div>
-                Notifications
+                {t("navNotifications")}
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
               <LogOut className="mr-2" />
-              Log out
+              {t("logout")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -33,8 +33,10 @@ import {
 } from "@/components/ui/table";
 import { useNavigate } from "react-router-dom";
 import api from "@/api/api";
+import { useToast } from "@/components/ui/custom-toast";
 
 export default function AdminDashboard() {
+  const toast = useToast();
   const [stats, setStats] = useState({
     total_students: 0,
     placed_students: 0,
@@ -74,11 +76,11 @@ export default function AdminDashboard() {
     if (!window.confirm("Are you sure you want to validate this internship agreement?")) return;
     try {
       await api.post(`/admin/applications/${id}/validate/`);
-      alert("Application validated successfully!");
+      toast.success("Application validated successfully!");
       fetchDashboardData();
     } catch (error) {
       console.error("Validation failed:", error);
-      alert("Failed to validate application.");
+      toast.error("Failed to validate application.");
     }
   };
 
@@ -96,7 +98,7 @@ export default function AdminDashboard() {
       link.remove();
     } catch (error) {
       console.error("Download failed:", error);
-      alert("Could not download agreement. Ensure it is validated.");
+      toast.error("Could not download agreement. Ensure it is validated.");
     }
   };
 

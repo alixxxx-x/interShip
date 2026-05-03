@@ -8,7 +8,7 @@ urlpatterns = [
 
     # Authentication
     path('auth/register/', RegisterView.as_view(), name='register'),
-    path('auth/login/', TokenObtainPairView.as_view(), name='login'),
+    path('auth/login/', MyTokenObtainPairView.as_view(), name='login'),
     path('auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('auth/profile/', UserProfileView.as_view(), name='profile'),
     path('auth/change-password/', ChangePasswordView.as_view(), name='change_password'),
@@ -42,6 +42,7 @@ urlpatterns = [
     # CV
     path('cv/create/', DigitalCVCreateView.as_view(), name='cv-create'),
     path('cv/', DigitalCVRetrieveUpdateView.as_view(), name='cv-detail'),
+    path('cv/generate/<int:student_id>/', GenerateCVView.as_view(), name='generate-cv'),
     path('student/dashboard/', StudentDashboardView.as_view(), name='student-dashboard'),
     path('company/dashboard/', CompanyDashboardView.as_view(), name='company-dashboard'),
 
@@ -49,15 +50,22 @@ urlpatterns = [
     path('notifications/', NotificationListView.as_view(), name='notification-list'),
     path('notifications/<int:pk>/read/', NotificationMarkReadView.as_view(), name='notification-read'),
     path('notifications/read-all/', NotificationMarkAllReadView.as_view(), name='notification-read-all'),
+    path('notifications/clear-all/', NotificationClearAllView.as_view(), name='notification-clear-all'),
 
     # Admin Dashboard Functionalities
     path('admin/dashboard/stats/', AdminStatsView.as_view(), name='admin-stats'),
     path('admin/applications/pending-validation/', AdminPendingValidationsView.as_view(), name='admin-pending-validations'),
     path('admin/applications/<int:pk>/validate/', AdminValidateApplicationView.as_view(), name='admin-validate-application'),
+    path('admin/applications/<int:pk>/reject/', AdminRejectApplicationView.as_view(), name='admin-reject-application'),
     path('admin/applications/<int:pk>/agreement/', GenerateInternshipAgreementView.as_view(), name='admin-generate-agreement'),
 
     # Messaging
     path('messages/', MessageListView.as_view(), name='message-list'),
     path('messages/send/', MessageCreateView.as_view(), name='message-send'),
+
+    # Password Reset
+    path('auth/forgot-password/', ForgotPasswordView.as_view(), name='forgot_password'),
+    path('auth/verify-reset-code/', VerifyResetCodeView.as_view(), name='verify_reset_code'),
+    path('auth/reset-password/', ResetPasswordView.as_view(), name='reset_password'),
 ]
    

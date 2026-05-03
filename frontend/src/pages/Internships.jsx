@@ -1,13 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Search, Building2, MapPin, Briefcase, X, Filter, Share2, Heart, Calendar, Users } from 'lucide-react';
+import { Search, Building2, MapPin, Briefcase, X, Filter, Share2, Heart, Calendar, Users, Check, ChevronDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
 import api from '@/api/api';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { useLanguage } from '@/components/language-provider';
 
 export default function Internships() {
+  const { t } = useLanguage();
   const location = useLocation();
   const [internships, setInternships] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,10 +22,16 @@ export default function Internships() {
   const [isSearchActive, setIsSearchActive] = useState(location.state?.isSearchActive || false);
 
   // Filter States
-  const [selectedWilaya, setSelectedWilaya] = useState(location.state?.selectedWilaya || "");
-  const [selectedType, setSelectedType] = useState(location.state?.selectedType || "");
-  const [selectedTech, setSelectedTech] = useState(location.state?.selectedTech || "");
-  const [selectedSkill, setSelectedSkill] = useState(location.state?.selectedSkill || "");
+  const [selectedWilaya, setSelectedWilaya] = useState("");
+  const [selectedType, setSelectedType] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState("");
+  const [selectedSkills, setSelectedSkills] = useState([]);
+  
+  // Popover Open States
+  const [isTypeOpen, setIsTypeOpen] = useState(false);
+  const [isLocationOpen, setIsLocationOpen] = useState(false);
+  const [isWilayaOpen, setIsWilayaOpen] = useState(false);
+  const [isSkillsOpen, setIsSkillsOpen] = useState(false);
   const navigate = useNavigate();
   const [likedItems, setLikedItems] = useState(new Set());
 
@@ -105,11 +115,33 @@ export default function Internships() {
   // Safe data processing
   const safeInternships = Array.isArray(internships) ? internships : [];
 
+  const ALGERIAN_WILAYAS = [
+    "Adrar", "Chlef", "Laghouat", "Oum El Bouaghi", "Batna", "Béjaïa", "Biskra", "Béchar", "Blida", "Bouira",
+    "Tamanrasset", "Tébessa", "Tlemcen", "Tiaret", "Tizi Ouzou", "Algiers", "Djelfa", "Jijel", "Sétif", "Saïda",
+    "Skikda", "Sidi Bel Abbès", "Annabba", "Guelma", "Constantine", "Médéa", "Mostaganem", "M'Sila", "Mascara", "Ouargla",
+    "Oran", "El Bayadh", "Illizi", "Bordj Bou Arréridj", "Boumerdès", "El Tarf", "Tindouf", "Tissemsilt", "El Oued", "Khenchela",
+    "Souk Ahras", "Tipaza", "Mila", "Aïn Defla", "Naâma", "Aïn Témouchent", "Ghardaïa", "Relizane", "Timimoun", "Bordj Badji Mokhtar",
+    "Ouled Djellal", "Béni Abbès", "In Salah", "In Guezzam", "Touggourt", "Djanet", "M'Ghair", "El Meniaa"
+  ];
+
+  const COMMON_SKILLS = [
+    "React", "Node.js", "Python", "UI/UX Design", "Marketing",
+    "Data Science", "Java", "C++", "SQL", "Graphic Design",
+    "Project Management", "Social Media", "SEO", "Excel",
+    "JavaScript", "TypeScript", "HTML/CSS", "PHP", "Laravel",
+    "Swift", "Kotlin", "Android", "iOS", "Flutter",
+    "AWS", "Docker", "Kubernetes", "DevOps", "Cybersecurity",
+    "Machine Learning", "Artificial Intelligence", "Blockchain",
+    "Financial Analysis", "Business Strategy", "Content Writing",
+    "Copywriting", "Video Editing", "Adobe Photoshop", "Adobe Illustrator",
+    "Figma", "Canva", "Sales", "Customer Support", "HR Management"
+  ];
+
   // Extracted unique filter options with safety
-  const allWilayas = [...new Set(safeInternships.map(i => i.wilaya).filter(Boolean))];
-  const allTypes = [...new Set(safeInternships.map(i => i.internship_type).filter(Boolean))];
-  const allTechs = [...new Set(safeInternships.flatMap(i => i.required_skills || []).filter(Boolean))];
-  const allSkills = [...new Set(safeInternships.flatMap(i => i.required_skills || []).filter(Boolean))];
+  const allWilayas = ALGERIAN_WILAYAS;
+  const allTypes = ["FULL_TIME", "PART_TIME"];
+  const allLocations = ["REMOTE", "ONSITE", "HYBRID"];
+  const allSkills = COMMON_SKILLS;
 
   // Close search on escape key
   useEffect(() => {
@@ -131,20 +163,20 @@ export default function Internships() {
     const matchesSearch = q === "" || title.includes(q) || company.includes(q);
     const matchesWilaya = selectedWilaya === "" || internship.wilaya === selectedWilaya;
     const matchesType = selectedType === "" || internship.internship_type === selectedType;
-    const matchesTech = selectedTech === "" || (internship.required_skills && internship.required_skills.includes(selectedTech));
-    const matchesSkill = selectedSkill === "" || (internship.required_skills && internship.required_skills.includes(selectedSkill));
+    const matchesLocation = selectedLocation === "" || internship.internship_location === selectedLocation;
+    const matchesSkill = selectedSkills.length === 0 || (internship.required_skills && selectedSkills.some(s => internship.required_skills.includes(s)));
 
-    return matchesSearch && matchesWilaya && matchesType && matchesTech && matchesSkill;
+    return matchesSearch && matchesWilaya && matchesType && matchesLocation && matchesSkill;
   });
 
   const clearFilters = () => {
     setSelectedWilaya("");
     setSelectedType("");
-    setSelectedTech("");
-    setSelectedSkill("");
+    setSelectedLocation("");
+    setSelectedSkills([]);
   };
 
-  const hasActiveFilters = selectedWilaya !== "" || selectedType !== "" || selectedTech !== "" || selectedSkill !== "";
+  const hasActiveFilters = selectedWilaya !== "" || selectedType !== "" || selectedLocation !== "" || selectedSkills.length > 0;
 
   return (
     <div className="container mx-auto pt-6 pb-12 px-4 max-w-6xl relative min-h-[80vh]">
@@ -164,8 +196,8 @@ export default function Internships() {
       <div className={`space-y-4 flex flex-col items-center text-center  ${isSearchActive ? 'opacity-0 h-0 overflow-hidden' : 'opacity-100 mb-8'
         }`}>
         <div className="flex flex-col items-center">
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Explore Internships</h1>
-          <p className="text-muted-foreground w-full max-w-xl mt-3">Find the best internship opportunities tailored for you.</p>
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">{t("exploreInternships")}</h1>
+          <p className="text-muted-foreground w-full max-w-xl mt-3">{t("exploreInternshipsDesc")}</p>
         </div>
       </div>
 
@@ -181,7 +213,7 @@ export default function Internships() {
           <Search className={`absolute text-muted-foreground  z-10 ${isSearchActive ? 'left-6 h-6 w-6' : 'left-4 h-5 w-5'}`} />
           <Input
             ref={searchInputRef}
-            placeholder="Search by title, company, or keywords..."
+            placeholder={t("searchInternships")}
             className={`transition-all duration-500 ease-in-out w-full bg-background relative z-0 ${isSearchActive
               ? 'pl-16 pr-14 h-16 text-lg lg:text-xl shadow-2xl rounded-2xl border-primary/30 focus-visible:border-primary focus-visible:ring-primary/20 hover:border-primary/50'
               : 'pl-11 h-12 text-base rounded-full shadow-sm hover:shadow-md'
@@ -223,93 +255,260 @@ export default function Internships() {
           <div className="w-full flex flex-wrap items-center gap-3 mt-4 animate-in fade-in slide-in-from-top-4 duration-500 bg-card p-3 rounded-2xl shadow-lg border shrink-0">
             <div className="flex items-center gap-2 px-2 text-sm font-semibold text-muted-foreground">
               <Filter className="h-4 w-4" />
-              Filters:
+              {t("filters")}
             </div>
 
-            {/* Skill Filter */}
-            <select
-              value={selectedSkill}
-              onChange={(e) => setSelectedSkill(e.target.value)}
-              className="bg-muted text-foreground text-sm font-medium rounded-xl px-4 py-2.5 border-0 focus:ring-2 focus:ring-primary/20 cursor-pointer hover:bg-muted/80 transition-colors appearance-none outline-none min-w-[140px] shadow-sm"
-            >
-              <option value="">By Skill (All)</option>
-              {allSkills.map(skill => (
-                <option key={skill} value={skill}>{skill}</option>
-              ))}
-            </select>
+            {/* Skill Filter (Custom Multi-select with Checkmarks) */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className="bg-muted hover:bg-muted/80 text-foreground border-0 rounded-xl px-4 py-2.5 h-10 font-medium flex items-center gap-2 w-[150px] justify-between shadow-sm"
+                >
+                  <span className="truncate text-xs">
+                    {selectedSkills.length === 0 
+                      ? t("bySkillAll") 
+                      : `${selectedSkills.length} ${t("skillsSelected")}`}
+                  </span>
+                  <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-1.5 rounded-xl shadow-2xl border-border bg-card" align="start">
+                <div className="max-h-64 overflow-y-auto custom-scrollbar space-y-0.5">
+                  {allSkills.map(skill => {
+                    const isSelected = selectedSkills.includes(skill);
+                    return (
+                      <button
+                        key={skill}
+                        className={cn(
+                          "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors",
+                          isSelected 
+                            ? "bg-primary/10 text-primary font-semibold" 
+                            : "hover:bg-muted text-foreground"
+                        )}
+                        onClick={() => {
+                          if (isSelected) {
+                            setSelectedSkills(selectedSkills.filter(s => s !== skill));
+                          } else {
+                            setSelectedSkills([...selectedSkills, skill]);
+                          }
+                        }}
+                      >
+                        {skill}
+                        {isSelected && <Check className="h-4 w-4" />}
+                      </button>
+                    );
+                  })}
+                </div>
+                {selectedSkills.length > 0 && (
+                  <div className="pt-2 mt-2 border-t">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="w-full text-xs text-destructive hover:bg-destructive/10 rounded-lg"
+                      onClick={() => setSelectedSkills([])}
+                    >
+                      {t("clearSkills")}
+                    </Button>
+                  </div>
+                )}
+              </PopoverContent>
+            </Popover>
 
             {/* Type Filter */}
-            <select
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
-              className="bg-muted text-foreground text-sm font-medium rounded-xl px-4 py-2.5 border-0 focus:ring-2 focus:ring-primary/20 cursor-pointer hover:bg-muted/80 transition-colors appearance-none outline-none min-w-[140px] shadow-sm"
-            >
-              <option value="">By Type (All)</option>
-              {allTypes.map(type => (
-                <option key={type} value={type}>{type}</option>
-              ))}
-            </select>
+            <Popover open={isTypeOpen} onOpenChange={setIsTypeOpen}>
+              <PopoverTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className="bg-muted hover:bg-muted/80 text-foreground border-0 rounded-xl px-4 py-2.5 h-10 font-medium flex items-center gap-2 w-[150px] justify-between shadow-sm"
+                >
+                  <span className="truncate text-xs">
+                    {selectedType === "" 
+                      ? t("byTypeAll") 
+                      : selectedType.replace('_', ' ')}
+                  </span>
+                  <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-1.5 rounded-xl shadow-2xl border-border bg-card" align="start">
+                <div className="max-h-64 overflow-y-auto custom-scrollbar space-y-0.5">
+                  <button
+                    className={cn(
+                      "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors text-left",
+                      selectedType === "" ? "bg-primary/10 text-primary font-semibold" : "hover:bg-muted text-foreground"
+                    )}
+                    onClick={() => {
+                      setSelectedType("");
+                      setIsTypeOpen(false);
+                    }}
+                  >
+                    {t("byTypeAll")}
+                    {selectedType === "" && <Check className="h-4 w-4" />}
+                  </button>
+                  {allTypes.map(type => {
+                    const isSelected = selectedType === type;
+                    return (
+                      <button
+                        key={type}
+                        className={cn(
+                          "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors text-left",
+                          isSelected 
+                            ? "bg-primary/10 text-primary font-semibold" 
+                            : "hover:bg-muted text-foreground"
+                        )}
+                        onClick={() => {
+                          setSelectedType(isSelected ? "" : type);
+                          setIsTypeOpen(false);
+                        }}
+                      >
+                        {type.replace('_', ' ')}
+                        {isSelected && <Check className="h-4 w-4" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </PopoverContent>
+            </Popover>
 
-            {/* Tech Filter */}
-            <select
-              value={selectedTech}
-              onChange={(e) => setSelectedTech(e.target.value)}
-              className="bg-muted text-foreground text-sm font-medium rounded-xl px-4 py-2.5 border-0 focus:ring-2 focus:ring-primary/20 cursor-pointer hover:bg-muted/80 transition-colors appearance-none outline-none min-w-[140px] shadow-sm"
-            >
-              <option value="">By Tech (All)</option>
-              {allTechs.map(tech => (
-                <option key={tech} value={tech}>{tech}</option>
-              ))}
-            </select>
+            {/* Location Type Filter */}
+            <Popover open={isLocationOpen} onOpenChange={setIsLocationOpen}>
+              <PopoverTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className="bg-muted hover:bg-muted/80 text-foreground border-0 rounded-xl px-4 py-2.5 h-10 font-medium flex items-center gap-2 w-[150px] justify-between shadow-sm"
+                >
+                  <span className="truncate text-xs">
+                    {selectedLocation === "" 
+                      ? t("byLocationAll") 
+                      : selectedLocation}
+                  </span>
+                  <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-1.5 rounded-xl shadow-2xl border-border bg-card" align="start">
+                <div className="max-h-64 overflow-y-auto custom-scrollbar space-y-0.5">
+                  <button
+                    className={cn(
+                      "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors text-left",
+                      selectedLocation === "" ? "bg-primary/10 text-primary font-semibold" : "hover:bg-muted text-foreground"
+                    )}
+                    onClick={() => {
+                      setSelectedLocation("");
+                      setIsLocationOpen(false);
+                    }}
+                  >
+                    {t("byLocationAll")}
+                    {selectedLocation === "" && <Check className="h-4 w-4" />}
+                  </button>
+                  {allLocations.map(loc => {
+                    const isSelected = selectedLocation === loc;
+                    return (
+                      <button
+                        key={loc}
+                        className={cn(
+                          "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors text-left",
+                          isSelected 
+                            ? "bg-primary/10 text-primary font-semibold" 
+                            : "hover:bg-muted text-foreground"
+                        )}
+                        onClick={() => {
+                          setSelectedLocation(isSelected ? "" : loc);
+                          setIsLocationOpen(false);
+                        }}
+                      >
+                        {loc}
+                        {isSelected && <Check className="h-4 w-4" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </PopoverContent>
+            </Popover>
 
             {/* Wilaya Filter */}
-            <select
-              value={selectedWilaya}
-              onChange={(e) => setSelectedWilaya(e.target.value)}
-              className="bg-muted text-foreground text-sm font-medium rounded-xl px-4 py-2.5 border-0 focus:ring-2 focus:ring-primary/20 cursor-pointer hover:bg-muted/80 transition-colors appearance-none outline-none min-w-[140px] shadow-sm"
-            >
-              <option value="">By Wilaya (All)</option>
-              {allWilayas.map(wilaya => (
-                <option key={wilaya} value={wilaya}>{wilaya}</option>
-              ))}
-            </select>
+            <Popover open={isWilayaOpen} onOpenChange={setIsWilayaOpen}>
+              <PopoverTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className="bg-muted hover:bg-muted/80 text-foreground border-0 rounded-xl px-4 py-2.5 h-10 font-medium flex items-center gap-2 w-[150px] justify-between shadow-sm"
+                >
+                  <span className="truncate text-xs">
+                    {selectedWilaya === "" 
+                      ? t("byWilayaAll") 
+                      : selectedWilaya}
+                  </span>
+                  <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-1.5 rounded-xl shadow-2xl border-border bg-card" align="start">
+                <div className="max-h-64 overflow-y-auto custom-scrollbar space-y-0.5">
+                  <button
+                    className={cn(
+                      "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors text-left",
+                      selectedWilaya === "" ? "bg-primary/10 text-primary font-semibold" : "hover:bg-muted text-foreground"
+                    )}
+                    onClick={() => {
+                      setSelectedWilaya("");
+                      setIsWilayaOpen(false);
+                    }}
+                  >
+                    {t("byWilayaAll")}
+                    {selectedWilaya === "" && <Check className="h-4 w-4" />}
+                  </button>
+                  {allWilayas.map(wilaya => {
+                    const isSelected = selectedWilaya === wilaya;
+                    return (
+                      <button
+                        key={wilaya}
+                        className={cn(
+                          "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors text-left",
+                          isSelected 
+                            ? "bg-primary/10 text-primary font-semibold" 
+                            : "hover:bg-muted text-foreground"
+                        )}
+                        onClick={() => {
+                          setSelectedWilaya(isSelected ? "" : wilaya);
+                          setIsWilayaOpen(false);
+                        }}
+                      >
+                        {wilaya}
+                        {isSelected && <Check className="h-4 w-4" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </PopoverContent>
+            </Popover>
 
             {/* Clear Filters Button */}
-            {hasActiveFilters && (
-              <button
-                onClick={clearFilters}
-                className="ml-auto text-sm font-bold text-destructive hover:bg-destructive/10 rounded-lg px-3 py-2 flex items-center gap-1.5 transition-colors"
-              >
-                <X className="h-4 w-4" /> Clear All
-              </button>
-            )}
           </div>
         )}
 
+
         {/* Interactive Search Overlay Results (Moved inside the main container!) */}
         {isSearchActive && (
-          <div className="w-full mt-4 animate-in fade-in slide-in-from-top-4 duration-500 flex-1 overflow-hidden flex flex-col">
-            <div className="bg-card text-card-foreground border rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-full">
-              <div className="overflow-y-auto p-4 space-y-2 relative custom-scrollbar">
+          <div className="w-full mt-4 animate-in fade-in slide-in-from-top-4 duration-500 flex-1 overflow-hidden flex flex-col min-h-[60vh]">
+            <div className="bg-card text-card-foreground border rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[70vh] max-h-full">
+              <div className="flex-1 overflow-y-auto p-4 space-y-2 relative custom-scrollbar">
                 {submittedSearchQuery.trim() === "" && !hasActiveFilters ? (
                   <div className="py-20 px-10 flex flex-col items-center justify-center text-center text-muted-foreground space-y-4">
                     <Search className="h-12 w-12 opacity-20 mb-4" />
                     <p className="text-xl font-medium">
                       {searchQuery.trim() !== ""
-                        ? "Press Enter to search..."
-                        : "Type anything or select a filter to start searching..."}
+                        ? t("pressEnterToSearch")
+                        : t("typeAnything")}
                     </p>
                     <p className="text-sm">
                       {searchQuery.trim() !== ""
-                        ? "You can still refine using filters."
-                        : "Try searching for \"Software\", \"Google\", or filter by Tech!"}
+                        ? t("youCanRefine")
+                        : t("trySearchingFor")}
                     </p>
                   </div>
                 ) : filteredInternships.length > 0 ? (
                   <div className="animate-in fade-in slide-in-from-top-4 duration-300">
                     <h3 className="px-4 py-2 pt-0 pb-3 text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                      {filteredInternships.length} Results Found
-                      {hasActiveFilters && <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase font-bold">Filtered</span>}
+                      {filteredInternships.length} {t("resultsFound")}
+                      {hasActiveFilters && <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase font-bold">{t("filtered")}</span>}
                     </h3>
                     {filteredInternships.map((internship, index) => (
                       <div
@@ -317,7 +516,7 @@ export default function Internships() {
                         className="group flex flex-col sm:flex-row sm:items-center gap-4 p-4 hover:bg-muted/60 rounded-2xl cursor-pointer transition-all border border-transparent hover:border-border/50"
                         style={{ animationDelay: `${index * 50}ms` }}
                         onClick={() => navigate(`/internships/${internship.id}`, {
-                          state: { searchQuery: submittedSearchQuery, isSearchActive, selectedWilaya, selectedType, selectedTech, selectedSkill }
+                          state: { searchQuery: submittedSearchQuery, isSearchActive, selectedWilaya, selectedType, selectedSkills }
                         })}
                       >
                         <div className="h-14 w-14 rounded-xl shrink-0 group-hover:scale-105 transition-transform overflow-hidden">
@@ -345,7 +544,7 @@ export default function Internships() {
                           </div>
                         </div>
                         <Button variant="default" className="shrink-0 rounded-xl sm:opacity-0 sm:group-hover:opacity-100 transition-opacity mt-4 sm:mt-0">
-                          View Details
+                          {t("viewDetails")}
                         </Button>
                       </div>
                     ))}
@@ -355,15 +554,14 @@ export default function Internships() {
                     <div className="h-12 w-12 rounded-full bg-muted/50 flex items-center justify-center">
                       <X className="h-6 w-6 opacity-50" />
                     </div>
-                    <p className="text-lg">No internships found matching your criteria</p>
-                    <Button variant="outline" size="sm" onClick={clearFilters} className="mt-2">Clear Filters</Button>
+                    <p className="text-lg">{t("noInternshipsCriteria")}</p>
                   </div>
                 )}
               </div>
 
               <div className="bg-muted px-6 py-4 border-t text-sm text-muted-foreground flex items-center justify-between shrink-0">
-                <span>Press <kbd className="bg-background px-2 py-1 rounded-md border text-xs font-semibold shadow-sm ml-1 hidden sm:inline-block">ESC</kbd> to close</span>
-                <span>Search results by advanced filtering</span>
+                <span>{t("pressToClose").split("ESC")[0]}<kbd className="bg-background px-2 py-1 rounded-md border text-xs font-semibold shadow-sm ml-1 hidden sm:inline-block">ESC</kbd>{t("pressToClose").split("ESC")[1]}</span>
+                <span>{t("searchResultsAdvanced")}</span>
               </div>
             </div>
           </div>
@@ -430,11 +628,11 @@ export default function Internships() {
                     onClick={(e) => {
                       e.stopPropagation();
                       navigate(`/internships/${internship.id}`, {
-                          state: { searchQuery: submittedSearchQuery, isSearchActive, selectedWilaya, selectedType, selectedTech, selectedSkill }
+                          state: { searchQuery: submittedSearchQuery, isSearchActive, selectedWilaya, selectedType, selectedSkills }
                       });
                     }}
                   >
-                    View Details
+                    {t("viewDetails")}
                   </Button>
                   <Button
                     variant="ghost"
@@ -463,9 +661,9 @@ export default function Internships() {
             <div className="h-16 w-16 bg-muted/50 rounded-full flex items-center justify-center mb-6">
               <Search className="h-8 w-8 text-muted-foreground/40" />
             </div>
-            <h3 className="text-xl font-bold tracking-tight text-foreground mb-2">No internships found</h3>
+            <h3 className="text-xl font-bold tracking-tight text-foreground mb-2">{t("noInternshipsFound")}</h3>
             <p className="text-muted-foreground max-w-xs mx-auto">
-              We couldn't find anything matching your current filters. Try adjusting them or clear your search.
+              {t("couldntFindInternships")}
             </p>
           </div>
         )}

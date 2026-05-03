@@ -25,6 +25,7 @@ class Student(User):
     university_id = models.CharField(max_length=50, blank=True, null=True)
     wilaya = models.CharField(max_length=100, blank=True, null=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
+    major = models.CharField(max_length=255, blank=True, null=True)
     class Meta:
         verbose_name_plural = "Students"
 
@@ -35,6 +36,7 @@ class Company(User):
     location = models.CharField(max_length=255, blank=True, null=True)
     website = models.URLField(blank=True, null=True)
     company_field = models.CharField(max_length=255, blank=True, null=True)
+    founded_year = models.IntegerField(blank=True, null=True)
 
     class Meta:
         verbose_name_plural = "Companies"
@@ -88,6 +90,7 @@ class InternshipOffer(models.Model):
     internship_salary = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     internship_skills = models.TextField(blank=True, null=True)
     internship_image = models.ImageField(upload_to='internship_images/', blank=True, null=True)
+    wilaya = models.CharField(max_length=100, blank=True, null=True)
 
 
 # application model
@@ -118,7 +121,7 @@ class Application(models.Model):
         if not internship:
             internship = self.internship
         
-        # Count only accepted AND admin-validated applications
+        # Count ONLY applications that have been validated by the ADMIN
         accepted_count = self.__class__.objects.filter(
             internship_id=internship.id,
             status='ACCEPTED',
@@ -131,28 +134,31 @@ class Application(models.Model):
                 internship.status = 'CLOSED_FOR_APPLICATION'
                 internship.save()
                 
-            # Send manual notifications to automatically rejected students
-            pending_apps = self.__class__.objects.filter(
+            # 1. Get all other unvalidated applications
+            other_apps = self.__class__.objects.filter(
                 internship_id=internship.id,
-                status='PENDING'
-            )
-            from django.apps import apps
-            NotificationModel = apps.get_model('apis', 'Notification')
-            for app in pending_apps:
-                NotificationModel.objects.create(
-                    recipient=app.student,
-                    notification_type='APPLICATION_REJECTED',
-                    message=f"Your application for '{internship.title}' has been rejected as the positions are now filled.",
-                    application=app
-                )
+                is_validated_by_admin=False
+            ).exclude(id=self.id)
             
-            # Bulk reject the remaining pending applications
-            pending_apps.update(status='REJECTED')
-        else:
-            # If accepted count is below limit, reopen if it was closed
-            if internship.status == 'CLOSED_FOR_APPLICATION':
-                internship.status = 'OPEN_FOR_APPLICATION'
-                internship.save()
+            # 2. Extract student IDs for notifications before updating
+            student_ids = list(other_apps.values_list('student_id', flat=True))
+            
+            # 3. Bulk update status to REJECTED (more efficient and avoids recursion)
+            other_apps.update(status='REJECTED')
+            
+            # 4. Send notifications
+            from .models import Student
+            for student_id in student_ids:
+                Notification.objects.create(
+                    recipient_id=student_id,
+                    notification_type=Notification.NotificationType.APPLICATION_REJECTED,
+                    message=f"The internship '{internship.title}' is now full. Your application has been automatically rejected.",
+                    application_id=None # Since we can't easily link bulk rejected ones to a single notification app object here safely
+                )
+        # If it falls below limit (e.g. admin rejected one), reopen it
+        elif internship.status == 'CLOSED_FOR_APPLICATION':
+            internship.status = 'OPEN_FOR_APPLICATION'
+            internship.save()
 
 
  # skills model
@@ -180,9 +186,13 @@ class DigitalCV(models.Model):
     phone = models.CharField(max_length=20)
     linkedin = models.URLField(blank=True, null=True)
     github = models.URLField(blank=True, null=True)
+    portfolio_link = models.URLField(blank=True, null=True)
     skills = models.TextField(blank=True, null=True)
     experience = models.TextField(blank=True, null=True)
     education = models.TextField(blank=True, null=True)
+    profile_summary = models.TextField(blank=True, null=True)
+    address = models.CharField(max_length=255, blank=True, null=True)
+    languages = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
     image = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)    
@@ -231,3 +241,13 @@ class Message(models.Model):
 
     def __str__(self):
         return f"From {self.sender.email} to {self.recipient.email} at {self.created_at}"
+
+class PasswordReset(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    code = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_used = models.BooleanField(default=False)
+
+    def is_valid(self):
+        # Temporarily simple check for testing
+        return not self.is_used
