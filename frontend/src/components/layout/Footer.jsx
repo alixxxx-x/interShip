@@ -30,9 +30,9 @@ export default function Footer() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 text-sm">
                     <div className="space-y-4">
                         <Link to="/" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                            <img src={logoGif} alt="Inter.Ship" className="w-8 h-8 rounded-md" />
+                            <img src={logoGif} alt="Stag.Io" className="w-8 h-8 rounded-md" />
                             <span className="text-xl font-bold tracking-tight text-purple-600 font-['Poppins',sans-serif]">
-                                Inter<span className="text-purple-400">.Ship</span>
+                                Stag<span className="text-purple-400">.Io</span>
                             </span>
                         </Link>
                         <p className="leading-relaxed text-muted-foreground">
@@ -58,14 +58,13 @@ export default function Footer() {
                                 </Link>
                             </li>
                             <li>
-                                <Link 
-                                    to={userInfo ? "#" : "/register"} 
+                                <Link
+                                    to={userInfo ? "#" : "/register"}
                                     onClick={(e) => userInfo && e.preventDefault()}
-                                    className={`transition-colors ${
-                                        userInfo 
-                                        ? "text-gray-500 cursor-not-allowed hover:text-gray-500" 
-                                        : "text-slate-500 hover:text-cyan-500 font-semibold"
-                                    }`}
+                                    className={`transition-colors ${userInfo
+                                            ? "text-gray-500 cursor-not-allowed hover:text-gray-500"
+                                            : "text-slate-500 hover:text-cyan-500 font-semibold"
+                                        }`}
                                 >
                                     {t("footerJoinNow")}
                                 </Link>

@@ -57,8 +57,8 @@ function Register() {
                 email,
                 password,
                 role,
-                ...(role === "STUDENT" 
-                    ? { first_name: firstName, last_name: lastName } 
+                ...(role === "STUDENT"
+                    ? { first_name: firstName, last_name: lastName }
                     : { username, name: username })
             };
             await api.post("/auth/register/", payload);
@@ -92,26 +92,26 @@ function Register() {
             </div>
 
             <div className="relative z-10 w-full max-w-[850px] bg-white rounded-[24px] flex flex-col md:flex-row overflow-hidden p-2 min-h-[500px] md:min-h-[550px] gap-3 md:gap-4 shadow-2xl">
-                
+
                 {/* Left Side - Image & Quote */}
                 <div className="hidden md:flex md:w-[50%] relative rounded-[18px] overflow-hidden">
-                    <img 
+                    <img
                         src={premiumPhoto}
-                        alt="Professional" 
+                        alt="Professional"
                         className="absolute inset-0 w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                    
+
                     <div className="absolute bottom-0 left-0 right-0 p-6 text-white flex flex-col justify-end">
                         <h2 className="text-[20px] md:text-[22px] font-semibold leading-[1.3] mb-4 tracking-tight font-sans">
                             "InterShip has streamlined our hiring process. Our platform connects top talent with the best companies seamlessly."
                         </h2>
-                        
+
                         <div className="mb-3">
                             <p className="font-semibold text-sm">John Doe</p>
                             <p className="text-white/80 text-[11px]">HR Manager</p>
                         </div>
-                        
+
                         <div className="flex gap-2 mt-1">
                             <button className="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center backdrop-blur-sm hover:bg-white/15 transition-colors">
                                 <ChevronLeft className="w-3.5 h-3.5 text-white/80" strokeWidth={1.5} />
@@ -125,8 +125,8 @@ function Register() {
 
                 {/* Right Side - Form */}
                 <div className="w-full md:w-[50%] flex flex-col pt-5 pb-5 px-4 md:px-6 md:pr-8">
-                    <span className="text-lg font-semibold tracking-tight text-black font-sans">
-                        InterShip.
+                    <span className="text-lg font-semibold tracking-tight text-purple-600 font-sans">
+                        Stag<span className="text-purple-400">.Io</span>
                     </span>
 
                     <div className="flex-1 flex flex-col justify-center max-w-[360px] mx-auto w-full">

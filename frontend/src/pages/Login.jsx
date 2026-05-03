@@ -92,8 +92,8 @@ function Login() {
 
                 {/* Right Side - Login Form */}
                 <div className="w-full md:w-[50%] flex flex-col pt-5 pb-5 px-4 md:px-6 md:pr-8">
-                    <span className="text-lg font-semibold tracking-tight text-black font-sans">
-                        InterShip.
+                    <span className="text-lg font-semibold tracking-tight text-purple-600 font-sans">
+                        Stag<span className="text-purple-400">.Io</span>
                     </span>
 
                     <div className="flex-1 flex flex-col justify-center max-w-[360px] mx-auto w-full">
@@ -142,8 +142,8 @@ function Login() {
                                 </div>
                                 {errors.password && <p className="text-[10px] text-red-500 ml-1">{errors.password}</p>}
                                 <div className="flex justify-end px-1 mt-1">
-                                    <button 
-                                        type="button" 
+                                    <button
+                                        type="button"
                                         onClick={() => setIsForgotModalOpen(true)}
                                         className="text-[11px] font-medium text-purple-600 hover:text-purple-700 transition-colors"
                                     >
@@ -180,9 +180,9 @@ function Login() {
                 </div>
             </div>
 
-            <ForgotPasswordModal 
-                isOpen={isForgotModalOpen} 
-                onClose={() => setIsForgotModalOpen(false)} 
+            <ForgotPasswordModal
+                isOpen={isForgotModalOpen}
+                onClose={() => setIsForgotModalOpen(false)}
             />
         </div>
     );
