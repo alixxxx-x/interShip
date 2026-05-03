@@ -12,6 +12,10 @@ from django.http import FileResponse
 from .models import *
 from .serializers import *
 from .permissions import *
+
+class MyTokenObtainPairView(TokenObtainPairView):
+    serializer_class = MyTokenObtainPairSerializer
+
 # gemini ai
 from google import genai
 from django.http import JsonResponse
@@ -94,12 +98,18 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
 
 
 class UserListView(generics.ListAPIView):
-    queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsAdmin]
+    permission_classes = [IsAdmin | IsCompany | IsStudent]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['username', 'email']
     ordering_fields = ['id', 'username']
+
+    def get_queryset(self):
+        queryset = User.objects.all()
+        role = self.request.query_params.get('role')
+        if role:
+            queryset = queryset.filter(role=role)
+        return queryset
 
 class UserAdminUpdateView(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()

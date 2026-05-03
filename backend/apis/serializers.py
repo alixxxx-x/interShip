@@ -1,7 +1,25 @@
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView
 from .models import *
 
 # user serializers
+
+class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        token['email'] = user.email
+        token['role'] = user.role
+        return token
+
+    def validate(self, attrs):
+        # We allow both 'username' and 'email' in the request, mapping to the model's identifier
+        username = attrs.get("username")
+        if not username:
+             # If frontend sends 'email', map it to 'username' for SimpleJWT's internal logic
+             attrs["username"] = attrs.get("email")
+        return super().validate(attrs)
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True)
