@@ -110,7 +110,7 @@ class UserAdminUpdateView(generics.RetrieveUpdateDestroyAPIView):
 class CompanyListView(generics.ListAPIView):
     queryset = Company.objects.filter(role=User.Role.COMPANY)
     serializer_class = CompanySerializer
-    permission_classes = [IsAuthenticated] # Allow all authenticated users to see companies
+    permission_classes = [AllowAny] # Allow all users to see companies
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name', 'location', 'company_field']
 
