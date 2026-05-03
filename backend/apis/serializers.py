@@ -371,10 +371,11 @@ class ApplicationSerializer(serializers.ModelSerializer):
             if internship.status != InternshipOffer.Status.OPEN_FOR_APPLICATION:
                 raise serializers.ValidationError("This internship is no longer accepting applications.")
             
-            # 4. Check if full (Double safety, only counting ACCEPTED)
+            # 4. Check if full (Only count those validated by ADMIN)
             accepted_apps = Application.objects.filter(
                 internship=internship,
-                status='ACCEPTED'
+                status='ACCEPTED',
+                is_validated_by_admin=True
             ).count()
             
             if accepted_apps >= internship.number_of_places:

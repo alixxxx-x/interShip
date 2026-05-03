@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import api from "@/api/api";
 import CreateOfferModal from "./CreateOfferModal";
+import { useToast } from "@/components/ui/custom-toast";
 
 const STATUS_CONFIG = {
   DRAFT: { label: "Draft", variant: "outline", icon: Clock },
@@ -51,6 +52,7 @@ const STATUS_CONFIG = {
 
 export default function CompanyListings() {
   const navigate = useNavigate();
+  const toast = useToast();
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingOffer, setEditingOffer] = useState(null);
@@ -129,7 +131,7 @@ export default function CompanyListings() {
       fetchListings(); // Refresh list
     } catch (err) {
       console.error("Failed to update status:", err);
-      alert("Failed to update status.");
+      toast.error("Failed to update status.");
     }
   };
 

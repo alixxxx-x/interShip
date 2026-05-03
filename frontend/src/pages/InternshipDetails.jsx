@@ -20,9 +20,11 @@ import { Badge } from '@/components/ui/badge';
 import api from '@/api/api';
 import { ACCESS_TOKEN } from '@/constants';
 import { useLanguage } from '@/components/language-provider';
+import { useToast } from "@/components/ui/custom-toast";
 
 export default function InternshipDetails() {
   const { t } = useLanguage();
+  const toast = useToast();
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -32,6 +34,7 @@ export default function InternshipDetails() {
   const [isApplying, setIsApplying] = useState(false);
   const [applied, setApplied] = useState(false);
   const [applicationStatus, setApplicationStatus] = useState(null);
+  const [isAdminValidated, setIsAdminValidated] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [userRole, setUserRole] = useState(null);
   const [hasCV, setHasCV] = useState(false);
@@ -93,6 +96,7 @@ export default function InternshipDetails() {
               if (myApp) {
                 setApplied(true);
                 setApplicationStatus(myApp.status);
+                setIsAdminValidated(myApp.is_validated_by_admin);
               }
             }
           } catch (e) {
@@ -140,7 +144,7 @@ export default function InternshipDetails() {
         setApplied(true);
         setApplicationStatus('PENDING');
       } else {
-        alert(msg);
+        toast.error(msg);
       }
     } finally {
       setIsApplying(false);
@@ -156,7 +160,7 @@ export default function InternshipDetails() {
       setApplicationStatus(null);
     } catch (err) {
       console.error("Error cancelling:", err);
-      alert("Failed to cancel.");
+      toast.error("Failed to cancel.");
     } finally {
       setIsApplying(false);
     }
@@ -345,20 +349,20 @@ export default function InternshipDetails() {
                       applicationStatus === 'REJECTED' 
                         ? 'bg-red-50 border-red-100' 
                         : applicationStatus === 'ACCEPTED'
-                        ? 'bg-green-50 border-green-100'
-                        : 'bg-green-50 dark:bg-green-900/10 border-green-100 dark:border-green-800'
+                        ? (isAdminValidated ? 'bg-green-50 border-green-100' : 'bg-purple-50 border-purple-100 dark:bg-purple-900/10 dark:border-purple-800')
+                        : 'bg-purple-50 dark:bg-purple-900/10 border-purple-100 dark:border-purple-800'
                     }`}>
                       <p className={`font-bold text-sm ${
                         applicationStatus === 'REJECTED' 
                           ? 'text-red-600' 
                           : applicationStatus === 'ACCEPTED'
-                          ? 'text-green-600'
-                          : 'text-green-800 dark:text-green-400'
+                          ? (isAdminValidated ? 'text-green-600' : 'text-purple-600 dark:text-purple-400')
+                          : 'text-purple-600 dark:text-purple-400'
                       }`}>
                         {applicationStatus === 'REJECTED' 
                           ? t("applicationRejected") 
                           : applicationStatus === 'ACCEPTED'
-                          ? t("applicationAccepted")
+                          ? (isAdminValidated ? t("applicationAccepted") : t("applicationReceived"))
                           : t("applicationReceived")}
                       </p>
                     </div>
@@ -395,19 +399,29 @@ export default function InternshipDetails() {
                     >
                       {t("applyNow")}
                     </Button>
-                    <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800/50 rounded-2xl p-4 flex items-start gap-3">
-                      <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                      <div className="space-y-1">
-                        <p className="text-xs font-bold text-amber-800 dark:text-amber-300">{t("cvRequired")}</p>
-                        <p className="text-[11px] text-amber-700/80 dark:text-amber-400/80 font-medium leading-relaxed">
-                          {t("uploadCvUnlock")}
-                        </p>
-                        <button 
-                          onClick={() => navigate('/studentdashboard/cv')}
-                          className="text-[11px] font-bold text-primary hover:underline flex items-center gap-1 mt-1"
-                        >
-                          {t("goToCvManager")} <ArrowRight className="h-3 w-3" />
-                        </button>
+                    <div className="relative overflow-hidden bg-primary/5 dark:bg-primary/10 border border-primary/10 dark:border-primary/20 rounded-2xl p-5 group transition-all hover:bg-primary/[0.08]">
+                      <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:scale-110 transition-transform">
+                        <AlertCircle className="h-12 w-12 text-primary" />
+                      </div>
+                      <div className="relative flex items-start gap-4">
+                        <div className="h-10 w-10 rounded-xl bg-white dark:bg-slate-900 border border-primary/10 flex items-center justify-center shrink-0 shadow-sm">
+                          <AlertCircle className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <p className="text-sm font-bold text-slate-900 dark:text-white leading-none">
+                            {t("cvRequired")}
+                          </p>
+                          <p className="text-xs text-slate-600 dark:text-slate-400 font-medium leading-relaxed">
+                            {t("uploadCvUnlock")}
+                          </p>
+                          <button 
+                            onClick={() => navigate('/studentdashboard/cv')}
+                            className="text-xs font-bold text-primary hover:text-primary/80 flex items-center gap-1.5 pt-1.5 group/btn"
+                          >
+                            {t("goToCvManager")} 
+                            <ArrowRight className="h-3.5 w-3.5 group-hover/btn:translate-x-1 transition-transform" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>

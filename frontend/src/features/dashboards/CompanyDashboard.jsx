@@ -20,9 +20,10 @@ import { useNavigate } from "react-router-dom";
 import CreateOfferModal from "./CreateOfferModal";
 import { useSearchParams } from "react-router-dom";
 import api from "@/api/api";
-
+import { useToast } from "@/components/ui/custom-toast";
 
 export default function CompanyDashboard() {
+  const toast = useToast();
   const [stats, setStats] = useState(null);
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -106,7 +107,7 @@ export default function CompanyDashboard() {
     if (application.cvUrl) {
       window.open(application.cvUrl, "_blank");
     } else {
-      alert(`No CV available for ${application.candidate}`);
+      toast.warning(`No CV available for ${application.candidate}`);
     }
   };
 

@@ -55,6 +55,7 @@ urlpatterns = [
     path('admin/dashboard/stats/', AdminStatsView.as_view(), name='admin-stats'),
     path('admin/applications/pending-validation/', AdminPendingValidationsView.as_view(), name='admin-pending-validations'),
     path('admin/applications/<int:pk>/validate/', AdminValidateApplicationView.as_view(), name='admin-validate-application'),
+    path('admin/applications/<int:pk>/reject/', AdminRejectApplicationView.as_view(), name='admin-reject-application'),
     path('admin/applications/<int:pk>/agreement/', GenerateInternshipAgreementView.as_view(), name='admin-generate-agreement'),
 
     # Messaging

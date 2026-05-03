@@ -121,7 +121,7 @@ class Application(models.Model):
         if not internship:
             internship = self.internship
         
-        # Count only accepted AND admin-validated applications
+        # Count ONLY applications that have been validated by the ADMIN
         accepted_count = self.__class__.objects.filter(
             internship_id=internship.id,
             status='ACCEPTED',
@@ -134,28 +134,31 @@ class Application(models.Model):
                 internship.status = 'CLOSED_FOR_APPLICATION'
                 internship.save()
                 
-            # Send manual notifications to automatically rejected students
-            pending_apps = self.__class__.objects.filter(
+            # 1. Get all other unvalidated applications
+            other_apps = self.__class__.objects.filter(
                 internship_id=internship.id,
-                status='PENDING'
-            )
-            from django.apps import apps
-            NotificationModel = apps.get_model('apis', 'Notification')
-            for app in pending_apps:
-                NotificationModel.objects.create(
-                    recipient=app.student,
-                    notification_type='APPLICATION_REJECTED',
-                    message=f"Your application for '{internship.title}' has been rejected as the positions are now filled.",
-                    application=app
-                )
+                is_validated_by_admin=False
+            ).exclude(id=self.id)
             
-            # Bulk reject the remaining pending applications
-            pending_apps.update(status='REJECTED')
-        else:
-            # If accepted count is below limit, reopen if it was closed
-            if internship.status == 'CLOSED_FOR_APPLICATION':
-                internship.status = 'OPEN_FOR_APPLICATION'
-                internship.save()
+            # 2. Extract student IDs for notifications before updating
+            student_ids = list(other_apps.values_list('student_id', flat=True))
+            
+            # 3. Bulk update status to REJECTED (more efficient and avoids recursion)
+            other_apps.update(status='REJECTED')
+            
+            # 4. Send notifications
+            from .models import Student
+            for student_id in student_ids:
+                Notification.objects.create(
+                    recipient_id=student_id,
+                    notification_type=Notification.NotificationType.APPLICATION_REJECTED,
+                    message=f"The internship '{internship.title}' is now full. Your application has been automatically rejected.",
+                    application_id=None # Since we can't easily link bulk rejected ones to a single notification app object here safely
+                )
+        # If it falls below limit (e.g. admin rejected one), reopen it
+        elif internship.status == 'CLOSED_FOR_APPLICATION':
+            internship.status = 'OPEN_FOR_APPLICATION'
+            internship.save()
 
 
  # skills model

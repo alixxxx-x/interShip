@@ -24,8 +24,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import api from "@/api/api";
 import ChatModal from "./ChatModal";
+import { useToast } from "@/components/ui/custom-toast";
 
 export default function AdminCompanies() {
+  const toast = useToast();
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -59,7 +61,7 @@ export default function AdminCompanies() {
       console.error("Failed to toggle status:", error);
       // Revert if failed
       setCompanies(prev => prev.map(c => c.id === company.id ? { ...c, is_active: company.is_active } : c));
-      alert("Failed to update company status.");
+      toast.error("Failed to update company status.");
     }
   };
 

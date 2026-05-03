@@ -7,9 +7,11 @@ import Threads from "@/components/ui/Threads";
 import premiumPhoto from "@/assets/premium_photo-1725534270555-84e4b39e6b90.avif";
 import ForgotPasswordModal from "@/pages/ForgotPassword";
 import { useLanguage } from "@/components/language-provider";
+import { useToast } from "@/components/ui/custom-toast";
 
 function Login() {
     const { t } = useLanguage();
+    const toast = useToast();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
@@ -37,7 +39,7 @@ function Login() {
             localStorage.setItem(REFRESH_TOKEN, res.data.refresh);
             navigate("/");
         } catch (error) {
-            alert("Login failed. Please check your credentials.");
+            toast.error("Login failed. Please check your credentials.");
         } finally {
             setLoading(false);
         }

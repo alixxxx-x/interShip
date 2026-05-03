@@ -5,9 +5,11 @@ import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import Threads from "@/components/ui/Threads";
 import premiumPhoto from "@/assets/premium_photo-1725534270555-84e4b39e6b90.avif";
 import { useLanguage } from "@/components/language-provider";
+import { useToast } from "@/components/ui/custom-toast";
 
 function Register() {
     const { t } = useLanguage();
+    const toast = useToast();
     const [username, setUsername] = useState("");
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
@@ -68,7 +70,7 @@ function Register() {
                 }
                 setErrors(newErrors);
             } else {
-                alert("Registration failed. Please check your connection and try again.");
+                toast.error("Registration failed. Please check your connection and try again.");
             }
         } finally {
             setLoading(false);

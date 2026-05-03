@@ -25,8 +25,10 @@ import {
   DropdownMenuLabel
 } from "@/components/ui/dropdown-menu";
 import api from "@/api/api";
+import { useToast } from "@/components/ui/custom-toast";
 
 export default function AdminUsers() {
+  const toast = useToast();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -58,7 +60,7 @@ export default function AdminUsers() {
       console.error("Failed to toggle status:", error);
       // Revert if failed
       setUsers(prev => prev.map(u => u.id === user.id ? { ...u, is_active: user.is_active } : u));
-      alert("Failed to update user status.");
+      toast.error("Failed to update user status.");
     }
   };
 
@@ -69,7 +71,7 @@ export default function AdminUsers() {
       setUsers(prev => prev.filter(u => u.id !== id));
     } catch (error) {
       console.error("Failed to delete user:", error);
-      alert("Failed to delete user.");
+      toast.error("Failed to delete user.");
     }
   };
 

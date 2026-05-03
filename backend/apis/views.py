@@ -486,7 +486,7 @@ class StudentDashboardView(generics.GenericAPIView):
         
         stats = {
             "pendingAplications": applications.filter(status=Application.Status.PENDING).count(),
-            "acceptedApplications": applications.filter(status=Application.Status.ACCEPTED).count(),
+            "acceptedApplications": applications.filter(status=Application.Status.ACCEPTED, is_validated_by_admin=True).count(),
             "totalApplications": applications.count(),
         }
         
@@ -530,7 +530,7 @@ class CompanyDashboardView(generics.GenericAPIView):
 
         stats = {
             "pendingApplications": applications.filter(status=Application.Status.PENDING).count(),
-            "acceptedApplications": applications.filter(status=Application.Status.ACCEPTED).count(),
+            "acceptedApplications": applications.filter(status=Application.Status.ACCEPTED, is_validated_by_admin=True).count(),
             "totalInternships": internships.count(),
         }
 
@@ -647,22 +647,53 @@ class AdminValidateApplicationView(generics.GenericAPIView):
         application.save()
         
         # Notify student
-        Notification.objects.create(
+        Notification.objects.get_or_create(
             recipient=application.student,
             notification_type=Notification.NotificationType.APPLICATION_ACCEPTED,
-            message=f"Your internship at {application.internship.company.name} has been validated by the administration! You can now download your agreement.",
+            application=application,
+            defaults={
+                "message": f"Your internship at {application.internship.company.name} has been validated by the administration! You can now download your agreement."
+            }
+        )
+
+        # Notify company
+        Notification.objects.get_or_create(
+            recipient=application.internship.company,
+            notification_type=Notification.NotificationType.APPLICATION_ACCEPTED,
+            application=application,
+            defaults={
+                "message": f"The internship for {application.student.first_name} {application.student.last_name} has been validated by the administration."
+            }
+        )
+        
+        return Response({"status": "validated"})
+
+class AdminRejectApplicationView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def post(self, request, pk):
+        application = get_object_or_404(Application, pk=pk, status=Application.Status.ACCEPTED)
+        application.status = Application.Status.REJECTED
+        application.is_validated_by_admin = False
+        application.save()
+        
+        # Notify student
+        Notification.objects.create(
+            recipient=application.student,
+            notification_type=Notification.NotificationType.APPLICATION_REJECTED,
+            message=f"Your internship validation for '{application.internship.title}' has been rejected by the administration.",
             application=application
         )
 
         # Notify company
         Notification.objects.create(
             recipient=application.internship.company,
-            notification_type=Notification.NotificationType.APPLICATION_ACCEPTED,
-            message=f"The internship for {application.student.first_name} {application.student.last_name} has been validated by the administration.",
+            notification_type=Notification.NotificationType.APPLICATION_REJECTED,
+            message=f"The internship validation for {application.student.get_full_name()} has been rejected by the administration.",
             application=application
         )
         
-        return Response({"status": "validated"})
+        return Response({"status": "rejected"})
 
 class AdminStatsView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated, IsAdmin]

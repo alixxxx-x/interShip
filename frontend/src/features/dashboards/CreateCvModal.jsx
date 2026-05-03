@@ -31,6 +31,7 @@ import {
   Globe,
 } from "lucide-react";
 import api from "@/api/api";
+import { useToast } from "@/components/ui/custom-toast";
 
 const SUGGESTED_SKILLS = [
   "React", "Node.js", "Python", "UI/UX Design", "Marketing",
@@ -50,6 +51,7 @@ export default function CreateCvModal({
   mode = "create",
   initialCv
 }) {
+  const toast = useToast();
   const emptyFormData = useMemo(
     () => ({
       first_name: "",
@@ -330,7 +332,7 @@ export default function CreateCvModal({
                 .join("\n")
               : null;
 
-      alert(message || "Failed to submit CV. Please try again.");
+      toast.error(message || "Failed to submit CV. Please try again.");
     } finally {
       setIsSubmitting(false);
     }

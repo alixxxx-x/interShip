@@ -39,6 +39,7 @@ import Notifications from "@/features/dashboards/Notifications";
 import Settings from "@/pages/Settings";
 
 import { LanguageProvider } from "@/components/language-provider";
+import { ToastProvider } from "@/components/ui/custom-toast";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -54,6 +55,7 @@ function App() {
   return (
     <ThemeProvider defaultTheme="light" storageKey="intership-theme">
       <LanguageProvider>
+      <ToastProvider>
       <TooltipProvider>
         <ScrollToTop />
         <Routes>
@@ -136,6 +138,7 @@ function App() {
           </Route>
         </Routes>
       </TooltipProvider>
+      </ToastProvider>
       </LanguageProvider>
     </ThemeProvider>
   );

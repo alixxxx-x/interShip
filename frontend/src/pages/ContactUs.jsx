@@ -5,9 +5,11 @@ import { Input } from "@/components/ui/input";
 import api from "@/api/api";
 import { ACCESS_TOKEN } from "@/constants";
 import { useLanguage } from "@/components/language-provider";
+import { useToast } from "@/components/ui/custom-toast";
 
 export default function ContactUs() {
   const { t } = useLanguage();
+  const toast = useToast();
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -37,7 +39,7 @@ export default function ContactUs() {
     // Simulate API call
     setTimeout(() => {
       setLoading(false);
-      alert("Your message has been sent. We'll get back to you soon!");
+      toast.success("Your message has been sent. We'll get back to you soon!");
       if (!isLoggedIn) setEmail("");
       setMessage("");
     }, 1000);

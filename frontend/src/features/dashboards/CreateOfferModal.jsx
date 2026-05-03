@@ -32,6 +32,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import api from "@/api/api";
+import { useToast } from "@/components/ui/custom-toast";
 
 const SUGGESTED_SKILLS = [
   "React", "Node.js", "Python", "UI/UX Design", "Marketing",
@@ -55,6 +56,7 @@ export default function CreateOfferModal({
   onOfferCreated,
   initialData = null // Added for edit mode
 }) {
+  const toast = useToast();
   const [formData, setFormData] = useState({
     title: initialData?.title || "",
     description: initialData?.description || "",
@@ -199,7 +201,7 @@ export default function CreateOfferModal({
       const errorMessage = err.response?.data 
         ? Object.entries(err.response.data).map(([key, value]) => `${key}: ${value}`).join("\n")
         : "Failed to create offer. Please check the fields and try again.";
-      alert(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
