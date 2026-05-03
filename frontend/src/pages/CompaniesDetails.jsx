@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { AlertCircle, Award, Briefcase, Building2, Calendar, ChevronLeft, ExternalLink, Globe, Heart, Mail, MapPin, Share2, Users } from 'lucide-react';
+import { AlertCircle, Award, Briefcase, Building2, Calendar, ChevronLeft, ChevronRight, ExternalLink, Globe, Heart, Mail, MapPin, Share2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import api from '@/api/api';
@@ -105,7 +105,7 @@ export default function CompaniesDetails() {
         const res = await api.get(`/companies/`);
         const companies = res.data.results || res.data;
         const foundCompany = companies.find(u => u.id === parseInt(id));
-        
+
         if (foundCompany) {
           setCompany(foundCompany);
         } else {
@@ -181,21 +181,21 @@ export default function CompaniesDetails() {
       {/* Main Container */}
       <div className="container mx-auto px-4 max-w-6xl pt-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
+
           {/* Left Column (Content) */}
           <div className="lg:col-span-8 space-y-6">
-            
+
             {/* Header Card */}
             <div className="bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-gray-100 dark:border-slate-800 shadow-sm">
               <div className="h-32 sm:h-48 w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 relative"></div>
-              
+
               <div className="p-6 sm:p-8 pt-0 relative">
                 {/* Logo Overlapping Header */}
                 <div className="flex justify-between items-end -mt-12 sm:-mt-16 mb-6 relative z-10">
                   <div className="h-24 w-24 sm:h-32 sm:w-32 bg-white dark:bg-slate-800 rounded-2xl p-2 border-4 border-white dark:border-slate-900 shadow-lg">
                     <img src={company.logo} alt={`${company.name} logo`} className="w-full h-full object-contain rounded-xl" />
                   </div>
-                  <Button 
+                  <Button
                     className={`rounded-xl px-6 font-bold shadow-sm ${isFollowing ? 'bg-gray-100 text-gray-900 hover:bg-gray-200' : 'bg-gray-900 text-white hover:bg-gray-800'}`}
                     onClick={() => setIsFollowing(!isFollowing)}
                   >
@@ -247,9 +247,11 @@ export default function CompaniesDetails() {
                   {t("aboutUs")}
                 </h2>
                 <div className="text-gray-600 dark:text-gray-400 leading-relaxed text-base space-y-4">
-                  {company.description.split('\n').map((para, i) => (
+                  {company.description ? company.description.split('\n').map((para, i) => (
                     <p key={i}>{para}</p>
-                  ))}
+                  )) : (
+                    <p>{t("noDescCompany")}</p>
+                  )}
                 </div>
               </section>
 
@@ -268,6 +270,58 @@ export default function CompaniesDetails() {
                 </div>
               </section>
             </div>
+
+            {/* Total Internships Section */}
+            <div id="internships-section" className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-gray-100 dark:border-slate-800 shadow-sm space-y-6 scroll-mt-20">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <Briefcase className="h-5 w-5 text-indigo-500" />
+                {t("totalInternships") || "Total Internships"}
+                <span className="ml-auto bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs py-1 px-3 rounded-full font-black">
+                  {company.total_internships_count}
+                </span>
+              </h2>
+
+              <div className="space-y-4">
+                {company.internships && company.internships.length > 0 ? (
+                  company.internships.map((internship) => (
+                    <div
+                      key={internship.id}
+                      onClick={() => navigate(`/internships/${internship.id}`)}
+                      className="group flex items-center gap-4 p-4 rounded-2xl bg-gray-50 dark:bg-slate-800/50 border border-gray-100 dark:border-slate-700/50 hover:border-indigo-200 dark:hover:border-indigo-800 transition-all cursor-pointer hover:shadow-md"
+                    >
+                      <div className="h-12 w-12 rounded-xl overflow-hidden bg-white dark:bg-slate-700 border border-gray-100 dark:border-slate-600 shrink-0 shadow-sm">
+                        {internship.image ? (
+                          <img src={internship.image} alt="" className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                        ) : (
+                          <div className="h-full w-full flex items-center justify-center bg-indigo-50 dark:bg-indigo-900/20">
+                            <Briefcase className="h-5 w-5 text-indigo-400" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-bold text-gray-900 dark:text-white truncate group-hover:text-indigo-600 transition-colors">
+                          {internship.title}
+                        </h4>
+                        <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
+                          <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {internship.location}</span>
+                          <span className="h-1 w-1 rounded-full bg-gray-300"></span>
+                          <span className="uppercase font-bold tracking-tighter text-indigo-500/80">{internship.type}</span>
+                        </div>
+                      </div>
+                      <div className={`text-[10px] font-black px-2 py-1 rounded-md uppercase tracking-tighter ${internship.status === 'OPEN_FOR_APPLICATION'
+                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                          : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+                        }`}>
+                        {internship.status === 'OPEN_FOR_APPLICATION' ? t('open') || 'Open' : t('closed') || 'Closed'}
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-indigo-500 transition-all group-hover:translate-x-1" />
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-500 italic text-center py-4">{t("noInternshipsFound") || "No internships posted yet."}</p>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Right Column (Sidebar) */}
@@ -275,7 +329,7 @@ export default function CompaniesDetails() {
             <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-gray-100 dark:border-slate-800 shadow-sm">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-8">{t("companySnapshot")}</h3>
               <div className="space-y-6">
-                <SidebarItem icon={Calendar} label={t("founded")} value={company.foundedYear?.toString() || t("notAvailable")} />
+                <SidebarItem icon={Calendar} label={t("founded")} value={company.founded_year?.toString() || t("notAvailable")} />
                 <SidebarItem icon={Briefcase} label={t("field")} value={company.company_field || t("notAvailable")} />
                 <SidebarItem icon={Users} label={t("companySize")} value={company.size || "10-50 Employees"} />
                 <SidebarItem icon={Building2} label={t("headquarters")} value={company.location || t("notAvailable")} />
@@ -308,8 +362,13 @@ export default function CompaniesDetails() {
                     <p className="text-indigo-200 text-xs font-semibold uppercase tracking-wider">{t("openRoles")}</p>
                   </div>
                 </div>
-                <Button 
-                  onClick={() => navigate('/internships')} 
+                <Button
+                  onClick={() => {
+                    const element = document.getElementById('internships-section');
+                    if (element) {
+                      element.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }}
                   className="w-full h-11 bg-white text-indigo-600 hover:bg-gray-50 rounded-xl font-bold shadow-sm"
                 >
                   {t("viewOpportunities")}

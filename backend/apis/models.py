@@ -35,6 +35,7 @@ class Company(User):
     location = models.CharField(max_length=255, blank=True, null=True)
     website = models.URLField(blank=True, null=True)
     company_field = models.CharField(max_length=255, blank=True, null=True)
+    founded_year = models.IntegerField(blank=True, null=True)
 
     class Meta:
         verbose_name_plural = "Companies"
@@ -181,6 +182,7 @@ class DigitalCV(models.Model):
     phone = models.CharField(max_length=20)
     linkedin = models.URLField(blank=True, null=True)
     github = models.URLField(blank=True, null=True)
+    portfolio_link = models.URLField(blank=True, null=True)
     skills = models.TextField(blank=True, null=True)
     experience = models.TextField(blank=True, null=True)
     education = models.TextField(blank=True, null=True)

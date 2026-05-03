@@ -143,7 +143,7 @@ function Register() {
                                         <label className="text-[11px] font-semibold text-black ml-1">{t("firstName")}</label>
                                         <input
                                             type="text"
-                                            placeholder="John"
+                                            placeholder={t("firstName")}
                                             value={firstName}
                                             onChange={(e) => { setFirstName(e.target.value); setErrors(prev => ({ ...prev, firstName: null })) }}
                                             className="w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans"
@@ -154,7 +154,7 @@ function Register() {
                                         <label className="text-[11px] font-semibold text-black ml-1">{t("lastName")}</label>
                                         <input
                                             type="text"
-                                            placeholder="Doe"
+                                            placeholder={t("lastName")}
                                             value={lastName}
                                             onChange={(e) => { setLastName(e.target.value); setErrors(prev => ({ ...prev, lastName: null })) }}
                                             className="w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans"
@@ -164,11 +164,11 @@ function Register() {
                                 </div>
                             ) : (
                                 <div className="space-y-1">
-                                    <label className="text-[11px] font-semibold text-black ml-1">{t("username")}</label>
+                                    <label className="text-[11px] font-semibold text-black ml-1">{role === "COMPANY" ? (t("companyName") || "Company Name") : t("username")}</label>
                                     <div className="relative">
                                         <input
                                             type="text"
-                                            placeholder="johndoe"
+                                            placeholder={role === "COMPANY" ? "Name of Company" : "johndoe"}
                                             value={username}
                                             onChange={(e) => { setUsername(e.target.value); setErrors(prev => ({ ...prev, username: null })) }}
                                             className="w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans"

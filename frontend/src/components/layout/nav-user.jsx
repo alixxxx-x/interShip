@@ -51,20 +51,24 @@ export function NavUser({
                 size="lg"
                 className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground w-full"
               >
-                <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.profile_picture} alt={user.username} />
+                <Avatar className="h-8 w-8 rounded-lg shrink-0">
+                  <AvatarImage src={user.profile_picture} alt={user.username} className="object-cover" />
                   <AvatarFallback className="rounded-lg uppercase">
                     {user.username?.charAt(0) || 'U'}
                   </AvatarFallback>
                 </Avatar>
-                <div className="grid flex-1 text-left text-sm leading-tight">
+                <div className="grid flex-1 text-left text-sm leading-tight overflow-hidden">
                   <div className="flex items-center gap-2">
-                    <span className="truncate font-semibold">{user.username}</span>
+                    <span className="truncate font-semibold">
+                      {user.role === 'COMPANY' ? (user.name || user.username) : user.username}
+                    </span>
                     {unreadCount > 0 && (
                       <span className="h-2 w-2 rounded-full bg-primary shrink-0" />
                     )}
                   </div>
-                  <span className="truncate text-xs">{user.email}</span>
+                  <span className="truncate text-xs text-muted-foreground">
+                    {user.role === 'COMPANY' ? t('company') : t(user.role?.toLowerCase()) || user.role}
+                  </span>
                 </div>
                 <ChevronsUpDown className="ml-auto size-4" />
               </SidebarMenuButton>
@@ -78,20 +82,24 @@ export function NavUser({
           >
             <div className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.profile_picture} alt={user.username} />
+                <Avatar className="h-8 w-8 rounded-lg shrink-0">
+                  <AvatarImage src={user.profile_picture} alt={user.username} className="object-cover" />
                   <AvatarFallback className="rounded-lg uppercase">
                     {user.username?.charAt(0) || 'U'}
                   </AvatarFallback>
                 </Avatar>
-                <div className="grid flex-1 text-left text-sm leading-tight">
+                <div className="grid flex-1 text-left text-sm leading-tight overflow-hidden">
                   <div className="flex items-center gap-2">
-                    <span className="truncate font-semibold">{user.username}</span>
+                    <span className="truncate font-semibold">
+                      {user.role === 'COMPANY' ? (user.name || user.username) : user.username}
+                    </span>
                     {unreadCount > 0 && (
                       <span className="h-2 w-2 rounded-full bg-primary shrink-0" />
                     )}
                   </div>
-                  <span className="truncate text-xs">{user.email}</span>
+                  <span className="truncate text-xs text-muted-foreground">
+                    {user.role === 'COMPANY' ? t('company') : t(user.role?.toLowerCase()) || user.role}
+                  </span>
                 </div>
               </div>
             </div>

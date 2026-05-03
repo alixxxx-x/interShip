@@ -10,26 +10,32 @@ class UserSerializer(serializers.ModelSerializer):
     university_id = serializers.CharField(required=False, write_only=True)
     wilaya = serializers.CharField(required=False, write_only=True)
     phone = serializers.CharField(required=False, write_only=True)
-    name = serializers.CharField(required=False, write_only=True)
+    name = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
     logo = serializers.ImageField(required=False, write_only=True)
-    description = serializers.CharField(required=False, write_only=True)
-    location = serializers.CharField(required=False, write_only=True)
-    website = serializers.URLField(required=False, write_only=True)
-    company_field = serializers.CharField(required=False, write_only=True)
-    department = serializers.CharField(required=False, write_only=True)
+    description = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
+    location = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
+    website = serializers.URLField(required=False, write_only=True, allow_blank=True, allow_null=True)
+    company_field = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
+    founded_year = serializers.IntegerField(required=False, write_only=True, allow_null=True)
+    department = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
 
     class Meta:
         model = User
         fields = [
             'id', 'username', 'email', 'role', 'profile_picture', 'password',
             'first_name', 'last_name', 'is_active', 'university_id', 'wilaya', 'phone',
-            'name', 'logo', 'description', 'location', 'website', 'company_field', 'department'
+            'name', 'logo', 'description', 'location', 'website', 'company_field', 'founded_year', 'department'
         ]
         read_only_fields = ['id']
     # hdi hiya t3 email  
     def validate(self, attrs):
-        role = attrs.get('role', User.Role.STUDENT)
-        email = attrs.get('email', '')
+        # For updates, use instance values if not provided in attrs
+        if self.instance:
+            role = attrs.get('role', getattr(self.instance, 'role', User.Role.STUDENT))
+            email = attrs.get('email', getattr(self.instance, 'email', ''))
+        else:
+            role = attrs.get('role', User.Role.STUDENT)
+            email = attrs.get('email', '')
 
         if role == User.Role.STUDENT:
             if not email.endswith('@univ.dz'):
@@ -44,7 +50,7 @@ class UserSerializer(serializers.ModelSerializer):
         # Add role-specific profile fields to the output
         profile_map = {
             User.Role.STUDENT: ('student', ['university_id', 'wilaya', 'phone']),
-            User.Role.COMPANY: ('company', ['name', 'logo', 'description', 'location', 'website', 'company_field']),
+            User.Role.COMPANY: ('company', ['name', 'logo', 'description', 'location', 'website', 'company_field', 'founded_year']),
             User.Role.ADMIN: ('administrator', ['department']),
         }
         
@@ -98,6 +104,59 @@ class UserSerializer(serializers.ModelSerializer):
         )
         return user
 
+    def update(self, instance, validated_data):
+        # Update base User fields
+        instance.username = validated_data.get('username', instance.username)
+        instance.first_name = validated_data.get('first_name', instance.first_name)
+        instance.last_name = validated_data.get('last_name', instance.last_name)
+        
+        if 'profile_picture' in validated_data:
+            pic = validated_data.get('profile_picture')
+            instance.profile_picture = pic
+            # If it's a company, also sync to logo
+            if instance.role == User.Role.COMPANY and hasattr(instance, 'company'):
+                instance.company.logo = pic
+                instance.company.save()
+            
+        instance.save()
+
+        # Update role-specific fields
+        if instance.role == User.Role.STUDENT and hasattr(instance, 'student'):
+            student = instance.student
+            if 'university_id' in validated_data:
+                student.university_id = validated_data.get('university_id')
+            if 'wilaya' in validated_data:
+                student.wilaya = validated_data.get('wilaya')
+            if 'phone' in validated_data:
+                student.phone = validated_data.get('phone')
+            student.save()
+            
+        elif instance.role == User.Role.COMPANY and hasattr(instance, 'company'):
+            company = instance.company
+            if 'name' in validated_data:
+                company.name = validated_data.get('name')
+            if 'logo' in validated_data:
+                company.logo = validated_data.get('logo')
+            if 'description' in validated_data:
+                company.description = validated_data.get('description')
+            if 'location' in validated_data:
+                company.location = validated_data.get('location')
+            if 'website' in validated_data:
+                company.website = validated_data.get('website')
+            if 'company_field' in validated_data:
+                company.company_field = validated_data.get('company_field')
+            if 'founded_year' in validated_data:
+                company.founded_year = validated_data.get('founded_year')
+            company.save()
+            
+        elif instance.role == User.Role.ADMIN and hasattr(instance, 'administrator'):
+            admin = instance.administrator
+            if 'department' in validated_data:
+                admin.department = validated_data.get('department')
+            admin.save()
+
+        return instance
+
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(required=True)
     new_password = serializers.CharField(required=True)
@@ -109,18 +168,48 @@ class ChangePasswordSerializer(serializers.Serializer):
         return value
 
 class CompanySerializer(serializers.ModelSerializer):
+    logo = serializers.SerializerMethodField()
     open_positions_count = serializers.SerializerMethodField()
+    total_internships_count = serializers.SerializerMethodField()
+    internships = serializers.SerializerMethodField()
 
     class Meta:
         model = Company
-        fields = ['id', 'email', 'name', 'logo', 'description', 'location', 'website', 'company_field', 'is_active', 'open_positions_count']
+        fields = ['id', 'email', 'name', 'logo', 'description', 'location', 'website', 'company_field', 'founded_year', 'is_active', 'open_positions_count', 'total_internships_count', 'internships']
         read_only_fields = ['id']
+
+    def get_logo(self, obj):
+        # Fallback to profile_picture if logo is not set
+        logo = obj.logo.url if obj.logo else None
+        if not logo and obj.profile_picture:
+            logo = obj.profile_picture.url
+        
+        # Ensure we return a full URL if possible
+        request = self.context.get('request')
+        if logo and request:
+            return request.build_absolute_uri(logo)
+        return logo
 
     def get_open_positions_count(self, obj):
         return InternshipOffer.objects.filter(
             company=obj,
             status=InternshipOffer.Status.OPEN_FOR_APPLICATION
         ).count()
+
+    def get_total_internships_count(self, obj):
+        return InternshipOffer.objects.filter(company=obj).count()
+
+    def get_internships(self, obj):
+        offers = InternshipOffer.objects.filter(company=obj)
+        # Use simple mapping to avoid circular import and stay efficient
+        return [{
+            'id': offer.id,
+            'title': offer.title,
+            'location': offer.internship_location,
+            'status': offer.status,
+            'type': offer.internship_type,
+            'image': self.context['request'].build_absolute_uri(offer.internship_image.url) if offer.internship_image else None
+        } for offer in offers]
 
 class MessageSerializer(serializers.ModelSerializer):
     sender_email = serializers.EmailField(source='sender.email', read_only=True)
@@ -327,16 +416,31 @@ class SkillsSerializer(serializers.ModelSerializer):
 class DigitalCVSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(required=False)
     pdfFile = serializers.FileField(source='cv_file', required=False)
+    github_link = serializers.URLField(source='github', required=False, allow_blank=True, allow_null=True)
+    phone_number = serializers.CharField(source='phone', required=False, allow_blank=True)
+    any_experience = serializers.CharField(source='experience', required=False, allow_blank=True)
+    profile_summary = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    address = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    languages = serializers.CharField(required=False, allow_blank=True, write_only=True)
 
     class Meta:
         model = DigitalCV
         fields = [
-            'id', 'student', 'first_name', 'last_name', 'image', 'phone',
-            'email', 'linkedin', 'github', 'education', 'skills', 
-            'experience', 'wilaya', 'university_id', 'date_of_birth', 
+            'id', 'student', 'first_name', 'last_name', 'image', 'phone_number',
+            'email', 'linkedin', 'github_link', 'portfolio_link', 'education', 'skills', 
+            'any_experience', 'profile_summary', 'address', 'languages',
+            'wilaya', 'university_id', 'date_of_birth', 
             'nationality', 'pdfFile'
         ]
         read_only_fields = ['id', 'student']
+
+    # Fields that exist on frontend but not on the model - strip before saving
+    NON_MODEL_FIELDS = ['profile_summary', 'address', 'languages']
+
+    def _strip_non_model_fields(self, data):
+        for field in self.NON_MODEL_FIELDS:
+            data.pop(field, None)
+        return data
 
     def validate(self, attrs):
         if self.instance is None:
@@ -346,10 +450,13 @@ class DigitalCVSerializer(serializers.ModelSerializer):
                     raise serializers.ValidationError("You already have a digital CV")
         return attrs
 
+    def create(self, validated_data):
+        self._strip_non_model_fields(validated_data)
+        return super().create(validated_data)
+
     def update(self, instance, validated_data):
+        self._strip_non_model_fields(validated_data)
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
         return instance
-    
-    

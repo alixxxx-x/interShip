@@ -17,7 +17,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle, DialogHeader, DialogDescription } from "@/components/ui/dialog";
 import Notifications from "@/features/dashboards/Notifications";
@@ -129,18 +129,18 @@ export default function Navbar({ children }) {
                         {userInfo ? (
                             <DropdownMenu>
                                 <DropdownMenuTrigger className="relative h-10 w-auto flex items-center gap-2.5 pl-1 pr-3.5 hover:bg-accent rounded-full group transition-all duration-200 outline-none border border-transparent hover:border-border bg-transparent">
-                                    <Avatar className="h-8 w-8 border border-border shadow-sm ring-1 ring-border group-hover:ring-primary/20 transition-all">
-                                        {userInfo.profile_picture && (
-                                            <img src={userInfo.profile_picture} alt={userInfo.username} className="h-full w-full object-cover" />
-                                        )}
+                                    <Avatar className="h-8 w-8 border border-border shadow-sm ring-1 ring-border group-hover:ring-primary/20 transition-all shrink-0">
+                                        <AvatarImage src={userInfo.profile_picture} alt={userInfo.username} className="object-cover" />
                                         <AvatarFallback className="bg-primary text-white text-[10px] font-medium uppercase">
                                             {userInfo.username?.charAt(0).toUpperCase() || 'A'}
                                         </AvatarFallback>
                                     </Avatar>
-                                    <div className="text-left hidden lg:block pr-1">
-                                        <p className="text-xs font-semibold text-slate-900 leading-none mb-1">{userInfo.username}</p>
+                                    <div className="text-left hidden lg:block pr-1 overflow-hidden">
+                                        <p className="text-xs font-semibold text-slate-900 leading-none mb-1 truncate">
+                                            {userInfo.role === 'COMPANY' ? (userInfo.name || userInfo.username) : userInfo.username}
+                                        </p>
                                         <p className="text-[10px] text-primary font-medium">
-                                            {userInfo.role === 'company' ? 'Company' : userInfo.role?.replace('_', ' ')}
+                                            {userInfo.role === 'COMPANY' ? t('company') : t(userInfo.role?.toLowerCase()) || userInfo.role}
                                         </p>
                                     </div>
                                     <ChevronDown className="h-3 w-3 text-slate-400 group-hover:text-primary transition-colors" />

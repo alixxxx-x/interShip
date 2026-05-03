@@ -13,20 +13,22 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Plus, 
-  X, 
-  Download, 
+import {
+  Plus,
+  X,
+  Download,
   Wand2,
   UserRound,
   UsersRound,
   UserRoundPen,
   Briefcase,
-  School,  
+  School,
   MailCheck,
   PhoneCall,
   House,
   GraduationCap,
+  Code2,
+  Globe,
 } from "lucide-react";
 import api from "@/api/api";
 
@@ -40,13 +42,13 @@ const SUGGESTED_LANGUAGES = [
   "English", "Arabic", "French", "Spanish", "German", "Portuguese", "Italian"
 ];
 
-export default function CreateCvModal({ 
-    open, 
-    onOpenChange, 
-    triggerButton, 
-    onCvCreated,
-    mode = "create",
-    initialCv
+export default function CreateCvModal({
+  open,
+  onOpenChange,
+  triggerButton,
+  onCvCreated,
+  mode = "create",
+  initialCv
 }) {
   const emptyFormData = useMemo(
     () => ({
@@ -56,6 +58,8 @@ export default function CreateCvModal({
       phone_number: "",
       email: "",
       address: "",
+      github_link: "",
+      portfolio_link: "",
       education: "",
       skills: [],
       profile_summary: "",
@@ -110,6 +114,24 @@ export default function CreateCvModal({
   useEffect(() => {
     if (!open) return;
 
+    if (mode === "create") {
+      const fetchProfile = async () => {
+        try {
+          const res = await api.get("/auth/profile/");
+          setFormData((prev) => ({
+            ...prev,
+            first_name: prev.first_name || res.data.first_name || "",
+            last_name: prev.last_name || res.data.last_name || "",
+            email: res.data.email || "",
+          }));
+        } catch (error) {
+          console.error("Failed to fetch profile for CV pre-fill:", error);
+        }
+      };
+      fetchProfile();
+      return;
+    }
+
     if (mode !== "edit" || !initialCv) {
       setFormData(emptyFormData);
       setCurrentSkill("");
@@ -126,6 +148,8 @@ export default function CreateCvModal({
       phone_number: initialCv.phone_number || "",
       email: initialCv.email || "",
       address: initialCv.address || "",
+      github_link: initialCv.github_link || "",
+      portfolio_link: initialCv.portfolio_link || "",
       education: initialCv.education || "",
       profile_summary: initialCv.profile_summary || "",
       any_experience: initialCv.any_experience || "",
@@ -302,8 +326,8 @@ export default function CreateCvModal({
             ? String(backendData.detail)
             : backendData && typeof backendData === "object"
               ? Object.entries(backendData)
-                  .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(" ") : String(v)}`)
-                  .join("\n")
+                .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(" ") : String(v)}`)
+                .join("\n")
               : null;
 
       alert(message || "Failed to submit CV. Please try again.");
@@ -335,11 +359,11 @@ export default function CreateCvModal({
               <UserRound className="h-4 w-4 text-muted-foreground" />
               First name
             </Label>
-            <Input 
-              id="first_name" 
-              value={formData.first_name} 
-              onChange={handleChange} 
-              placeholder="Enter your first name" 
+            <Input
+              id="first_name"
+              value={formData.first_name}
+              onChange={handleChange}
+              placeholder="Enter your first name"
               className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
               required
             />
@@ -350,10 +374,10 @@ export default function CreateCvModal({
               <UsersRound className="h-4 w-4 text-muted-foreground" />
               Last name
             </Label>
-            <Input 
-              id="last_name" 
-              value={formData.last_name} 
-              onChange={handleChange} 
+            <Input
+              id="last_name"
+              value={formData.last_name}
+              onChange={handleChange}
               placeholder="Enter your last name"
               className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
               required
@@ -367,12 +391,12 @@ export default function CreateCvModal({
             Profile summary
           </Label>
           <textarea
-           id="profile_summary" 
-           value={formData.profile_summary} 
-           onChange={handleChange} 
-           className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-           placeholder="A brief summary about you, your background, and what you're looking for (optional)"
-           required
+            id="profile_summary"
+            value={formData.profile_summary}
+            onChange={handleChange}
+            className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+            placeholder="A brief summary about you, your background, and what you're looking for (optional)"
+            required
           />
         </div>
 
@@ -387,13 +411,14 @@ export default function CreateCvModal({
             <MailCheck className="h-4 w-4 text-muted-foreground" />
             Email
           </Label>
-          <Input 
-            id="email" 
-            value={formData.email} 
-            onChange={handleChange} 
+          <Input
+            id="email"
+            value={formData.email}
+            onChange={handleChange}
             placeholder="example@gmail.com"
             type="email"
-            className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+            disabled
+            className="flex w-full rounded-md border border-input bg-muted/50 px-3 py-2 text-base shadow-sm placeholder:text-muted-foreground cursor-not-allowed md:text-sm"
             required
           />
         </div>
@@ -403,28 +428,58 @@ export default function CreateCvModal({
             <PhoneCall className="h-4 w-4 text-muted-foreground" />
             Phone Number
           </Label>
-          <Input 
-            id="phone_number" 
-            value={formData.phone_number} 
-            onChange={handleChange} 
+          <Input
+            id="phone_number"
+            value={formData.phone_number}
+            onChange={handleChange}
             placeholder="0555555555"
             className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
             required
           />
         </div>
-        
+
         <div className="grid gap-2 py-2">
           <Label htmlFor="address" className="flex items-center gap-2">
             <House className="h-4 w-4 text-muted-foreground" />
             Address
           </Label>
-          <Input 
-            id="address" 
-            value={formData.address} 
-            onChange={handleChange} 
+          <Input
+            id="address"
+            value={formData.address}
+            onChange={handleChange}
             placeholder="N° 123, Street Name, City, Country"
             className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
             required
+          />
+        </div>
+
+        <div className="grid gap-2 py-2">
+          <Label htmlFor="github_link" className="flex items-center gap-2">
+            <Code2 className="h-4 w-4 text-muted-foreground" />
+            GitHub Profile <span className="text-muted-foreground font-normal">(Optional)</span>
+          </Label>
+          <Input
+            id="github_link"
+            value={formData.github_link}
+            onChange={handleChange}
+            placeholder="https://github.com/username"
+            type="url"
+            className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+          />
+        </div>
+
+        <div className="grid gap-2 py-2">
+          <Label htmlFor="portfolio_link" className="flex items-center gap-2">
+            <Globe className="h-4 w-4 text-muted-foreground" />
+            Portfolio / Website <span className="text-muted-foreground font-normal">(Optional)</span>
+          </Label>
+          <Input
+            id="portfolio_link"
+            value={formData.portfolio_link}
+            onChange={handleChange}
+            placeholder="https://yourportfolio.com"
+            type="url"
+            className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
           />
         </div>
 
@@ -440,9 +495,9 @@ export default function CreateCvModal({
             Education
           </Label>
           <textarea
-            id="education" 
-            value={formData.education} 
-            onChange={handleChange} 
+            id="education"
+            value={formData.education}
+            onChange={handleChange}
             className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
             placeholder="e.g. Bachelor's in Computer Science from XYZ University"
             required
@@ -455,14 +510,14 @@ export default function CreateCvModal({
             Experience
           </Label>
           <textarea
-           id="any_experience" 
-           value={formData.any_experience} 
-           onChange={handleChange} 
-           className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"  rows={3}
-           placeholder="(Optional) e.g. Internship at ABC Corp (2025): Built a React dashboard..."
+            id="any_experience"
+            value={formData.any_experience}
+            onChange={handleChange}
+            className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm" rows={3}
+            placeholder="(Optional) e.g. Internship at ABC Corp (2025): Built a React dashboard..."
           />
         </div>
-  
+
         <div className="grid gap-4 py-2">
           <div className="grid gap-2">
             <Label htmlFor="skills" className="flex items-center gap-2">
@@ -586,14 +641,14 @@ export default function CreateCvModal({
           </div>
         </div>
 
-                <div className="flex items-center text-xs uppercase text-muted-foreground font-semibold mt-2 mb-1">
+        <div className="flex items-center text-xs uppercase text-muted-foreground font-semibold mt-2 mb-1">
           <div className="flex-1 border-t"></div>
           <span className="px-3">OR</span>
           <div className="flex-1 border-t"></div>
         </div>
-        
+
         <div className="grid grid-cols-2 gap-2 items-start">
-        {/* 
+          {/* 
           <div>
             <Label htmlFor="image-upload">Profile Image</Label>
             <div className="flex items-center gap-2">

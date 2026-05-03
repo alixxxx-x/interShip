@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { User, Lock, Palette, Camera, Loader2, CheckCircle2, AlertCircle, Languages, LogOut, Globe, ShieldCheck, HelpCircle } from "lucide-react";
+import { User, Lock, Palette, Camera, Loader2, CheckCircle2, AlertCircle, Languages, LogOut, Globe, ShieldCheck, HelpCircle, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "@/api/api";
 import { useTheme } from "@/components/theme-provider";
@@ -22,12 +22,22 @@ export default function Settings() {
   const [message, setMessage] = useState({ type: "", text: "" });
   const [langDialog, setLangDialog] = useState({ open: false, target: null });
 
+  const fileInputRef = useRef(null);
+  const [selectedFile, setSelectedFile] = useState(null);
+
   const [profileData, setProfileData] = useState({
     username: "",
     email: "",
     first_name: "",
     last_name: "",
-    profile_picture: null
+    profile_picture: null,
+    role: "STUDENT",
+    name: "",
+    description: "",
+    location: "",
+    website: "",
+    company_field: "",
+    founded_year: ""
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -45,7 +55,14 @@ export default function Settings() {
           email: res.data.email || "",
           first_name: res.data.first_name || "",
           last_name: res.data.last_name || "",
-          profile_picture: res.data.profile_picture || null
+          profile_picture: res.data.profile_picture || null,
+          role: res.data.role || "STUDENT",
+          name: res.data.name || "",
+          description: res.data.description || "",
+          location: res.data.location || "",
+          website: res.data.website || "",
+          company_field: res.data.company_field || "",
+          founded_year: res.data.founded_year || "",
         });
       } catch (error) {
         console.error("Failed to fetch profile:", error);
@@ -56,16 +73,40 @@ export default function Settings() {
     fetchProfile();
   }, []);
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedFile(file);
+      const previewUrl = URL.createObjectURL(file);
+      setProfileData({ ...profileData, profile_picture: previewUrl });
+    }
+  };
+
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMessage({ type: "", text: "" });
     try {
-      await api.patch("/auth/profile/", {
-        username: profileData.username,
-        first_name: profileData.first_name,
-        last_name: profileData.last_name,
-      });
+      const formData = new FormData();
+
+      if (profileData.role === "COMPANY") {
+        formData.append("name", profileData.name);
+        formData.append("description", profileData.description);
+        formData.append("location", profileData.location);
+        formData.append("website", profileData.website);
+        formData.append("company_field", profileData.company_field);
+        formData.append("founded_year", profileData.founded_year);
+      } else {
+        formData.append("username", profileData.username);
+        formData.append("first_name", profileData.first_name);
+        formData.append("last_name", profileData.last_name);
+      }
+
+      if (selectedFile) {
+        formData.append("profile_picture", selectedFile);
+      }
+
+      await api.patch("/auth/profile/", formData);
       setMessage({ type: "success", text: t("profileUpdated") });
     } catch (error) {
       setMessage({ type: "error", text: t("profileError") });
@@ -117,9 +158,14 @@ export default function Settings() {
 
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">{t("settings")}</h1>
-        <p className="text-muted-foreground text-lg">{t("settingsDesc")}</p>
+      <div className="flex items-start gap-4">
+        <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="mt-1 shrink-0 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
+          <ArrowLeft className="h-6 w-6 rtl:rotate-180 text-slate-600" />
+        </Button>
+        <div className="flex flex-col gap-2">
+          <h1 className="text-3xl font-bold tracking-tight">{t("settings")}</h1>
+          <p className="text-muted-foreground text-lg">{t("settingsDesc")}</p>
+        </div>
       </div>
 
       <Separator />
@@ -165,7 +211,7 @@ export default function Settings() {
               <HelpCircle className="h-4 w-4" /> {t("supportCenter")}
             </TabsTrigger>
 
-            <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+            <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 space-y-1">
               <button
                 onClick={() => navigate("/logout")}
                 className="w-full flex items-center justify-start py-3 px-4 gap-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all font-bold rounded-lg"
@@ -195,52 +241,139 @@ export default function Settings() {
               <CardContent>
                 <form onSubmit={handleProfileUpdate} className="space-y-8">
                   <div className="flex items-center gap-6 pb-4">
-                    <Avatar className="h-24 w-24 border-4 border-background shadow-xl">
-                      <AvatarImage src={profileData.profile_picture} />
-                      <AvatarFallback className="text-2xl bg-primary text-white">
-                        {profileData.username?.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
+                    <div
+                      className="relative group cursor-pointer h-24 w-24 rounded-full"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <Avatar className="h-full w-full border-4 border-background shadow-xl">
+                        <AvatarImage src={profileData.profile_picture} className="object-cover" />
+                        <AvatarFallback className="text-2xl bg-primary text-white">
+                          {profileData.username?.charAt(0).toUpperCase() || profileData.name?.charAt(0).toUpperCase() || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+
+                      {/* Hover Overlay */}
+                      <div className="absolute inset-0 bg-black/60 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer">
+                        <Camera className="h-10 w-10 text-white" />
+                      </div>
+                    </div>
+
                     <div className="space-y-2">
-                      <Button variant="outline" size="sm" type="button" className="gap-2">
-                        <Camera className="h-4 w-4" /> {t("changePhoto")}
-                      </Button>
-                      <p className="text-[11px] text-muted-foreground italic">{t("photoHint")}</p>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        ref={fileInputRef}
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+                      <p className="text-sm text-muted-foreground italic max-w-[200px] leading-snug">{t("photoHint")}</p>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="username">{t("username")}</Label>
-                      <Input
-                        id="username"
-                        value={profileData.username}
-                        onChange={(e) => setProfileData({ ...profileData, username: e.target.value })}
-                        className="bg-background/50"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">{t("emailAddress")}</Label>
-                      <Input id="email" value={profileData.email} disabled className="bg-muted/50 cursor-not-allowed" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="firstName">{t("firstName")}</Label>
-                      <Input
-                        id="firstName"
-                        value={profileData.first_name}
-                        onChange={(e) => setProfileData({ ...profileData, first_name: e.target.value })}
-                        className="bg-background/50"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="lastName">{t("lastName")}</Label>
-                      <Input
-                        id="lastName"
-                        value={profileData.last_name}
-                        onChange={(e) => setProfileData({ ...profileData, last_name: e.target.value })}
-                        className="bg-background/50"
-                      />
-                    </div>
+                    {profileData.role === "COMPANY" ? (
+                      <>
+                        <div className="space-y-2">
+                          <Label htmlFor="companyName">{t("companyName") || "Company Name"}</Label>
+                          <Input
+                            id="companyName"
+                            value={profileData.name}
+                            onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                            className="bg-background/50"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="email">{t("emailAddress")}</Label>
+                          <Input id="email" value={profileData.email} disabled className="bg-muted/50 cursor-not-allowed" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="location">{t("companyLocation") || "Location"}</Label>
+                          <Input
+                            id="location"
+                            value={profileData.location}
+                            onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
+                            className="bg-background/50"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="companyField">{t("companyField") || "Industry / Field"}</Label>
+                          <Input
+                            id="companyField"
+                            value={profileData.company_field}
+                            onChange={(e) => setProfileData({ ...profileData, company_field: e.target.value })}
+                            className="bg-background/50"
+                          />
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                          <Label htmlFor="website">{t("companyWebsite") || "Website"}</Label>
+                          <Input
+                            id="website"
+                            type="url"
+                            value={profileData.website}
+                            onChange={(e) => setProfileData({ ...profileData, website: e.target.value })}
+                            className="bg-background/50"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="foundedYear">{t("founded") || "Founded Year"}</Label>
+                          <select
+                            id="foundedYear"
+                            value={profileData.founded_year}
+                            onChange={(e) => setProfileData({ ...profileData, founded_year: e.target.value })}
+                            className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <option value="">{t("selectYear") || "Select Year"}</option>
+                            {Array.from({ length: new Date().getFullYear() - 1900 + 1 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                              <option key={year} value={year}>{year}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                          <Label htmlFor="description">{t("companyDescription") || "Description"}</Label>
+                          <textarea
+                            id="description"
+                            rows={3}
+                            value={profileData.description}
+                            onChange={(e) => setProfileData({ ...profileData, description: e.target.value })}
+                            className="flex min-h-[80px] w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="space-y-2">
+                          <Label htmlFor="username">{t("username")}</Label>
+                          <Input
+                            id="username"
+                            value={profileData.username}
+                            onChange={(e) => setProfileData({ ...profileData, username: e.target.value })}
+                            className="bg-background/50"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="email">{t("emailAddress")}</Label>
+                          <Input id="email" value={profileData.email} disabled className="bg-muted/50 cursor-not-allowed" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="firstName">{t("firstName")}</Label>
+                          <Input
+                            id="firstName"
+                            value={profileData.first_name}
+                            onChange={(e) => setProfileData({ ...profileData, first_name: e.target.value })}
+                            className="bg-background/50"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="lastName">{t("lastName")}</Label>
+                          <Input
+                            id="lastName"
+                            value={profileData.last_name}
+                            onChange={(e) => setProfileData({ ...profileData, last_name: e.target.value })}
+                            className="bg-background/50"
+                          />
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   <div className="flex justify-end">
