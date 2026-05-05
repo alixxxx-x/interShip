@@ -38,6 +38,9 @@ import AdminMessages from "@/features/dashboards/AdminMessages";
 import Notifications from "@/features/dashboards/Notifications";
 import Settings from "@/pages/Settings";
 
+import CompanyMessages from "@/features/dashboards/CompanyMessages";
+import StudentMessages from "@/features/dashboards/StudentMessages";
+
 import { LanguageProvider } from "@/components/language-provider";
 import { ToastProvider } from "@/components/ui/custom-toast";
 
@@ -107,6 +110,7 @@ function App() {
             <Route path="validations" element={<AdminValidations />} />
             <Route path="analytics" element={<AdminAnalytics />} />
             <Route path="messages" element={<AdminMessages />} />
+            <Route path="notifications" element={<Notifications />} />
           </Route>
 
           <Route
@@ -126,6 +130,7 @@ function App() {
             <Route path="/companydashboard/analytics" element={<CompanyAnalytics />} />
             <Route path="/companydashboard/listings" element={<CompanyListings />} />
             <Route path="/companydashboard/applications" element={<AllApplications />} />
+            <Route path="/companydashboard/messages" element={<CompanyMessages />} />
             <Route path="/companydashboard/notifications" element={<Notifications />} />
           </Route>
 
@@ -134,6 +139,7 @@ function App() {
             <Route path="/studentdashboard" element={<StudentDashboard />} />
             <Route path="/studentdashboard/cv" element={<MyCv />} />
             <Route path="/studentdashboard/MyApplications" element={<MyApplications />} />
+            <Route path="/studentdashboard/messages" element={<StudentMessages />} />
             <Route path="/studentdashboard/notifications" element={<Notifications />} />
           </Route>
         </Routes>

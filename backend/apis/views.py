@@ -12,6 +12,10 @@ from django.http import FileResponse
 from .models import *
 from .serializers import *
 from .permissions import *
+
+class MyTokenObtainPairView(TokenObtainPairView):
+    serializer_class = MyTokenObtainPairSerializer
+
 # gemini ai
 from google import genai
 from django.http import JsonResponse
@@ -94,12 +98,18 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
 
 
 class UserListView(generics.ListAPIView):
-    queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsAdmin]
+    permission_classes = [IsAdmin | IsCompany | IsStudent]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['username', 'email']
     ordering_fields = ['id', 'username']
+
+    def get_queryset(self):
+        queryset = User.objects.all()
+        role = self.request.query_params.get('role')
+        if role:
+            queryset = queryset.filter(role=role)
+        return queryset
 
 class UserAdminUpdateView(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
@@ -110,7 +120,7 @@ class UserAdminUpdateView(generics.RetrieveUpdateDestroyAPIView):
 class CompanyListView(generics.ListAPIView):
     queryset = Company.objects.filter(role=User.Role.COMPANY)
     serializer_class = CompanySerializer
-    permission_classes = [IsAuthenticated] # Allow all authenticated users to see companies
+    permission_classes = [AllowAny] # Allow all users to see companies
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name', 'location', 'company_field']
 
@@ -373,7 +383,10 @@ class ApplicationListView(generics.ListAPIView):
     serializer_class = ApplicationSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['student','internship','status']
+    search_fields = [
+        'student__first_name', 'student__last_name', 'student__email',
+        'internship__title', 'internship__company__name', 'status'
+    ]
     ordering_fields = ['id', 'application_date']
     
     def get_queryset(self):
@@ -384,6 +397,13 @@ class ApplicationListView(generics.ListAPIView):
             else:
                 queryset = queryset.filter(student=self.request.user.student)
         return queryset
+
+    @property
+    def pagination_class(self):
+        # Disable pagination for admins to avoid missing candidates
+        if self.request.user.role == User.Role.ADMIN:
+            return None
+        return super().pagination_class
 
 # skills views
 
@@ -875,28 +895,39 @@ class GenerateCVView(generics.GenericAPIView):
         elements = []
 
         # Header - Name
-        elements.append(Paragraph(f"{cv.first_name} {cv.last_name}", name_style))
+        elements.append(Paragraph(f"{cv.first_name} {cv.last_name}".upper(), name_style))
         
-        # Contact Info Line 1
-        contact_parts = []
-        if cv.email: contact_parts.append(cv.email)
-        if cv.phone: contact_parts.append(cv.phone)
+        # Contact Info Styles
+        contact_style_left = ParagraphStyle('ContactLeft', parent=styles['Normal'], fontName='Helvetica', fontSize=9, alignment=0) # TA_LEFT
+        contact_style_right = ParagraphStyle('ContactRight', parent=styles['Normal'], fontName='Helvetica', fontSize=9, alignment=2) # TA_RIGHT
+
+        # Contact Info Table Data
+        left_data = []
+        if cv.email: left_data.append(f"<b>Email:</b> {cv.email}")
+        if cv.phone: left_data.append(f"<b>Phone:</b> {cv.phone}")
+        
+        right_data = []
         loc = cv.address or cv.wilaya
-        if loc: contact_parts.append(loc)
-        
-        if contact_parts:
-            elements.append(Paragraph(" &nbsp;&nbsp;|&nbsp;&nbsp; ".join(contact_parts), contact_style))
-        
-        # Contact Info Line 2 (Links & ID)
-        links_parts = []
-        if cv.linkedin: links_parts.append(cv.linkedin)
-        if cv.github: links_parts.append(cv.github)
-        if cv.portfolio_link: links_parts.append(cv.portfolio_link)
+        if loc: right_data.append(f"<b>Location:</b> {loc}")
         uid = cv.university_id or student.university_id
-        if uid: links_parts.append(f"Univ ID: {uid}")
-        
-        if links_parts:
-            elements.append(Paragraph(" &nbsp;&nbsp;|&nbsp;&nbsp; ".join(links_parts), contact_style))
+        if uid: right_data.append(f"<b>Student ID:</b> {uid}")
+
+        # Construct table rows
+        table_rows = []
+        for i in range(max(len(left_data), len(right_data))):
+            l = left_data[i] if i < len(left_data) else ""
+            r = right_data[i] if i < len(right_data) else ""
+            table_rows.append([Paragraph(l, contact_style_left), Paragraph(r, contact_style_right)])
+
+        if table_rows:
+            t = RLTable(table_rows, colWidths=['50%', '50%'])
+            t.setStyle(TableStyle([
+                ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                ('LEFTPADDING', (0,0), (-1,-1), 0),
+                ('RIGHTPADDING', (0,0), (-1,-1), 0),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+            ]))
+            elements.append(t)
             
         elements.append(Spacer(1, 15))
 
@@ -908,20 +939,25 @@ class GenerateCVView(generics.GenericAPIView):
             t.setStyle(TableStyle([
                 ('FONTNAME', (0,0), (-1,-1), 'Helvetica-Bold'),
                 ('FONTSIZE', (0,0), (-1,-1), 11),
+                ('TEXTCOLOR', (0,0), (-1,-1), colors.HexColor("#4c1d95")), # Purple-900
                 ('ALIGN', (0,0), (-1,-1), 'LEFT'),
                 ('BOTTOMPADDING', (0,0), (-1,-1), 3),
-                ('TOPPADDING', (0,0), (-1,-1), 10),
-                ('LINEBELOW', (0,0), (-1,-1), 1, colors.black),
+                ('TOPPADDING', (0,0), (-1,-1), 12),
+                ('LINEBELOW', (0,0), (-1,-1), 1.5, colors.HexColor("#7c3aed")), # Purple-600
             ]))
             elements.append(t)
-            elements.append(Spacer(1, 5))
+            elements.append(Spacer(1, 8))
             
             # Content
             import json
             try:
                 parsed = json.loads(content)
                 if isinstance(parsed, list):
-                    content = " • ".join(parsed)
+                    # For list-like content, use bullet points
+                    for item in parsed:
+                        if item.strip():
+                            elements.append(Paragraph(f"• {item.strip()}", body_style))
+                    return
             except Exception:
                 pass
                 
@@ -932,6 +968,15 @@ class GenerateCVView(generics.GenericAPIView):
         add_section("Professional Experience", cv.experience)
         add_section("Skills", cv.skills)
         add_section("Languages", cv.languages)
+
+        # Move links to the bottom in a nice "Links & Portfolio" section
+        links_content = []
+        if cv.linkedin: links_content.append(f"<b>LinkedIn:</b> {cv.linkedin}")
+        if cv.github: links_content.append(f"<b>GitHub:</b> {cv.github}")
+        if cv.portfolio_link: links_content.append(f"<b>Portfolio:</b> {cv.portfolio_link}")
+        
+        if links_content:
+            add_section("Links & Portfolio", "<br/>".join(links_content))
 
         doc.build(elements)
         buffer.seek(0)

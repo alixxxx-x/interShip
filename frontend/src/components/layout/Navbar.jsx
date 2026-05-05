@@ -155,10 +155,10 @@ export default function Navbar({ children }) {
                             <DropdownMenu>
                                 <DropdownMenuTrigger className="relative h-10 w-auto flex items-center gap-2.5 pl-1 pr-3.5 hover:bg-accent rounded-full group transition-all duration-200 outline-none border border-transparent hover:border-border bg-transparent">
                                     <div className="relative">
-                                        <Avatar className="h-8 w-8 border border-border shadow-sm ring-1 ring-border group-hover:ring-primary/20 transition-all shrink-0">
-                                            <AvatarImage src={userInfo.profile_picture} alt={userInfo.username} className="object-cover" />
+                                         <Avatar className="h-8 w-8 border border-border shadow-sm ring-1 ring-border group-hover:ring-primary/20 transition-all shrink-0">
+                                            <AvatarImage src={userInfo.role === 'COMPANY' ? (userInfo.logo || userInfo.profile_picture) : userInfo.profile_picture} alt={userInfo.username} className="object-cover" />
                                             <AvatarFallback className="bg-primary text-white text-[10px] font-medium uppercase">
-                                                {userInfo.username?.charAt(0).toUpperCase() || 'A'}
+                                                {(userInfo.role === 'COMPANY' ? (userInfo.name || userInfo.username) : userInfo.username)?.charAt(0).toUpperCase() || 'A'}
                                             </AvatarFallback>
                                         </Avatar>
                                         {unreadCount > 0 && (
@@ -267,10 +267,12 @@ export default function Navbar({ children }) {
                             <div className="space-y-4 px-2">
                                 <div className="flex items-center gap-4 py-2">
                                     <Avatar className="h-10 w-10">
-                                        {userInfo.profile_picture && (
-                                            <img src={userInfo.profile_picture} alt={userInfo.username} className="h-full w-full object-cover" />
-                                        )}
-                                        <AvatarFallback className="bg-primary text-white font-medium">{userInfo.username?.charAt(0).toUpperCase() || 'A'}</AvatarFallback>
+                                        {(userInfo.logo || userInfo.profile_picture) ? (
+                                            <img src={userInfo.role === 'COMPANY' ? (userInfo.logo || userInfo.profile_picture) : userInfo.profile_picture} alt={userInfo.username} className="h-full w-full object-cover" />
+                                        ) : null}
+                                        <AvatarFallback className="bg-primary text-white font-medium">
+                                            {(userInfo.role === 'COMPANY' ? (userInfo.name || userInfo.username) : userInfo.username)?.charAt(0).toUpperCase() || 'A'}
+                                        </AvatarFallback>
                                     </Avatar>
                                     <div>
                                         <p className="text-sm font-semibold text-slate-900">

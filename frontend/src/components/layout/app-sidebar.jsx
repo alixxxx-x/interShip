@@ -174,6 +174,12 @@ export function AppSidebar({ ...props }) {
           isActive: location.pathname.startsWith("/studentdashboard/MyApplications"),
         },
         {
+          title: t("sidebarMessages"),
+          url: "/studentdashboard/messages",
+          icon: MessageSquare,
+          isActive: location.pathname.startsWith("/studentdashboard/messages"),
+        },
+        {
         title: t("sidebarPlatform"),
         url: "#",
         icon: Settings2,
@@ -263,6 +269,11 @@ export function AppSidebar({ ...props }) {
           title: t("sidebarApplications"),
           url: "/companydashboard/applications",
           icon: Users,
+        },
+        {
+          title: t("sidebarMessages"),
+          url: "/companydashboard/messages",
+          icon: MessageSquare,
         },
         {
           title: t("sidebarPlatform"),
