@@ -391,19 +391,23 @@ class ApplicationListView(generics.ListAPIView):
     
     def get_queryset(self):
         queryset = super().get_queryset()
-        if self.request.user.role not in [User.Role.ADMIN]:
-            if self.request.user.role == User.Role.COMPANY:
-                queryset = queryset.filter(internship__company=self.request.user)
-            else:
-                queryset = queryset.filter(student=self.request.user.student)
-        return queryset
+        user = self.request.user
+        
+        if user.role == User.Role.ADMIN:
+            return queryset
+            
+        if user.role == User.Role.COMPANY:
+            return queryset.filter(internship__company__id=user.id)
+            
+        if user.role == User.Role.STUDENT:
+            return queryset.filter(student__id=user.id)
+            
+        return queryset.none()
 
     @property
     def pagination_class(self):
-        # Disable pagination for admins to avoid missing candidates
-        if self.request.user.role == User.Role.ADMIN:
-            return None
-        return super().pagination_class
+        # Disable pagination for this view as the frontend expects a direct array
+        return None
 
 # skills views
 
