@@ -20,6 +20,7 @@ export default function Internships() {
   const [searchQuery, setSearchQuery] = useState(location.state?.searchQuery || "");
   const [submittedSearchQuery, setSubmittedSearchQuery] = useState(location.state?.searchQuery || "");
   const [isSearchActive, setIsSearchActive] = useState(location.state?.isSearchActive || false);
+  const [visibleCount, setVisibleCount] = useState(6);
 
   // Filter States
   const [selectedWilaya, setSelectedWilaya] = useState("");
@@ -190,6 +191,7 @@ export default function Internships() {
           setSearchQuery("");
           setSubmittedSearchQuery("");
           clearFilters();
+          setVisibleCount(6);
         }}
       />
 
@@ -577,7 +579,7 @@ export default function Internships() {
             <div key={i} className="h-[350px] w-full rounded-2xl bg-muted" />
           ))
         ) : filteredInternships.length > 0 ? (
-          filteredInternships.map((internship) => (
+          filteredInternships.slice(0, visibleCount).map((internship) => (
             <div
               key={internship.id}
               className="border rounded-2xl bg-card text-card-foreground shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col group"
@@ -668,6 +670,19 @@ export default function Internships() {
           </div>
         )}
       </div>
+
+      {!loading && !isSearchActive && visibleCount < filteredInternships.length && (
+        <div className="mt-12 flex justify-center pb-8">
+          <Button 
+            variant="outline" 
+            size="lg" 
+            className="rounded-full px-8 font-bold border-primary text-primary hover:bg-primary hover:text-white transition-all shadow-sm"
+            onClick={() => setVisibleCount(filteredInternships.length)}
+          >
+            {t("viewAll") || "View All"}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

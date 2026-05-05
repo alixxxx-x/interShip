@@ -17,8 +17,11 @@ export default function AdminValidations() {
       setLoading(true);
       const res = await api.get("/applications/");
       const allApps = res.data.results || res.data;
-      // Show both Accepted (pending/validated) and Rejected applications
-      const filtered = allApps.filter(app => app.status === 'ACCEPTED' || app.status === 'REJECTED');
+      // Show Accepted applications (waiting for admin) and applications explicitly Rejected by Admin
+      const filtered = allApps.filter(app => 
+        app.status === 'ACCEPTED' || 
+        (app.status === 'REJECTED' && app.is_validated_by_admin)
+      );
       setValidations(filtered);
     } catch (error) {
       console.error("Failed to fetch validations:", error);

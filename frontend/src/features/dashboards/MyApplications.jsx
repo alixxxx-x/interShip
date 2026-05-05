@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/table";
 import { useNavigate } from "react-router-dom";
 import api from "@/api/api";
+import { Stepper } from "@/components/ui/stepper";
 
 
 export default function MyApplications() {
@@ -106,7 +107,7 @@ export default function MyApplications() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Offer</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead className="w-[250px]">Status</TableHead>
                   <TableHead>Applied Date</TableHead>
                   <TableHead className="text-right">Agreement</TableHead>
                 </TableRow>
@@ -126,7 +127,21 @@ export default function MyApplications() {
                     <TableRow key={application.id}>
                       <TableCell className="font-medium">{offer}</TableCell>
                       <TableCell>
-                        <Badge variant={getStatusBadge(statusText)}>{statusText}</Badge>
+                        <div className="py-2 -translate-x-24">
+                          <Stepper 
+                            steps={[
+                              { label: "Applied" },
+                              { label: application.status === 'PENDING' ? "Pending" : "Accepted" },
+                              { label: application.is_validated_by_admin ? "Validated" : application.status === 'ACCEPTED' ? "Pending" : "Validated" }
+                            ]}
+                            currentStep={
+                              application.status === 'REJECTED' ? 2 :
+                              (application.is_validated_by_admin ? 4 : 
+                                (application.status === 'ACCEPTED' ? 3 : 2))
+                            }
+                            status={application.status}
+                          />
+                        </div>
                       </TableCell>
                       <TableCell>{appliedDate}</TableCell>
                       <TableCell className="text-right">
