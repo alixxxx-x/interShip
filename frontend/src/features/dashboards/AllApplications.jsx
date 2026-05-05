@@ -121,8 +121,8 @@ export default function AllApplications() {
                           size="sm"
                           onClick={async () => {
                             try {
-                              const res = await api.get(`/cv/generate/${application.student}/`, { 
-                                responseType: 'blob' 
+                              const res = await api.get(`/cv/generate/${application.student}/`, {
+                                responseType: 'blob'
                               });
                               const blob = new Blob([res.data], { type: 'application/pdf' });
                               const url = window.URL.createObjectURL(blob);
@@ -156,9 +156,19 @@ export default function AllApplications() {
                             </Button>
                           </div>
                         ) : (
-                          <Button variant="ghost" size="icon" onClick={() => handleStatusChange(offer, application.id, 'PENDING')}>
-                            <Pencil className="h-4 w-4" />
-                          </Button>
+                          <span
+                            className={application.is_validated_by_admin ? "cursor-not-allowed inline-block" : ""}
+                            title={application.is_validated_by_admin ? "Cannot edit after admin validation" : "Edit status"}
+                          >
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              disabled={application.is_validated_by_admin}
+                              onClick={() => handleStatusChange(offer, application.id, 'PENDING')}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          </span>
                         )}
                       </TableCell>
                     </TableRow>
