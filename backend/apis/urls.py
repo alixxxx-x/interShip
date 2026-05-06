@@ -15,11 +15,16 @@ urlpatterns = [
     path('users/', UserListView.as_view(), name='user-list'),
     path('users/<int:pk>/', UserAdminUpdateView.as_view(), name='user-admin-update'),
     path('companies/', CompanyListView.as_view(), name='company-list'),
+    path('companies/<int:company_id>/follow/', FollowStatusView.as_view(), name='follow-status'),
+    path('companies/<int:company_id>/follow/toggle/', FollowCompanyView.as_view(), name='follow-company'),
+    path('companies/<int:company_id>/unfollow/', UnfollowCompanyView.as_view(), name='unfollow-company'),
 
     # Internships
     path('internships/create/', InternshipCreateView.as_view(), name='create'),
     path('internships/', InternshipListView.as_view(), name='internship-list'),
+    path('internships/followed/', FollowedCompaniesInternshipsView.as_view(), name='followed-internships'),
     path('internships/company/', CompanyInternshipListView.as_view(), name='company-internship-list'),
+
     path('internships/<int:pk>/', InternshipRetrieveView.as_view(), name='internship-retrieve'),
     path('internships/<int:pk>/update/', InternshipUpdateDestroyView.as_view(), name='internship-update'),
     path('internships/<int:pk>/delete/', InternshipUpdateDestroyView.as_view(), name='internship-delete'),
@@ -45,6 +50,8 @@ urlpatterns = [
     path('cv/generate/<int:student_id>/', GenerateCVView.as_view(), name='generate-cv'),
     path('student/dashboard/', StudentDashboardView.as_view(), name='student-dashboard'),
     path('company/dashboard/', CompanyDashboardView.as_view(), name='company-dashboard'),
+    path('admin-univ/dashboard/', AdminUnivDashboardView.as_view(), name='admin-univ-dashboard'),
+    path('company/followers/', CompanyFollowersCountView.as_view(), name='company-followers-count'),
 
     # Notifications
     path('notifications/', NotificationListView.as_view(), name='notification-list'),

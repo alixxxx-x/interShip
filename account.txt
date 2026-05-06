@@ -1,4 +1,62 @@
-admin : 
+admin Dept : 
   email :[admin@stag.io]
   password : [admin123]
 
+Admins Dept (Université Mehri) :
+  email :[ntic@mehry.univ.dz] (Informatique)
+  password : [password123]
+  
+  email :[math@mehry.univ.dz] (Mathématiques)
+  password : [password123]
+
+  email :[eco@mehry.univ.dz] (Économie)
+  password : [password123]
+
+Admins Dept (Université Mentouri) :
+  email :[snv@mentouri.univ.dz] (Sciences de la Nature et de la Vie)
+  password : [password123]
+
+  email :[droit@mentouri.univ.dz] (Droit)
+  password : [password123]
+
+  email :[lettres@mentouri.univ.dz] (Lettres et Langues)
+  password : [password123]
+
+admin univ 
+  email :[admin@mentouri.univ.dz]
+  password : [password123]
+
+  email :[admin@mehry.univ.dz]
+  password : [password123]
+
+companies : 
+  email :[djezzy@gmail.com]
+  password : [djezzy]
+  
+  email :[google@gmail.com]
+  password : [google]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  student : 
+      email:[ali@univ.dz]
+      password:[[password]]
+      
+      email:[[EMAIL_ADDRESS]]
+      password:[[PASSWORD]]
+      
+      email:[[EMAIL_ADDRESS]]
+      password:[[PASSWORD]]

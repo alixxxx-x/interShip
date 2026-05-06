@@ -16,7 +16,7 @@ class ApisConfig(AppConfig):
                         username='admin',
                         email='admin@stag.io',
                         password='admin123',
-                        role='ADMIN'
+                        role='ADMIN_DEPT'
                     )
                     print("--- ADMIN ACCOUNT CREATED: user='admin', pass='admin123' ---")
             except Exception as e:

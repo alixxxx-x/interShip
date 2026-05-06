@@ -36,6 +36,8 @@ class UserSerializer(serializers.ModelSerializer):
     company_field = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
     founded_year = serializers.IntegerField(required=False, write_only=True, allow_null=True)
     department = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
+    university_name = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
+    departments = serializers.JSONField(required=False, write_only=True, allow_null=True)
     major = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
 
     class Meta:
@@ -43,7 +45,8 @@ class UserSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'username', 'email', 'role', 'profile_picture', 'password',
             'first_name', 'last_name', 'is_active', 'university_id', 'wilaya', 'phone', 'major',
-            'name', 'logo', 'description', 'location', 'website', 'company_field', 'founded_year', 'department'
+            'name', 'logo', 'description', 'location', 'website', 'company_field', 'founded_year', 'department',
+            'university_name', 'departments'
         ]
         read_only_fields = ['id']
     # hdi hiya t3 email  
@@ -70,7 +73,8 @@ class UserSerializer(serializers.ModelSerializer):
         profile_map = {
             User.Role.STUDENT: ('student', ['university_id', 'wilaya', 'phone', 'major']),
             User.Role.COMPANY: ('company', ['name', 'logo', 'description', 'location', 'website', 'company_field', 'founded_year']),
-            User.Role.ADMIN: ('administrator', ['department']),
+            User.Role.ADMIN_DEPT: ('administrator', ['department']),
+            User.Role.ADMIN_UNIV: ('adminuniv', ['university_name', 'departments']),
         }
         
         config = profile_map.get(instance.role)
@@ -120,7 +124,8 @@ class UserSerializer(serializers.ModelSerializer):
         models_map = {
             User.Role.STUDENT: Student,
             User.Role.COMPANY: Company,
-            User.Role.ADMIN: Administrator,
+            User.Role.ADMIN_DEPT: Administrator,
+            User.Role.ADMIN_UNIV: AdminUniv,
         }
         
         model_class = models_map.get(role, User)
@@ -179,10 +184,18 @@ class UserSerializer(serializers.ModelSerializer):
                 company.founded_year = validated_data.get('founded_year')
             company.save()
             
-        elif instance.role == User.Role.ADMIN and hasattr(instance, 'administrator'):
+        elif instance.role == User.Role.ADMIN_DEPT and hasattr(instance, 'administrator'):
             admin = instance.administrator
             if 'department' in validated_data:
                 admin.department = validated_data.get('department')
+            admin.save()
+            
+        elif instance.role == User.Role.ADMIN_UNIV and hasattr(instance, 'adminuniv'):
+            admin = instance.adminuniv
+            if 'university_name' in validated_data:
+                admin.university_name = validated_data.get('university_name')
+            if 'departments' in validated_data:
+                admin.departments = validated_data.get('departments')
             admin.save()
 
         return instance

@@ -170,8 +170,18 @@ class InternshipCreateView(generics.CreateAPIView):
     permission_classes = [IsCompany, IsAuthenticated]
 
     def perform_create(self, serializer):
-        serializer.save(company=self.request.user.company) # Access the Company profile from the User
-    
+        company = self.request.user.company
+        internship = serializer.save(company=company)
+
+        # Notify all followers of this company about the new open internship
+        if internship.status == InternshipOffer.Status.OPEN_FOR_APPLICATION:
+            followers = CompanyFollow.objects.filter(company=company).select_related('student')
+            for follow in followers:
+                Notification.objects.create(
+                    recipient=follow.student,
+                    notification_type=Notification.NotificationType.NEW_INTERNSHIP_FROM_FOLLOWED,
+                    message=f"{company.name} posted a new internship: '{internship.title}'",
+                )
 
 class InternshipUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = InternshipOffer.objects.all()
@@ -203,7 +213,7 @@ class InternshipRetrieveView(generics.RetrieveAPIView):
                 raise PermissionDenied("You do not have permission to view this internship.")
             return obj
 
-        if user.role != User.Role.ADMIN:
+        if user.role not in [User.Role.ADMIN_DEPT, User.Role.ADMIN_UNIV]:
             if obj.status == InternshipOffer.Status.HIDDEN:
                 raise PermissionDenied("You do not have permission to view this internship.")
             
@@ -225,7 +235,7 @@ class InternshipListView(generics.ListAPIView):
     def get_queryset(self):
         queryset = super().get_queryset()
         # Admins see all offers
-        if self.request.user.is_authenticated and self.request.user.role == User.Role.ADMIN:
+        if self.request.user.is_authenticated and self.request.user.role in [User.Role.ADMIN_DEPT, User.Role.ADMIN_UNIV]:
             return queryset
             
         # Everyone else (Students, unauthenticated users, and companies browsing the public feed)
@@ -314,7 +324,7 @@ class ApplicationUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
                 )
                 
                 # Notify all Admins that validation is required
-                admins = User.objects.filter(role=User.Role.ADMIN)
+                admins = User.objects.filter(role__in=[User.Role.ADMIN_DEPT, User.Role.ADMIN_UNIV])
                 for admin in admins:
                     Notification.objects.create(
                         recipient=admin,
@@ -393,7 +403,7 @@ class ApplicationListView(generics.ListAPIView):
         queryset = super().get_queryset()
         user = self.request.user
         
-        if user.role == User.Role.ADMIN:
+        if user.role in [User.Role.ADMIN_DEPT, User.Role.ADMIN_UNIV]:
             return queryset
             
         if user.role == User.Role.COMPANY:
@@ -464,7 +474,7 @@ class SkillsListView(generics.ListAPIView):
     
     def get_queryset(self):
         queryset = super().get_queryset()
-        if self.request.user.role not in [User.Role.ADMIN]:
+        if self.request.user.role not in [User.Role.ADMIN_DEPT, User.Role.ADMIN_UNIV]:
             if self.request.user.role == User.Role.COMPANY:
                 queryset = queryset.filter(internship__company=self.request.user)
             else:
@@ -592,6 +602,49 @@ class CompanyDashboardView(generics.GenericAPIView):
                 "email": student.email,
                 "internshipTitle": app.internship.title,
                 "cvUrl": cv_url,
+            })
+
+        return Response({
+            "stats": stats,
+            "applications": recent_apps_data
+        })
+
+
+class AdminUnivDashboardView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        if request.user.role != User.Role.ADMIN_UNIV:
+            raise PermissionDenied("Only Admin Univ can access this dashboard.")
+
+        applications = Application.objects.all()
+
+        stats = {
+            "totalStudents": User.objects.filter(role=User.Role.STUDENT).count(),
+            "totalCompanies": User.objects.filter(role=User.Role.COMPANY).count(),
+            "pendingValidations": applications.filter(status=Application.Status.ACCEPTED, is_validated_by_admin=False).count(),
+            "validatedInternships": applications.filter(status=Application.Status.ACCEPTED, is_validated_by_admin=True).count(),
+        }
+
+        # Recent applications pending validation
+        recent_apps = applications.filter(
+            status=Application.Status.ACCEPTED, 
+            is_validated_by_admin=False
+        ).select_related('student', 'internship', 'internship__company').order_by('-application_date')[:5]
+
+        recent_apps_data = []
+        for app in recent_apps:
+            student = app.student
+            candidate_name = f"{student.first_name} {student.last_name}".strip() or student.username or student.email
+
+            recent_apps_data.append({
+                "id": app.id,
+                "studentId": student.id,
+                "candidate": candidate_name,
+                "internshipTitle": app.internship.title,
+                "companyName": app.internship.company.name,
+                "appliedDate": app.application_date.strftime("%Y-%m-%d"),
+                "status": "Pending Validation"
             })
 
         return Response({
@@ -776,7 +829,7 @@ class GenerateInternshipAgreementView(generics.GenericAPIView):
         application = get_object_or_404(Application, pk=pk)
         
         # Check permissions: Student, Company, or Admin
-        if not (request.user.role == User.Role.ADMIN or 
+        if not (request.user.role in [User.Role.ADMIN_DEPT, User.Role.ADMIN_UNIV] or 
                 request.user.id == application.student.id or 
                 request.user.id == application.internship.company.id):
             raise PermissionDenied("You do not have permission to view this document.")
@@ -1054,3 +1107,77 @@ class ResetPasswordView(APIView):
                 return Response({"error": "Invalid or expired code."}, status=400)
         except Exception as e:
             return Response({"error": f"Server Error: {str(e)}"}, status=500)
+
+
+# ─── Company Follow Views ────────────────────────────────────────────────────
+
+class FollowCompanyView(generics.GenericAPIView):
+    """POST /companies/<company_id>/follow/ — student follows a company."""
+    permission_classes = [IsAuthenticated, IsStudent]
+
+    def post(self, request, company_id, *args, **kwargs):
+        company = get_object_or_404(Company, pk=company_id)
+        student = request.user.student
+        follow, created = CompanyFollow.objects.get_or_create(student=student, company=company)
+        if created:
+            return Response({"status": "followed", "followers_count": company.followers.count()}, status=status.HTTP_201_CREATED)
+        return Response({"status": "already_following", "followers_count": company.followers.count()}, status=status.HTTP_200_OK)
+
+
+class UnfollowCompanyView(generics.GenericAPIView):
+    """DELETE /companies/<company_id>/follow/ — student unfollows a company."""
+    permission_classes = [IsAuthenticated, IsStudent]
+
+    def delete(self, request, company_id, *args, **kwargs):
+        company = get_object_or_404(Company, pk=company_id)
+        student = request.user.student
+        deleted, _ = CompanyFollow.objects.filter(student=student, company=company).delete()
+        return Response(
+            {"status": "unfollowed" if deleted else "not_following", "followers_count": company.followers.count()},
+            status=status.HTTP_200_OK
+        )
+
+
+class FollowStatusView(generics.GenericAPIView):
+    """GET /companies/<company_id>/follow/ — check if the current student follows this company."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, company_id, *args, **kwargs):
+        company = get_object_or_404(Company, pk=company_id)
+        is_following = False
+        if request.user.role == User.Role.STUDENT:
+            is_following = CompanyFollow.objects.filter(student=request.user.student, company=company).exists()
+        return Response({
+            "is_following": is_following,
+            "followers_count": company.followers.count(),
+        })
+
+
+class CompanyFollowersCountView(generics.GenericAPIView):
+    """GET /company/followers/ — returns the follower count for the logged-in company."""
+    permission_classes = [IsAuthenticated, IsCompany]
+
+    def get(self, request, *args, **kwargs):
+        try:
+            # Multi-table inheritance: request.user is a User, but has a 'company' attribute
+            # Or we can query Company directly using the same ID
+            company_id = request.user.id
+            count = CompanyFollow.objects.filter(company_id=company_id).count()
+            return Response({"followers_count": count})
+        except Exception as e:
+            return Response({"followers_count": 0, "error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class FollowedCompaniesInternshipsView(generics.ListAPIView):
+    """GET /internships/followed/ — internships from companies the student follows."""
+    serializer_class = InternshipSerializer
+    permission_classes = [IsAuthenticated, IsStudent]
+
+    def get_queryset(self):
+        student = self.request.user.student
+        followed_companies = CompanyFollow.objects.filter(student=student).values_list('company_id', flat=True)
+        return InternshipOffer.objects.filter(
+            company_id__in=followed_companies,
+            status=InternshipOffer.Status.OPEN_FOR_APPLICATION
+        ).order_by('-id')
+

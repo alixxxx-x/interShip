@@ -9,6 +9,8 @@ import api from '@/api/api';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useLanguage } from '@/components/language-provider';
+import { jwtDecode } from 'jwt-decode';
+import { ACCESS_TOKEN } from '@/constants';
 
 export default function Internships() {
   const { t } = useLanguage();
@@ -35,6 +37,16 @@ export default function Internships() {
   const [isSkillsOpen, setIsSkillsOpen] = useState(false);
   const navigate = useNavigate();
   const [likedItems, setLikedItems] = useState(new Set());
+  const [followedCompanyIds, setFollowedCompanyIds] = useState(new Set());
+
+  // Check if current user is a student
+  const isStudent = (() => {
+    try {
+      const token = localStorage.getItem(ACCESS_TOKEN);
+      if (!token) return false;
+      return jwtDecode(token).role === 'STUDENT';
+    } catch { return false; }
+  })();
 
   const toggleLike = (id) => {
     setLikedItems(prev => {
@@ -113,6 +125,22 @@ export default function Internships() {
     fetchInternships();
   }, []);
 
+  // Fetch followed company IDs so we can sort/highlight them
+  useEffect(() => {
+    if (!isStudent) return;
+    const fetchFollowed = async () => {
+      try {
+        const res = await api.get('/internships/followed/');
+        const raw = res.data.results || res.data;
+        const ids = new Set((Array.isArray(raw) ? raw : []).map(i => i.company));
+        setFollowedCompanyIds(ids);
+      } catch {
+        // silently ignore (e.g. not logged in)
+      }
+    };
+    fetchFollowed();
+  }, [isStudent]);
+
   // Safe data processing
   const safeInternships = Array.isArray(internships) ? internships : [];
 
@@ -156,19 +184,26 @@ export default function Internships() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const filteredInternships = safeInternships.filter((internship) => {
-    const title = internship.title?.toLowerCase() || "";
-    const company = internship.company_name?.toLowerCase() || "";
+  const filteredInternships = safeInternships
+    .filter((internship) => {
+      const title = internship.title?.toLowerCase() || "";
+      const company = internship.company_name?.toLowerCase() || "";
 
-    const q = (submittedSearchQuery || "").toLowerCase();
-    const matchesSearch = q === "" || title.includes(q) || company.includes(q);
-    const matchesWilaya = selectedWilaya === "" || internship.wilaya === selectedWilaya;
-    const matchesType = selectedType === "" || internship.internship_type === selectedType;
-    const matchesLocation = selectedLocation === "" || internship.internship_location === selectedLocation;
-    const matchesSkill = selectedSkills.length === 0 || (internship.required_skills && selectedSkills.some(s => internship.required_skills.includes(s)));
+      const q = (submittedSearchQuery || "").toLowerCase();
+      const matchesSearch = q === "" || title.includes(q) || company.includes(q);
+      const matchesWilaya = selectedWilaya === "" || internship.wilaya === selectedWilaya;
+      const matchesType = selectedType === "" || internship.internship_type === selectedType;
+      const matchesLocation = selectedLocation === "" || internship.internship_location === selectedLocation;
+      const matchesSkill = selectedSkills.length === 0 || (internship.required_skills && selectedSkills.some(s => internship.required_skills.includes(s)));
 
-    return matchesSearch && matchesWilaya && matchesType && matchesLocation && matchesSkill;
-  });
+      return matchesSearch && matchesWilaya && matchesType && matchesLocation && matchesSkill;
+    })
+    // Sort: followed companies first
+    .sort((a, b) => {
+      const aFollowed = followedCompanyIds.has(a.company) ? 0 : 1;
+      const bFollowed = followedCompanyIds.has(b.company) ? 0 : 1;
+      return aFollowed - bFollowed;
+    });
 
   const clearFilters = () => {
     setSelectedWilaya("");
@@ -600,9 +635,16 @@ export default function Internships() {
                 <div className="mb-4">
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <h3 className="font-bold text-xl leading-tight line-clamp-2">{internship.title}</h3>
-                    <Badge variant={getInternshipStatusBadge(internship.status)} className="capitalize whitespace-nowrap mt-1">
-                      {internship.status ? internship.status.replace(/_/g, ' ').toLowerCase() : 'N/A'}
-                    </Badge>
+                    <div className="flex flex-col items-end gap-1 shrink-0 mt-1">
+                      <Badge variant={getInternshipStatusBadge(internship.status)} className="capitalize whitespace-nowrap">
+                        {internship.status ? internship.status.replace(/_/g, ' ').toLowerCase() : 'N/A'}
+                      </Badge>
+                      {followedCompanyIds.has(internship.company) && (
+                        <span className="text-[10px] font-black uppercase tracking-tight bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <Heart className="h-2.5 w-2.5 fill-pink-500" /> Following
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center text-sm font-semibold text-primary/80 gap-1.5 mb-3">
                     <Building2 className="h-4 w-4" />

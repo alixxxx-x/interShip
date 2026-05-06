@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { AlertCircle, Award, Briefcase, Building2, Calendar, ChevronLeft, ChevronRight, ExternalLink, Globe, Heart, Mail, MapPin, Share2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import api from '@/api/api';
 import { useLanguage } from '@/components/language-provider';
+import { jwtDecode } from 'jwt-decode';
+import { ACCESS_TOKEN } from '@/constants';
 
 // Using the same mock data as in Companies.jsx
 const MOCK_COMPANIES = [
@@ -97,6 +99,20 @@ export default function CompaniesDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followLoading, setFollowLoading] = useState(false);
+
+  // Determine if the logged-in user is a student
+  const isStudent = (() => {
+    try {
+      const token = localStorage.getItem(ACCESS_TOKEN);
+      if (!token) return false;
+      const decoded = jwtDecode(token);
+      return decoded.role === 'STUDENT';
+    } catch {
+      return false;
+    }
+  })();
 
   useEffect(() => {
     const fetchCompanyDetails = async () => {
@@ -121,6 +137,41 @@ export default function CompaniesDetails() {
 
     fetchCompanyDetails();
   }, [id]);
+
+  // Fetch follow status once company is loaded
+  useEffect(() => {
+    if (!company || !isStudent) return;
+    const fetchFollowStatus = async () => {
+      try {
+        const res = await api.get(`/companies/${company.id}/follow/`);
+        setIsFollowing(res.data.is_following);
+        setFollowersCount(res.data.followers_count);
+      } catch {
+        // silently ignore
+      }
+    };
+    fetchFollowStatus();
+  }, [company, isStudent]);
+
+  const handleFollowToggle = useCallback(async () => {
+    if (!isStudent || followLoading) return;
+    setFollowLoading(true);
+    try {
+      if (isFollowing) {
+        const res = await api.delete(`/companies/${company.id}/unfollow/`);
+        setIsFollowing(false);
+        setFollowersCount(res.data.followers_count);
+      } else {
+        const res = await api.post(`/companies/${company.id}/follow/toggle/`);
+        setIsFollowing(true);
+        setFollowersCount(res.data.followers_count);
+      }
+    } catch (err) {
+      console.error('Follow toggle error:', err);
+    } finally {
+      setFollowLoading(false);
+    }
+  }, [isFollowing, followLoading, company, isStudent]);
 
   if (loading) {
     return (
@@ -162,14 +213,6 @@ export default function CompaniesDetails() {
             <Button
               variant="ghost"
               size="icon"
-              className={`h-12 w-12 rounded-xl transition-all duration-300 hover:bg-transparent ${isFollowing ? 'text-pink-500' : 'text-gray-500 hover:text-pink-500'}`}
-              onClick={() => setIsFollowing(!isFollowing)}
-            >
-              <Heart className={`h-6 w-6 ${isFollowing ? 'fill-pink-500 text-pink-500' : ''}`} />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
               className="h-12 w-12 rounded-xl text-gray-500 hover:text-indigo-600 hover:bg-transparent transition-all duration-300"
             >
               <Share2 className="h-6 w-6" />
@@ -196,10 +239,12 @@ export default function CompaniesDetails() {
                     <img src={company.logo} alt={`${company.name} logo`} className="w-full h-full object-contain rounded-xl" />
                   </div>
                   <Button
-                    className={`rounded-xl px-6 font-bold shadow-sm ${isFollowing ? 'bg-gray-100 text-gray-900 hover:bg-gray-200' : 'bg-gray-900 text-white hover:bg-gray-800'}`}
-                    onClick={() => setIsFollowing(!isFollowing)}
+                    className={`rounded-xl px-6 font-bold shadow-sm transition-all duration-300 ${isFollowing ? 'bg-pink-50 text-pink-600 border border-pink-200 hover:bg-pink-100' : 'bg-gray-900 text-white hover:bg-gray-800'
+                      } ${!isStudent ? 'hidden' : ''}`}
+                    onClick={handleFollowToggle}
+                    disabled={followLoading}
                   >
-                    {isFollowing ? t("following") : t("followCompany")}
+                    {followLoading ? '...' : isFollowing ? `✓ ${t('following')}` : t('followCompany')}
                   </Button>
                 </div>
 
@@ -309,8 +354,8 @@ export default function CompaniesDetails() {
                         </div>
                       </div>
                       <div className={`text-[10px] font-black px-2 py-1 rounded-md uppercase tracking-tighter ${internship.status === 'OPEN_FOR_APPLICATION'
-                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                          : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                        : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
                         }`}>
                         {internship.status === 'OPEN_FOR_APPLICATION' ? t('open') || 'Open' : t('closed') || 'Closed'}
                       </div>

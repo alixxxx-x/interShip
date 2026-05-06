@@ -16,7 +16,8 @@ import {
     Settings,
     Briefcase,
     GraduationCap,
-    CheckCircle2
+    CheckCircle2,
+    Heart
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -29,6 +30,7 @@ export default function Profile() {
     const { t } = useLanguage();
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [followersCount, setFollowersCount] = useState(0);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -49,6 +51,20 @@ export default function Profile() {
         };
         fetchProfile();
     }, [navigate]);
+
+    // Fetch followers count if the user is a company
+    useEffect(() => {
+        if (!profile || profile.role !== 'COMPANY') return;
+        const fetchFollowers = async () => {
+            try {
+                const res = await api.get('/company/followers/');
+                setFollowersCount(res.data.followers_count);
+            } catch {
+                // silently ignore
+            }
+        };
+        fetchFollowers();
+    }, [profile]);
 
     if (loading) {
         return (
@@ -98,6 +114,11 @@ export default function Profile() {
                                 <Badge className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-md font-medium text-xs px-3 py-1">
                                     {profile.role === 'company' ? t("company") : profile.role === 'STUDENT' ? t("student") : profile.role?.replace('_', ' ')}
                                 </Badge>
+                                {profile.role === 'COMPANY' && (
+                                    <span className="text-sm font-bold text-slate-900">
+                                        {followersCount} <span className="font-normal text-slate-500">{followersCount === 1 ? 'follower' : 'followers'}</span>
+                                    </span>
+                                )}
                                 <div className="flex items-center gap-2 text-slate-400 text-sm font-medium">
                                     <Calendar className="w-4 h-4" />
                                     <span>

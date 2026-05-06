@@ -8,11 +8,12 @@ class User(AbstractUser):
     class Role(models.TextChoices):
         STUDENT = 'STUDENT', 'Student'
         COMPANY = 'COMPANY', 'Company'
-        ADMIN = 'ADMIN', 'Admin'
+        ADMIN_DEPT = 'ADMIN_DEPT', 'Admin Dept'
+        ADMIN_UNIV = 'ADMIN_UNIV', 'Admin Univ'
 
     email = models.EmailField(unique=True)
     username = models.CharField(max_length=150, null=True, blank=True)
-    role = models.CharField(max_length=10, choices=Role.choices, default=Role.STUDENT)
+    role = models.CharField(max_length=20, choices=Role.choices, default=Role.STUDENT)
     profile_picture = models.ImageField(upload_to='profiles/', blank=True, null=True)
 
     USERNAME_FIELD = 'email'
@@ -46,6 +47,13 @@ class Administrator(User):
 
     class Meta:
         verbose_name_plural = "Administrators"
+
+class AdminUniv(User):
+    university_name = models.CharField(max_length=255, blank=True, null=True)
+    departments = models.JSONField(default=list, blank=True, null=True)
+
+    class Meta:
+        verbose_name_plural = "Admin Univs"
 
 
 # internship model
@@ -215,6 +223,7 @@ class Notification(models.Model):
         APPLICATION_ACCEPTED = 'APPLICATION_ACCEPTED', 'Application Accepted'
         APPLICATION_REJECTED = 'APPLICATION_REJECTED', 'Application Rejected'
         VALIDATION_REQUIRED = 'VALIDATION_REQUIRED', 'Validation Required'
+        NEW_INTERNSHIP_FROM_FOLLOWED = 'NEW_INTERNSHIP_FROM_FOLLOWED', 'New Internship From Followed Company'
 
     recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
     notification_type = models.CharField(max_length=30, choices=NotificationType.choices)
@@ -228,6 +237,21 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"Notification for {self.recipient.email}: {self.message[:50]}"
+
+# company follow model
+
+class CompanyFollow(models.Model):
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='followed_companies')
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='followers')
+    followed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('student', 'company')
+        ordering = ['-followed_at']
+
+    def __str__(self):
+        return f"{self.student.email} follows {self.company.name}"
+
 
 class Message(models.Model):
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
