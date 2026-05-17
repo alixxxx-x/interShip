@@ -4,7 +4,7 @@ import random
 from datetime import date, timedelta
 
 # Setup Django environment
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'interShip.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
 from apis.models import User, Student, Company, Administrator, InternshipOffer, Application, DigitalCV, Notification, Message
