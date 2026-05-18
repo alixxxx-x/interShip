@@ -35,6 +35,35 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table as RL
 # Prepare chart data with proper month names
 import calendar
 
+def _scope_applications_for_admin(queryset, user):
+    if user.role == User.Role.ADMIN_DEPT:
+        admin_dept = getattr(user, 'admindept', None)
+        if admin_dept and admin_dept.department_id:
+            return queryset.filter(student__department=admin_dept.department)
+        return queryset.none()
+    if user.role == User.Role.ADMIN_UNIV:
+        admin_univ = getattr(user, 'adminuniv', None)
+        university = getattr(admin_univ, 'university', None)
+        if university:
+            return queryset.filter(student__department__university=university)
+        return queryset.none()
+    return queryset
+
+def _get_validation_admins_for_student(student):
+    if not student or not student.department_id:
+        return User.objects.none()
+
+    university = student.department.university
+    admin_univ_qs = User.objects.filter(
+        role=User.Role.ADMIN_UNIV,
+        adminuniv__university=university
+    )
+    admin_dept_qs = User.objects.filter(
+        role=User.Role.ADMIN_DEPT,
+        admindept__department=student.department
+    )
+    return admin_univ_qs | admin_dept_qs
+
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
 
@@ -417,8 +446,8 @@ class ApplicationUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
                     application=application
                 )
                 
-                # Notify all Admins that validation is required
-                admins = User.objects.filter(role__in=[User.Role.ADMIN_DEPT, User.Role.ADMIN_UNIV])
+                # Notify relevant Admins that validation is required
+                admins = _get_validation_admins_for_student(application.student)
                 for admin in admins:
                     Notification.objects.create(
                         recipient=admin,
@@ -498,7 +527,7 @@ class ApplicationListView(generics.ListAPIView):
         user = self.request.user
         
         if user.role in [User.Role.ADMIN_DEPT, User.Role.ADMIN_UNIV]:
-            return queryset
+            return _scope_applications_for_admin(queryset, user)
             
         if user.role == User.Role.COMPANY:
             return queryset.filter(internship__company__id=user.id)
@@ -720,11 +749,25 @@ class AdminUnivDashboardView(generics.GenericAPIView):
         if request.user.role != User.Role.ADMIN_UNIV:
             raise PermissionDenied("Only Admin Univ can access this dashboard.")
 
-        applications = Application.objects.all()
+        applications = _scope_applications_for_admin(Application.objects.all(), request.user)
+        admin_univ = getattr(request.user, 'adminuniv', None)
+        university = getattr(admin_univ, 'university', None)
+
+        if university:
+            total_students = User.objects.filter(
+                role=User.Role.STUDENT,
+                student__department__university=university
+            ).count()
+            total_companies = Company.objects.filter(
+                internshipoffer__application__student__department__university=university
+            ).distinct().count()
+        else:
+            total_students = 0
+            total_companies = 0
 
         stats = {
-            "totalStudents": User.objects.filter(role=User.Role.STUDENT).count(),
-            "totalCompanies": User.objects.filter(role=User.Role.COMPANY).count(),
+            "totalStudents": total_students,
+            "totalCompanies": total_companies,
             "pendingValidations": applications.filter(status=Application.Status.ACCEPTED, is_validated_by_admin=False).count(),
             "validatedInternships": applications.filter(status__in=[Application.Status.VALIDATED, Application.Status.COMPLETE], is_validated_by_admin=True).count(),
         }
@@ -813,16 +856,19 @@ class AdminPendingValidationsView(generics.ListAPIView):
     serializer_class = ApplicationSerializer
 
     def get_queryset(self):
-        return Application.objects.filter(
+        queryset = Application.objects.filter(
             status=Application.Status.ACCEPTED,
             is_validated_by_admin=False
         )
+        return _scope_applications_for_admin(queryset, self.request.user)
 
 class AdminValidateApplicationView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated, IsAdmin]
 
     def post(self, request, pk):
         application = get_object_or_404(Application, pk=pk, status=Application.Status.ACCEPTED)
+        if not _scope_applications_for_admin(Application.objects.filter(pk=application.pk), request.user).exists():
+            raise PermissionDenied("You do not have permission to validate this application.")
         application.status = Application.Status.VALIDATED
         application.is_validated_by_admin = True
         application.admin_validation_date = timezone.now()
@@ -855,6 +901,8 @@ class AdminRejectApplicationView(generics.GenericAPIView):
 
     def post(self, request, pk):
         application = get_object_or_404(Application, pk=pk, status=Application.Status.ACCEPTED)
+        if not _scope_applications_for_admin(Application.objects.filter(pk=application.pk), request.user).exists():
+            raise PermissionDenied("You do not have permission to reject this application.")
         application.status = Application.Status.REJECTED
         application.is_validated_by_admin = False
         application.save()
@@ -882,15 +930,32 @@ class AdminStatsView(generics.GenericAPIView):
 
     def get(self, request):
         # Use User model to count by role to be more reliable
-        total_students = User.objects.filter(role=User.Role.STUDENT).count()
-        placed_students = Application.objects.filter(
+        student_qs = User.objects.filter(role=User.Role.STUDENT)
+        if request.user.role == User.Role.ADMIN_DEPT:
+            dept = getattr(request.user, 'admindept', None)
+            if dept and dept.department_id:
+                student_qs = student_qs.filter(student__department=dept.department)
+            else:
+                student_qs = student_qs.none()
+        elif request.user.role == User.Role.ADMIN_UNIV:
+            admin_univ = getattr(request.user, 'adminuniv', None)
+            university = getattr(admin_univ, 'university', None)
+            if university:
+                student_qs = student_qs.filter(student__department__university=university)
+            else:
+                student_qs = student_qs.none()
+
+        total_students = student_qs.count()
+
+        applications_scoped = _scope_applications_for_admin(Application.objects.all(), request.user)
+        placed_students = applications_scoped.filter(
             status__in=[Application.Status.VALIDATED, Application.Status.COMPLETE],
             is_validated_by_admin=True
         ).values('student').distinct().count()
         
         unplaced_students = total_students - placed_students
         
-        month_counts = Application.objects.filter(
+        month_counts = applications_scoped.filter(
             application_date__year=timezone.now().year
         ).values('application_date__month').annotate(count=Count('id')).order_by('application_date__month')
 
@@ -926,9 +991,10 @@ class GenerateInternshipAgreementView(generics.GenericAPIView):
         application = get_object_or_404(Application, pk=pk)
         
         # Check permissions: Student, Company, or Admin
-        if not (request.user.role in [User.Role.ADMIN_DEPT, User.Role.ADMIN_UNIV] or 
-                request.user.id == application.student.id or 
-                request.user.id == application.internship.company.id):
+        if request.user.role in [User.Role.ADMIN_DEPT, User.Role.ADMIN_UNIV]:
+            if not _scope_applications_for_admin(Application.objects.filter(pk=application.pk), request.user).exists():
+                raise PermissionDenied("You do not have permission to view this document.")
+        elif request.user.id != application.student.id and request.user.id != application.internship.company.id:
             raise PermissionDenied("You do not have permission to view this document.")
 
         if not application.is_validated_by_admin:
@@ -1005,11 +1071,10 @@ class GenerateInternshipCertificateView(generics.GenericAPIView):
         application = get_object_or_404(Application, pk=pk)
 
         # Check permissions: Student, Company, or Admin
-        if not (
-            request.user.role in [User.Role.ADMIN_DEPT, User.Role.ADMIN_UNIV]
-            or request.user.id == application.student.id
-            or request.user.id == application.internship.company.id
-        ):
+        if request.user.role in [User.Role.ADMIN_DEPT, User.Role.ADMIN_UNIV]:
+            if not _scope_applications_for_admin(Application.objects.filter(pk=application.pk), request.user).exists():
+                raise PermissionDenied("You do not have permission to view this document.")
+        elif request.user.id != application.student.id and request.user.id != application.internship.company.id:
             raise PermissionDenied("You do not have permission to view this document.")
 
         if application.status != Application.Status.COMPLETE:

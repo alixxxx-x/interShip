@@ -28,6 +28,13 @@ function Register() {
     const [selectedUniv, setSelectedUniv] = useState("");
     const [departments, setDepartments] = useState([]);
     const [selectedDept, setSelectedDept] = useState("");
+    const [selectedUnivDomain, setSelectedUnivDomain] = useState("");
+
+    const normalizeDomain = (domain) => {
+        if (!domain) return "";
+        const cleaned = domain.trim().toLowerCase();
+        return cleaned.startsWith("@") ? cleaned : `@${cleaned}`;
+    };
 
     useEffect(() => {
         const fallbackUniversities = [
@@ -71,6 +78,7 @@ function Register() {
         } else {
             setDepartments([]);
         }
+        setSelectedUnivDomain(normalizeDomain(univ?.email_domain || ""));
         setSelectedDept("");
     };
 
@@ -88,8 +96,11 @@ function Register() {
         }
         if (!email.trim()) {
             EmptyErrors.email = "Email is required";
-        } else if (role === "STUDENT" && !email.toLowerCase().endsWith("@univ.dz")) {
-            EmptyErrors.email = "Student email must end with @univ.dz";
+        } else if (role === "STUDENT") {
+            const requiredDomain = selectedUnivDomain || "@univ.dz";
+            if (!email.toLowerCase().endsWith(requiredDomain)) {
+                EmptyErrors.email = `Student email must end with ${requiredDomain}`;
+            }
         }
         if (!password) EmptyErrors.password = "Password is required";
         if (!confirmPassword) {

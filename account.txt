@@ -37,12 +37,9 @@ companies :
   password : [google]
 
 
-student : 
-  email:[ali@univ.dz]
+student :       
+  email:[[ahmed.ziri@univ.dz]]
   password:[[password123]]
       
   email:[[EMAIL_ADDRESS]]
-  password:[[PASSWORD]]
-      
-  email:[[EMAIL_ADDRESS]]
-  password:[[PASSWORD]]
+  password:[[password123]]

@@ -22,15 +22,6 @@ class User(AbstractUser):
     def __str__(self):
         return f"{self.email} ({self.role})"
 
-class Student(User):
-    university_id = models.CharField(max_length=50, blank=True, null=True)
-    wilaya = models.CharField(max_length=100, blank=True, null=True)
-    phone = models.CharField(max_length=20, blank=True, null=True)
-    department = models.CharField(max_length=255, blank=True, null=True)
-    university_name = models.CharField(max_length=255, blank=True, null=True)
-    class Meta:
-        verbose_name_plural = "Students"
-
 class Company(User):
     name = models.CharField(max_length=255)
     logo = models.ImageField(upload_to='logos/', blank=True, null=True)
@@ -44,18 +35,72 @@ class Company(User):
         verbose_name_plural = "Companies"
 
 class AdminDept(User):
-    department = models.CharField(max_length=100, blank=True, null=True)
+    department = models.ForeignKey('Department', on_delete=models.PROTECT, related_name='admin_depts')
+
+    @property
+    def university_name(self):
+        if self.department_id and self.department:
+            return self.department.university.name
+        return None
 
     class Meta:
         db_table = 'apis_admindept'
         verbose_name_plural = "Administrators"
 
 class AdminUniv(User):
-    university_name = models.CharField(max_length=255, blank=True, null=True)
-    departments = models.JSONField(default=list, blank=True, null=True)
+    @property
+    def university_name(self):
+        if hasattr(self, 'university') and self.university:
+            return self.university.name
+        return None
+
+    @property
+    def departments(self):
+        if hasattr(self, 'university') and self.university:
+            return list(self.university.departments.values_list('name', flat=True))
+        return []
 
     class Meta:
         verbose_name_plural = "Admin Univs"
+
+class University(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    email_domain = models.CharField(max_length=255)
+    admin = models.OneToOneField('AdminUniv', on_delete=models.PROTECT, related_name='university', null=True, blank=True)
+
+    class Meta:
+        verbose_name_plural = "Universities"
+
+    def __str__(self):
+        return self.name
+
+class Department(models.Model):
+    name = models.CharField(max_length=255)
+    university = models.ForeignKey(University, on_delete=models.CASCADE, related_name='departments')
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['university', 'name'], name='unique_department_per_university')
+        ]
+        verbose_name_plural = "Departments"
+
+    def __str__(self):
+        return f"{self.name} ({self.university.name})"
+
+class Student(User):
+    university_id = models.CharField(max_length=50, blank=True, null=True)
+    wilaya = models.CharField(max_length=100, blank=True, null=True)
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    department = models.ForeignKey('Department', on_delete=models.PROTECT, related_name='students')
+
+    @property
+    def university_name(self):
+        if self.department_id and self.department:
+            return self.department.university.name
+        return None
+
+    class Meta:
+        verbose_name_plural = "Students"
 
 
 # internship model
