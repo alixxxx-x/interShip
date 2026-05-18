@@ -216,50 +216,56 @@ export default function CreateCvModal({
     }
   };
 
-  const handlePdfChange = (e) => {
-
+  const handlePdfChange = async (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
 
     setFormData((prev) => ({ ...prev, pdfFile: file }));
     setPdfName(file.name);
 
-    (async () => {
-      try {
-        const pdfjs = await import("pdfjs-dist/legacy/build/pdf");
-        pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
-        const arrayBuffer = await file.arrayBuffer();
-        const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
-        const pdf = await loadingTask.promise;
-        let fullText = "";
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const content = await page.getTextContent();
-          const strings = content.items.map((itm) => itm.str);
-          fullText += strings.join(" ") + "\n";
-        }
+    try {
+      const formDataUpload = new FormData();
+      formDataUpload.append("file", file);
 
-        const text = fullText;
-        const emailMatch = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
-        const phoneMatch = text.match(/(\+?\d[\d\s().-]{6,}\d)/);
-        const nameMatch = text.match(/\b([A-Z][a-z]+\s+[A-Z][a-z]+)\b/);
-        const foundSkills = SUGGESTED_SKILLS.filter((s) => new RegExp("\\b" + s.replace('.', '\\.') + "\\b", "i").test(text));
-        const LANGS = SUGGESTED_LANGUAGES.filter(l => new RegExp("\\b" + l + "\\b", "i").test(text));
-        const foundLangs = LANGS.filter((l) => new RegExp("\\b" + l + "\\b", "i").test(text));
+      // Call the FastAPI OCR parsing endpoint (make sure your fastAPI is running on port 8001)
+      const fastApiUrl = "http://localhost:8001/api/cv/parse";
+      
+      const response = await fetch(fastApiUrl, {
+        method: "POST",
+        body: formDataUpload,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const extracted = data.extracted_data;
 
         setFormData((prev) => ({
           ...prev,
-          email: prev.email || (emailMatch ? emailMatch[0] : prev.email),
-          phone_number: prev.phone_number || (phoneMatch ? phoneMatch[0].trim() : prev.phone_number),
-          first_name: prev.first_name || (nameMatch ? nameMatch[0].split(' ')[0] : prev.first_name),
-          last_name: prev.last_name || (nameMatch ? nameMatch[0].split(' ').slice(1).join(' ') : prev.last_name),
-          skills: Array.from(new Set([...(prev.skills || []), ...foundSkills])),
-          languages: Array.from(new Set([...(prev.languages || []), ...foundLangs])),
+          email: extracted.email || prev.email,
+          phone_number: extracted.phone || prev.phone_number,
+          first_name: extracted.first_name || prev.first_name,
+          last_name: extracted.last_name || prev.last_name,
+          github_link: extracted.github || prev.github_link,
+          portfolio_link: extracted.linkedin || prev.portfolio_link,
+          profile_summary: extracted.profile_summary || prev.profile_summary,
+          any_experience: extracted.experience || prev.any_experience,
+          education: extracted.education || prev.education,
+          skills: Array.isArray(extracted.skills)
+            ? Array.from(new Set([...(prev.skills || []), ...extracted.skills]))
+            : prev.skills,
         }));
-      } catch (err) {
-        console.error("PDF parsing failed", err);
+        
+        toast.success("CV prefilled successfully via AI!");
+      } else {
+        const errorData = await response.json();
+        console.error("FastAPI backend error:", errorData);
+        toast.error("Failed to extract data: " + (errorData.detail || "Unknown error"));
       }
-    })();
+
+    } catch (err) {
+      console.error("OCR parsing failed", err);
+      toast.error("An error occurred during OCR extraction.");
+    }
   };
 
   const handleRemovePdf = (e) => {
