@@ -32,7 +32,8 @@ from io import BytesIO
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table as RLTable, TableStyle
-
+# Prepare chart data with proper month names
+import calendar
 
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
@@ -95,9 +96,9 @@ class ChatbotView(APIView):
                 {'error': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-    
 
 # Authentication Views
+
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -139,6 +140,9 @@ class CompanyListView(generics.ListAPIView):
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name', 'location', 'company_field']
 
+# messaging views
+
+
 class MessageListView(generics.ListAPIView):
     serializer_class = MessageSerializer
     permission_classes = [IsAuthenticated]
@@ -153,7 +157,22 @@ class MessageListView(generics.ListAPIView):
                 (Q(sender_id=recipient_id) & Q(recipient=user))
             )
             # Mark received messages as read
-            messages.filter(recipient=user).update(is_read=True)
+            unread_messages = messages.filter(recipient=user, is_read=False)
+            if unread_messages.exists():
+                unread_messages.update(is_read=True)
+                # Broadcast read receipt
+                from channels.layers import get_channel_layer
+                from asgiref.sync import async_to_sync
+                channel_layer = get_channel_layer()
+                id1, id2 = sorted([user.id, int(recipient_id)])
+                room_group_name = f'chat_{id1}_{id2}'
+                async_to_sync(channel_layer.group_send)(
+                    room_group_name,
+                    {
+                        'type': 'read_receipt',
+                        'reader_id': user.id
+                    }
+                )
             return messages
         return Message.objects.filter(Q(sender=user) | Q(recipient=user))
 
@@ -163,6 +182,57 @@ class MessageCreateView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(sender=self.request.user)
+
+class MessageDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = MessageSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Users can edit/delete messages they sent or received (to allow reactions)
+        return Message.objects.filter(Q(sender=self.request.user) | Q(recipient=self.request.user))
+
+    def perform_destroy(self, instance):
+        # Before deleting, get room information to notify the other user via WebSocket
+        recipient_id = instance.recipient.id
+        sender_id = instance.sender.id
+        message_id = instance.id
+        
+        # Call super to delete
+        super().perform_destroy(instance)
+        
+        # Broadcast message deletion
+        from channels.layers import get_channel_layer
+        from asgiref.sync import async_to_sync
+        channel_layer = get_channel_layer()
+        id1, id2 = sorted([sender_id, recipient_id])
+        room_group_name = f'chat_{id1}_{id2}'
+        async_to_sync(channel_layer.group_send)(
+            room_group_name,
+            {
+                'type': 'message_deleted',
+                'message_id': message_id
+            }
+        )
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        
+        # Broadcast message edit
+        from channels.layers import get_channel_layer
+        from asgiref.sync import async_to_sync
+        channel_layer = get_channel_layer()
+        id1, id2 = sorted([instance.sender.id, instance.recipient.id])
+        room_group_name = f'chat_{id1}_{id2}'
+        async_to_sync(channel_layer.group_send)(
+            room_group_name,
+            {
+                'type': 'message_edited',
+                'message_id': instance.id,
+                'content': instance.content
+            }
+        )
+
+# password change view
 
 class ChangePasswordView(generics.GenericAPIView):
     serializer_class = ChangePasswordSerializer
@@ -213,7 +283,6 @@ class InternshipUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
         instance.status = InternshipOffer.Status.HIDDEN
         instance.save()
 
-
 class InternshipRetrieveView(generics.RetrieveAPIView):
     queryset = InternshipOffer.objects.all()
     serializer_class = InternshipSerializer
@@ -237,7 +306,6 @@ class InternshipRetrieveView(generics.RetrieveAPIView):
                 raise PermissionDenied("You do not have permission to view this internship.")
         
         return obj
-
 
 class InternshipListView(generics.ListAPIView):
     queryset = InternshipOffer.objects.all()
@@ -275,7 +343,6 @@ class CompanyInternshipListView(generics.ListAPIView):
     def get_queryset(self):
         # Allow the company to see ALL of their own offers (including drafts, finished, hidden)
         return super().get_queryset().filter(company=self.request.user.company)
-
 
 # application views
 
@@ -537,6 +604,8 @@ class DigitalCVRetrieveView(generics.RetrieveAPIView):
         if hasattr(self.request.user, 'student'):
             return get_object_or_404(DigitalCV, student=self.request.user.student)
         return super().get_object()
+
+# dashboard views
 
 class StudentDashboardView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated, IsStudent]
@@ -821,8 +890,6 @@ class AdminStatsView(generics.GenericAPIView):
         
         unplaced_students = total_students - placed_students
         
-        # Prepare chart data with proper month names
-        import calendar
         month_counts = Application.objects.filter(
             application_date__year=timezone.now().year
         ).values('application_date__month').annotate(count=Count('id')).order_by('application_date__month')
@@ -849,6 +916,8 @@ class AdminStatsView(generics.GenericAPIView):
             "placement_rate": (placed_students / total_students * 100) if total_students > 0 else 0,
             "apps_by_month": final_chart_data
         })
+
+# Document generation views
 
 class GenerateInternshipAgreementView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
@@ -1147,6 +1216,7 @@ class GenerateCVView(generics.GenericAPIView):
         buffer.seek(0)
         return FileResponse(buffer, as_attachment=True, filename=f"{cv.first_name}_{cv.last_name}_CV.pdf")
 
+# Forgot Password and Reset Password Views
 
 class ForgotPasswordView(APIView):
     permission_classes = [AllowAny]
@@ -1220,7 +1290,7 @@ class ResetPasswordView(APIView):
             return Response({"error": f"Server Error: {str(e)}"}, status=500)
 
 
-# ─── Company Follow Views ────────────────────────────────────────────────────
+# Company Follow Views 
 
 class FollowCompanyView(generics.GenericAPIView):
     """POST /companies/<company_id>/follow/ — student follows a company."""

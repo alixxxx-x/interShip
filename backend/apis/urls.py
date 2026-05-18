@@ -3,6 +3,7 @@ from rest_framework_simplejwt.views import (TokenObtainPairView, TokenRefreshVie
 from .views import *
 
 urlpatterns = [
+
     #chat gemini
     path('chat/', ChatbotView.as_view(), name='chatbot'),
 
@@ -28,7 +29,6 @@ urlpatterns = [
     path('internships/<int:pk>/', InternshipRetrieveView.as_view(), name='internship-retrieve'),
     path('internships/<int:pk>/update/', InternshipUpdateDestroyView.as_view(), name='internship-update'),
     path('internships/<int:pk>/delete/', InternshipUpdateDestroyView.as_view(), name='internship-delete'),
-
 
     # Applications
     path('applications/apply/<int:pk>/', ApplicationCreateView.as_view(), name='apply'),
@@ -70,10 +70,10 @@ urlpatterns = [
     # Messaging
     path('messages/', MessageListView.as_view(), name='message-list'),
     path('messages/send/', MessageCreateView.as_view(), name='message-send'),
+    path('messages/<int:pk>/', MessageDetailView.as_view(), name='message-detail'),
 
     # Password Reset
     path('auth/forgot-password/', ForgotPasswordView.as_view(), name='forgot_password'),
     path('auth/verify-reset-code/', VerifyResetCodeView.as_view(), name='verify_reset_code'),
     path('auth/reset-password/', ResetPasswordView.as_view(), name='reset_password'),
 ]
-   

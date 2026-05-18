@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import api from "@/api/api";
+import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Loader2, Eye, EyeOff } from "lucide-react";
 import Threads from "@/components/ui/Threads";
@@ -23,6 +24,56 @@ function Register() {
     const [errors, setErrors] = useState({});
     const navigate = useNavigate();
 
+    const [universities, setUniversities] = useState([]);
+    const [selectedUniv, setSelectedUniv] = useState("");
+    const [departments, setDepartments] = useState([]);
+    const [selectedDept, setSelectedDept] = useState("");
+
+    useEffect(() => {
+        const fallbackUniversities = [
+            {
+                id: 6,
+                university_name: "Université Abdelhamid Mehri - Constantine 2",
+                departments: ["Informatique (NTIC)", "Mathématiques", "Économie"]
+            },
+            {
+                id: 7,
+                university_name: "Université des Frères Mentouri - Constantine 1",
+                departments: ["Sciences de la Nature et de la Vie", "Droit", "Lettres et Langues"]
+            }
+        ];
+
+        const fetchUniversities = async () => {
+            try {
+                const url = `${import.meta.env.VITE_API_URL}users/?role=ADMIN_UNIV`.replace(/([^:]\/)\/+/g, "$1");
+                const res = await axios.get(url);
+                const data = res.data.results || res.data;
+                const univList = data.filter(u => u.university_name);
+                if (univList && univList.length > 0) {
+                    setUniversities(univList);
+                } else {
+                    setUniversities(fallbackUniversities);
+                }
+            } catch (error) {
+                console.error("Failed to fetch universities, using database fallback:", error);
+                setUniversities(fallbackUniversities);
+            }
+        };
+        fetchUniversities();
+    }, []);
+
+    const handleUnivChange = (univName) => {
+        setSelectedUniv(univName);
+        setErrors(prev => ({ ...prev, university: null }));
+        const univ = universities.find(u => u.university_name === univName);
+        if (univ && univ.departments) {
+            setDepartments(univ.departments);
+        } else {
+            setDepartments([]);
+        }
+        setSelectedDept("");
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -30,6 +81,8 @@ function Register() {
         if (role === "STUDENT") {
             if (!firstName.trim()) EmptyErrors.firstName = "First name is required";
             if (!lastName.trim()) EmptyErrors.lastName = "Last name is required";
+            if (!selectedUniv) EmptyErrors.university = "University is required";
+            if (!selectedDept) EmptyErrors.department = "Department is required";
         } else {
             if (!username.trim()) EmptyErrors.username = "Username is required";
         }
@@ -58,7 +111,12 @@ function Register() {
                 password,
                 role,
                 ...(role === "STUDENT"
-                    ? { first_name: firstName, last_name: lastName }
+                    ? { 
+                        first_name: firstName, 
+                        last_name: lastName,
+                        university_name: selectedUniv,
+                        department: selectedDept
+                      }
                     : { username, name: username })
             };
             await api.post("/auth/register/", payload);
@@ -142,28 +200,65 @@ function Register() {
 
                         <form onSubmit={handleSubmit} className="space-y-3">
                             {role === "STUDENT" ? (
-                                <div className="flex gap-3">
-                                    <div className="space-y-1 flex-1">
-                                        <label className="text-[11px] font-semibold text-black ml-1">{t("firstName")}</label>
-                                        <input
-                                            type="text"
-                                            placeholder={t("firstName")}
-                                            value={firstName}
-                                            onChange={(e) => { setFirstName(e.target.value); setErrors(prev => ({ ...prev, firstName: null })) }}
-                                            className="w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans"
-                                        />
-                                        {errors.firstName && <p className="text-[10px] text-red-500 ml-1">{errors.firstName}</p>}
+                                <div className="space-y-3">
+                                    <div className="flex gap-3">
+                                        <div className="space-y-1 flex-1">
+                                            <label className="text-[11px] font-semibold text-black ml-1">{t("firstName")}</label>
+                                            <input
+                                                type="text"
+                                                placeholder={t("firstName")}
+                                                value={firstName}
+                                                onChange={(e) => { setFirstName(e.target.value); setErrors(prev => ({ ...prev, firstName: null })) }}
+                                                className="w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans"
+                                            />
+                                            {errors.firstName && <p className="text-[10px] text-red-500 ml-1">{errors.firstName}</p>}
+                                        </div>
+                                        <div className="space-y-1 flex-1">
+                                            <label className="text-[11px] font-semibold text-black ml-1">{t("lastName")}</label>
+                                            <input
+                                                type="text"
+                                                placeholder={t("lastName")}
+                                                value={lastName}
+                                                onChange={(e) => { setLastName(e.target.value); setErrors(prev => ({ ...prev, lastName: null })) }}
+                                                className="w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans"
+                                            />
+                                            {errors.lastName && <p className="text-[10px] text-red-500 ml-1">{errors.lastName}</p>}
+                                        </div>
                                     </div>
-                                    <div className="space-y-1 flex-1">
-                                        <label className="text-[11px] font-semibold text-black ml-1">{t("lastName")}</label>
-                                        <input
-                                            type="text"
-                                            placeholder={t("lastName")}
-                                            value={lastName}
-                                            onChange={(e) => { setLastName(e.target.value); setErrors(prev => ({ ...prev, lastName: null })) }}
-                                            className="w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans"
-                                        />
-                                        {errors.lastName && <p className="text-[10px] text-red-500 ml-1">{errors.lastName}</p>}
+
+                                    <div className="space-y-1">
+                                        <label className="text-[11px] font-semibold text-black ml-1">University</label>
+                                        <select
+                                            value={selectedUniv}
+                                            onChange={(e) => handleUnivChange(e.target.value)}
+                                            className="w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 bg-white transition-all text-[13px] font-medium text-slate-700 font-sans cursor-pointer"
+                                        >
+                                            <option value="">Select your university</option>
+                                            {universities.map((univ) => (
+                                                <option key={univ.id} value={univ.university_name}>
+                                                    {univ.university_name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        {errors.university && <p className="text-[10px] text-red-500 ml-1">{errors.university}</p>}
+                                    </div>
+
+                                    <div className="space-y-1">
+                                        <label className="text-[11px] font-semibold text-black ml-1">Department</label>
+                                        <select
+                                            value={selectedDept}
+                                            onChange={(e) => { setSelectedDept(e.target.value); setErrors(prev => ({ ...prev, department: null })) }}
+                                            disabled={!selectedUniv}
+                                            className="w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 bg-white transition-all text-[13px] font-medium text-slate-700 font-sans cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            <option value="">Select your department</option>
+                                            {departments.map((dept, idx) => (
+                                                <option key={idx} value={dept}>
+                                                    {dept}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        {errors.department && <p className="text-[10px] text-red-500 ml-1">{errors.department}</p>}
                                     </div>
                                 </div>
                             ) : (

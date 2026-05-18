@@ -3,6 +3,7 @@ from django.contrib.auth.models import AbstractUser
 from datetime import timedelta
 
 # user model
+
 class User(AbstractUser):
     class Role(models.TextChoices):
         STUDENT = 'STUDENT', 'Student'
@@ -25,7 +26,8 @@ class Student(User):
     university_id = models.CharField(max_length=50, blank=True, null=True)
     wilaya = models.CharField(max_length=100, blank=True, null=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
-    major = models.CharField(max_length=255, blank=True, null=True)
+    department = models.CharField(max_length=255, blank=True, null=True)
+    university_name = models.CharField(max_length=255, blank=True, null=True)
     class Meta:
         verbose_name_plural = "Students"
 
@@ -41,11 +43,12 @@ class Company(User):
     class Meta:
         verbose_name_plural = "Companies"
 
-class AdminDept(User):
+class Administrator(User):
     department = models.CharField(max_length=100, blank=True, null=True)
 
     class Meta:
-        verbose_name_plural = "Admin Depts"
+        db_table = 'apis_admindept'
+        verbose_name_plural = "Administrators"
 
 class AdminUniv(User):
     university_name = models.CharField(max_length=255, blank=True, null=True)
@@ -56,6 +59,7 @@ class AdminUniv(User):
 
 
 # internship model
+
 class InternshipOffer(models.Model):
 
     class Status(models.TextChoices):
@@ -100,6 +104,7 @@ class InternshipOffer(models.Model):
 
 
 # application model
+
 class Application(models.Model):
     class Status(models.TextChoices):
         PENDING = 'PENDING', 'Pending'
@@ -169,6 +174,7 @@ class Application(models.Model):
 
 
 # skills model
+
 class Skills(models.Model):
     class SkillLevel(models.TextChoices):
         BEGINNER = 'BEGINNER', 'Beginner'
@@ -184,6 +190,7 @@ class Skills(models.Model):
 
 
 # digital cv model
+
 class DigitalCV(models.Model):
 
     student = models.OneToOneField(Student, on_delete=models.CASCADE, related_name='digital_cv')
@@ -209,7 +216,9 @@ class DigitalCV(models.Model):
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
 
+
 # notification model
+
 class Notification(models.Model):
     class NotificationType(models.TextChoices):
         NEW_APPLICATION = 'NEW_APPLICATION', 'New Application'
@@ -233,6 +242,7 @@ class Notification(models.Model):
         return f"Notification for {self.recipient.email}: {self.message[:50]}"
 
 # company follow model
+
 class CompanyFollow(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='followed_companies')
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='followers')

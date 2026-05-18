@@ -30,6 +30,7 @@ import StudentRoute from "@/routes/StudentRoute";
 import DashboardRedirect from "@/routes/DashboardRedirect";
 import MyCv from "@/features/dashboards/MyCv";
 import AdminDashboard from "@/features/dashboards/AdminDashboard";
+import AdminUnivDashboard from "@/features/dashboards/AdminUnivDashboard";
 import AdminUsers from "@/features/dashboards/AdminUsers";
 import AdminCompanies from "@/features/dashboards/AdminCompanies";
 import AdminValidations from "@/features/dashboards/AdminValidations";
@@ -105,6 +106,23 @@ function App() {
             }
           >
             <Route index element={<AdminDashboard />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="companies" element={<AdminCompanies />} />
+            <Route path="validations" element={<AdminValidations />} />
+            <Route path="analytics" element={<AdminAnalytics />} />
+            <Route path="messages" element={<AdminMessages />} />
+            <Route path="notifications" element={<Notifications />} />
+          </Route>
+
+          <Route
+            path="/adminunivdashboard"
+            element={
+              <AdminRoute>
+                <DashboardLayout />
+              </AdminRoute>
+            }
+          >
+            <Route index element={<AdminUnivDashboard />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="companies" element={<AdminCompanies />} />
             <Route path="validations" element={<AdminValidations />} />

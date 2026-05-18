@@ -38,13 +38,11 @@ class UserSerializer(serializers.ModelSerializer):
     department = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
     university_name = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
     departments = serializers.JSONField(required=False, write_only=True, allow_null=True)
-    major = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
-
     class Meta:
         model = User
         fields = [
             'id', 'username', 'email', 'role', 'profile_picture', 'password',
-            'first_name', 'last_name', 'is_active', 'university_id', 'wilaya', 'phone', 'major',
+            'first_name', 'last_name', 'is_active', 'university_id', 'wilaya', 'phone',
             'name', 'logo', 'description', 'location', 'website', 'company_field', 'founded_year', 'department',
             'university_name', 'departments'
         ]
@@ -71,7 +69,7 @@ class UserSerializer(serializers.ModelSerializer):
         
         # Add role-specific profile fields to the output
         profile_map = {
-            User.Role.STUDENT: ('student', ['university_id', 'wilaya', 'phone', 'major']),
+            User.Role.STUDENT: ('student', ['university_id', 'wilaya', 'phone', 'department', 'university_name']),
             User.Role.COMPANY: ('company', ['name', 'logo', 'description', 'location', 'website', 'company_field', 'founded_year']),
             User.Role.ADMIN_DEPT: ('admindept', ['department']),
             User.Role.ADMIN_UNIV: ('adminuniv', ['university_name', 'departments']),
@@ -80,7 +78,8 @@ class UserSerializer(serializers.ModelSerializer):
         config = profile_map.get(instance.role)
         if config:
             related_name, fields = config
-            profile = getattr(instance, related_name, None)
+            if hasattr(instance, related_name):
+                profile = getattr(instance, related_name)
             if profile:
                 for field in fields:
                     val = getattr(profile, field, None)
@@ -162,8 +161,10 @@ class UserSerializer(serializers.ModelSerializer):
                 student.wilaya = validated_data.get('wilaya')
             if 'phone' in validated_data:
                 student.phone = validated_data.get('phone')
-            if 'major' in validated_data:
-                student.major = validated_data.get('major')
+            if 'department' in validated_data:
+                student.department = validated_data.get('department')
+            if 'university_name' in validated_data:
+                student.university_name = validated_data.get('university_name')
             student.save()
             
         elif instance.role == User.Role.COMPANY and hasattr(instance, 'company'):
