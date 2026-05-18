@@ -43,7 +43,7 @@ class Company(User):
     class Meta:
         verbose_name_plural = "Companies"
 
-class Administrator(User):
+class AdminDept(User):
     department = models.CharField(max_length=100, blank=True, null=True)
 
     class Meta:

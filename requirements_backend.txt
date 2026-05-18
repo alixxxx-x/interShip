@@ -1,5 +1,6 @@
 asgiref
 Django
+daphne
 djangorestframework
 djangorestframework_simplejwt
 PyJWT
