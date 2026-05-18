@@ -26,7 +26,8 @@ class Student(User):
     university_id = models.CharField(max_length=50, blank=True, null=True)
     wilaya = models.CharField(max_length=100, blank=True, null=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
-    major = models.CharField(max_length=255, blank=True, null=True)
+    department = models.CharField(max_length=255, blank=True, null=True)
+    university_name = models.CharField(max_length=255, blank=True, null=True)
     class Meta:
         verbose_name_plural = "Students"
 
@@ -46,6 +47,7 @@ class Administrator(User):
     department = models.CharField(max_length=100, blank=True, null=True)
 
     class Meta:
+        db_table = 'apis_admindept'
         verbose_name_plural = "Administrators"
 
 class AdminUniv(User):

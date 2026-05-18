@@ -1,0 +1,9 @@
+Total users: 21
+Role STUDENT: 6
+Role COMPANY: 6
+Role ADMIN_DEPT: 6
+Role ADMIN_UNIV: 2
+
+AdminUniv instances:
+ID: 6, Email: admin@mehry.univ.dz, Univ Name: Université Abdelhamid Mehri - Constantine 2, Depts: ['Informatique (NTIC)', 'Mathématiques', 'Économie']
+ID: 7, Email: admin@mentouri.univ.dz, Univ Name: Université des Frères Mentouri - Constantine 1, Depts: ['Sciences de la Nature et de la Vie', 'Droit', 'Lettres et Langues']

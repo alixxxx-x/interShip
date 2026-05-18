@@ -439,7 +439,7 @@ export default function CreateCvModal({
           <Input
             id="phone_number"
             value={formData.phone_number}
-            onChange={handleChange}
+            onChange={(e) => setFormData((prev) => ({ ...prev, phone_number: e.target.value.replace(/\D/g, "") }))}
             placeholder="0555555555"
             className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
             required

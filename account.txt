@@ -1,4 +1,4 @@
-admin Dept : 
+admin : 
   email :[admin@stag.io]
   password : [admin123]
 

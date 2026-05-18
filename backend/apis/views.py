@@ -1,3 +1,4 @@
+# Reload trigger 2
 from .permissions import IsAdmin
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status, filters
@@ -12,6 +13,8 @@ from django.http import FileResponse
 from .models import *
 from .serializers import *
 from .permissions import *
+
+
 
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
@@ -99,16 +102,47 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
 
 class UserListView(generics.ListAPIView):
     serializer_class = UserSerializer
-    permission_classes = [IsAdmin | IsCompany | IsStudent]
+    permission_classes = [AllowAny]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['username', 'email']
     ordering_fields = ['id', 'username']
 
     def get_queryset(self):
-        queryset = User.objects.all()
         role = self.request.query_params.get('role')
+        # Allow unauthenticated users to query only ADMIN_UNIV
+        if not self.request.user.is_authenticated:
+            if role != 'ADMIN_UNIV':
+                raise PermissionDenied("Authentication is required to view these users.")
+            return User.objects.filter(role=User.Role.ADMIN_UNIV)
+
+        queryset = User.objects.all()
         if role:
-            queryset = queryset.filter(role=role)
+            if ',' in role:
+                roles = role.split(',')
+                queryset = queryset.filter(role__in=roles)
+            else:
+                queryset = queryset.filter(role=role)
+
+        # Apply student-specific filters
+        if self.request.user.role == User.Role.STUDENT:
+            student = getattr(self.request.user, 'student', None)
+            if student:
+                student_dept = student.department
+                # If they queried ADMIN_DEPT, filter to match student department
+                if role == 'ADMIN_DEPT' or (role and 'ADMIN_DEPT' in role):
+                    queryset = queryset.filter(
+                        administrator__department=student_dept
+                    )
+
+        # Apply ADMIN_DEPT-specific filters
+        if self.request.user.role == User.Role.ADMIN_DEPT:
+            admin_profile = getattr(self.request.user, 'administrator', None)
+            if admin_profile:
+                admin_dept = admin_profile.department
+                if role == 'STUDENT' or (role and 'STUDENT' in role):
+                    queryset = queryset.filter(
+                        student__department=admin_dept
+                    )
         return queryset
 
 class UserAdminUpdateView(generics.RetrieveUpdateDestroyAPIView):
@@ -138,7 +172,22 @@ class MessageListView(generics.ListAPIView):
                 (Q(sender_id=recipient_id) & Q(recipient=user))
             )
             # Mark received messages as read
-            messages.filter(recipient=user).update(is_read=True)
+            unread_messages = messages.filter(recipient=user, is_read=False)
+            if unread_messages.exists():
+                unread_messages.update(is_read=True)
+                # Broadcast read receipt
+                from channels.layers import get_channel_layer
+                from asgiref.sync import async_to_sync
+                channel_layer = get_channel_layer()
+                id1, id2 = sorted([user.id, int(recipient_id)])
+                room_group_name = f'chat_{id1}_{id2}'
+                async_to_sync(channel_layer.group_send)(
+                    room_group_name,
+                    {
+                        'type': 'read_receipt',
+                        'reader_id': user.id
+                    }
+                )
             return messages
         return Message.objects.filter(Q(sender=user) | Q(recipient=user))
 
@@ -148,6 +197,55 @@ class MessageCreateView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(sender=self.request.user)
+
+class MessageDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = MessageSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Users can edit/delete messages they sent or received (to allow reactions)
+        return Message.objects.filter(Q(sender=self.request.user) | Q(recipient=self.request.user))
+
+    def perform_destroy(self, instance):
+        # Before deleting, get room information to notify the other user via WebSocket
+        recipient_id = instance.recipient.id
+        sender_id = instance.sender.id
+        message_id = instance.id
+        
+        # Call super to delete
+        super().perform_destroy(instance)
+        
+        # Broadcast message deletion
+        from channels.layers import get_channel_layer
+        from asgiref.sync import async_to_sync
+        channel_layer = get_channel_layer()
+        id1, id2 = sorted([sender_id, recipient_id])
+        room_group_name = f'chat_{id1}_{id2}'
+        async_to_sync(channel_layer.group_send)(
+            room_group_name,
+            {
+                'type': 'message_deleted',
+                'message_id': message_id
+            }
+        )
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        
+        # Broadcast message edit
+        from channels.layers import get_channel_layer
+        from asgiref.sync import async_to_sync
+        channel_layer = get_channel_layer()
+        id1, id2 = sorted([instance.sender.id, instance.recipient.id])
+        room_group_name = f'chat_{id1}_{id2}'
+        async_to_sync(channel_layer.group_send)(
+            room_group_name,
+            {
+                'type': 'message_edited',
+                'message_id': instance.id,
+                'content': instance.content
+            }
+        )
 
 class ChangePasswordView(generics.GenericAPIView):
     serializer_class = ChangePasswordSerializer
@@ -1180,4 +1278,4 @@ class FollowedCompaniesInternshipsView(generics.ListAPIView):
             company_id__in=followed_companies,
             status=InternshipOffer.Status.OPEN_FOR_APPLICATION
         ).order_by('-id')
-
+# Reload pristine

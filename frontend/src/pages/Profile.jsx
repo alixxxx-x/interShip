@@ -284,7 +284,7 @@ export default function Profile() {
                                                 <GraduationCap className="w-3.5 h-3.5" /> {t("majorField")}
                                             </span>
                                             <div className="text-slate-800 font-semibold text-[15px] pt-1 ml-2">
-                                                {profile.major || <span className="text-slate-400 italic font-medium">{t("notSpecified")}</span>}
+                                                {profile.department || <span className="text-slate-400 italic font-medium">{t("notSpecified")}</span>}
                                             </div>
                                         </div>
                                     </>

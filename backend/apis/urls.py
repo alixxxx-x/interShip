@@ -69,6 +69,7 @@ urlpatterns = [
     # Messaging
     path('messages/', MessageListView.as_view(), name='message-list'),
     path('messages/send/', MessageCreateView.as_view(), name='message-send'),
+    path('messages/<int:pk>/', MessageDetailView.as_view(), name='message-detail'),
 
     # Password Reset
     path('auth/forgot-password/', ForgotPasswordView.as_view(), name='forgot_password'),
