@@ -62,17 +62,23 @@ export default function AllApplications() {
   const getStatusBadge = (status) => {
     const variants = {
       "PENDING": "purple",
-      "ACCEPTED": "success",
-      "REJECTED": "destructive"
+      "ACCEPTED": "info",
+      "VALIDATED": "success",
+      "COMPLETE": "success",
+      "REJECTED": "destructive",
+      "CANCELLED": "destructive"
     };
     return variants[status] || "outline";
   };
 
   const getStatusLabel = (status) => {
     const labels = {
-      "PENDING": "In progress",
+      "PENDING": "Pending",
       "ACCEPTED": "Accepted",
-      "REJECTED": "Rejected"
+      "VALIDATED": "Validated",
+      "COMPLETE": "Completed",
+      "REJECTED": "Rejected",
+      "CANCELLED": "Cancelled"
     };
     return labels[status] || status;
   };
@@ -155,7 +161,16 @@ export default function AllApplications() {
                               <X className="h-4 w-4" />
                             </Button>
                           </div>
-                        ) : (
+                        ) : application.status === "VALIDATED" ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-green-600"
+                            onClick={() => handleStatusChange(offer, application.id, 'COMPLETE')}
+                          >
+                            Complete
+                          </Button>
+                        ) : application.status === "ACCEPTED" ? (
                           <span
                             className={application.is_validated_by_admin ? "cursor-not-allowed inline-block" : ""}
                             title={application.is_validated_by_admin ? "Cannot edit after admin validation" : "Edit status"}
@@ -169,6 +184,8 @@ export default function AllApplications() {
                               <Pencil className="h-4 w-4" />
                             </Button>
                           </span>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">—</span>
                         )}
                       </TableCell>
                     </TableRow>

@@ -22,10 +22,8 @@ import {
   UsersRound,
   UserRoundPen,
   Briefcase,
-  School,
   MailCheck,
   PhoneCall,
-  House,
   GraduationCap,
   Code2,
   Globe,
@@ -58,11 +56,9 @@ export default function CreateCvModal({
     () => ({
       first_name: "",
       last_name: "",
-      image: null,
       phone_number: "",
       email: "",
-      wilaya: "",
-      university_id: "",
+      address: "",
       github_link: "",
       portfolio_link: "",
       education: "",
@@ -78,7 +74,6 @@ export default function CreateCvModal({
   const [formData, setFormData] = useState(emptyFormData);
   const [currentSkill, setCurrentSkill] = useState("");
   const [currentLanguage, setCurrentLanguage] = useState("");
-  const [imagePreview, setImagePreview] = useState(null);
   const [pdfName, setPdfName] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -128,7 +123,7 @@ export default function CreateCvModal({
             first_name: prev.first_name || res.data.first_name || "",
             last_name: prev.last_name || res.data.last_name || "",
             email: res.data.email || "",
-            wilaya: prev.wilaya || res.data.wilaya || "",
+            address: prev.address || res.data.address || "",
             university_id: prev.university_id || res.data.university_id || "",
           }));
         } catch (error) {
@@ -143,7 +138,6 @@ export default function CreateCvModal({
       setFormData(emptyFormData);
       setCurrentSkill("");
       setCurrentLanguage("");
-      setImagePreview(null);
       setPdfName(null);
       return;
     }
@@ -154,8 +148,7 @@ export default function CreateCvModal({
       last_name: initialCv.last_name || "",
       phone_number: initialCv.phone_number || "",
       email: initialCv.email || "",
-      wilaya: initialCv.wilaya || "",
-      university_id: initialCv.university_id || "",
+      address: initialCv.address || "",
       github_link: initialCv.github_link || "",
       portfolio_link: initialCv.portfolio_link || "",
       education: initialCv.education || "",
@@ -163,13 +156,11 @@ export default function CreateCvModal({
       any_experience: initialCv.any_experience || "",
       skills: parseMaybeJsonArray(initialCv.skills),
       languages: parseMaybeJsonArray(initialCv.languages),
-      image: null,
       pdfFile: null,
     });
 
     setCurrentSkill("");
     setCurrentLanguage("");
-    setImagePreview(toAbsoluteBackendUrl(initialCv.image));
 
     const existingPdfUrl = toAbsoluteBackendUrl(initialCv.pdfFile);
     if (existingPdfUrl) {
@@ -223,28 +214,6 @@ export default function CreateCvModal({
       }));
       setCurrentLanguage("");
     }
-  };
-
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setFormData((prev) => ({ ...prev, image: file }));
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleRemoveImage = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setFormData((prev) => ({ ...prev, image: null }));
-    setImagePreview(null);
-    // Reset file input value so same file can be re-selected
-    const fileInput = document.getElementById("image-upload");
-    if (fileInput) fileInput.value = "";
   };
 
   const handlePdfChange = (e) => {
@@ -447,13 +416,13 @@ export default function CreateCvModal({
         </div>
 
         <div className="grid gap-2 py-2">
-          <Label htmlFor="wilaya" className="flex items-center gap-2">
+          <Label htmlFor="address" className="flex items-center gap-2">
             <MapPin className="h-4 w-4 text-muted-foreground" />
-            Location
+            Address
           </Label>
           <Input
-            id="wilaya"
-            value={formData.wilaya}
+            id="address"
+            value={formData.address}
             onChange={handleChange}
             placeholder="e.g. Algiers, Algeria"
             className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
@@ -461,20 +430,6 @@ export default function CreateCvModal({
           />
         </div>
 
-        <div className="grid gap-2 py-2">
-          <Label htmlFor="university_id" className="flex items-center gap-2">
-            <IdCard className="h-4 w-4 text-muted-foreground" />
-            University ID
-          </Label>
-          <Input
-            id="university_id"
-            value={formData.university_id}
-            onChange={handleChange}
-            placeholder="e.g. 2121330..."
-            className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-            required
-          />
-        </div>
 
         <div className="grid gap-2 py-2">
           <Label htmlFor="github_link" className="flex items-center gap-2">
@@ -671,26 +626,6 @@ export default function CreateCvModal({
         </div>
 
         <div className="grid grid-cols-2 gap-2 items-start">
-          {/* 
-          <div>
-            <Label htmlFor="image-upload">Profile Image</Label>
-            <div className="flex items-center gap-2">
-              <label className="cursor-pointer inline-flex items-center gap-2">
-                <ImagePlus />
-                <span className="text-sm">Upload</span>
-                <input id="image-upload" type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
-              </label>
-              {imagePreview && (
-                <div className="relative">
-                  <img src={imagePreview} alt="preview" className="w-20 h-20 object-cover rounded" />
-                  <button type="button" onClick={handleRemoveImage} className="absolute top-0 right-0 p-1 bg-white rounded-full">
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        */}
           <div className="grid gap-2">
             <Label htmlFor="pdf-upload">Upload your CV</Label>
             <div className="flex items-center gap-2">

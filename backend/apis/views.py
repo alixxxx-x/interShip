@@ -1,27 +1,41 @@
-from .permissions import IsAdmin
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status, filters
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.decorators import api_view, permission_classes
 from rest_framework_simplejwt.views import TokenObtainPairView
-from django.db.models import Q, Count, Avg
+from django.db.models import Q, Count
 from django.utils import timezone
 from django.http import FileResponse
 from .models import *
 from .serializers import *
 from .permissions import *
+# gemini ai
+from google import genai
+from django.conf import settings
+from rest_framework import status
+import json
+# forgot password and reset password
+import random
+from rest_framework.views import APIView
+#cv generation to pdf
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
+from reportlab.lib.units import cm
+from io import BytesIO
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table as RLTable, TableStyle
+#internship agreement 
+from io import BytesIO
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table as RLTable, TableStyle
+
 
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
-
-# gemini ai
-from google import genai
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.conf import settings
-import json
 
 # Initialize Gemini Client
 client = genai.Client(api_key=settings.GEMINI_API_KEY)
@@ -38,51 +52,52 @@ SYSTEM_INSTRUCTION = """
     IMPORTANT RULE: Students MUST register using their university email address ending in '@univ.dz'. Non-university emails are not accepted for student accounts.
 """
 
-@csrf_exempt       # to allow POST requests from any origin
-def chatbot(request):
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Only POST requests are allowed'}, status=405)
-    try:
-        data = json.loads(request.body)
-        user_question = data.get('question', '').strip()
-        chat_history = data.get('chat_history', [])
+class ChatbotView(APIView):
+    permission_classes = [AllowAny]  # anyone can ask questions, even without logging in
 
-        if not user_question:
-            return JsonResponse({'error': 'No question provided'}, status=400)
+    def post(self, request):
+        try:
+            user_question = request.data.get('question', '').strip()
+            chat_history = request.data.get('chat_history', [])
 
-        # Prepare history for Gemini
-        # The new SDK uses 'role' and 'parts' [ { 'text': ... } ]
-        history = []
-        for msg in chat_history:
-            history.append({
-                "role": "user" if msg.get("role") == "user" else "model",
-                "parts": [{"text": msg.get("text", "")}]
+            if not user_question:
+                return Response(
+                    {'error': 'No question provided'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            #Prepare history for Gemini
+            history = []
+            for msg in chat_history:
+                history.append({
+                    "role": "user" if msg.get("role") == "user" else "model",
+                    "parts": [{"text": msg.get("text", "")}]
+                })
+
+            #Gemini request
+            response = client.models.generate_content(
+                model='gemini-2.0-flash',
+                config={'system_instruction': SYSTEM_INSTRUCTION},
+                contents=history + [{
+                    "role": "user",
+                    "parts": [{"text": user_question}]
+                }]
+            )
+
+            return Response({
+                'success': True,
+                'response': response.text
             })
 
-        # Generate response using the new client structure
-        response = client.models.generate_content(
-            model='gemini-2.0-flash',
-            config={
-                'system_instruction': SYSTEM_INSTRUCTION,
-            },
-            contents=history + [{"role": "user", "parts": [{"text": user_question}]}]
-        )
-
-        ai_response = response.text
-
-        return JsonResponse({
-            'success': True,
-            'response': ai_response
-        })
-
-    except json.JSONDecodeError:
-        return JsonResponse({'error': 'Invalid JSON'}, status=400)
-    except Exception as e:
-        print(f"Error in chatbot: {str(e)}")
-        return JsonResponse({'error': str(e)}, status=500)
+        except Exception as e:
+            print(f"Error in chatbot: {str(e)}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
 
 # Authentication Views
-
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -301,6 +316,18 @@ class ApplicationUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
 
     def perform_update(self, serializer):
         old_status = serializer.instance.status
+        new_status = serializer.validated_data.get("status", old_status)
+        if new_status == Application.Status.VALIDATED:
+            raise PermissionDenied("Only admins can validate applications.")
+        if (
+            new_status == Application.Status.COMPLETE
+            and (
+                serializer.instance.status != Application.Status.VALIDATED
+                or not serializer.instance.is_validated_by_admin
+            )
+        ):
+            raise PermissionDenied("Only admin-validated applications can be completed.")
+
         application = serializer.save()
         internship = application.internship
         
@@ -515,12 +542,12 @@ class StudentDashboardView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated, IsStudent]
 
     def get(self, request, *args, **kwargs):
-        student = request.user.student
+        student = getattr(request.user, 'student', None)
         applications = Application.objects.filter(student=student)
         
         stats = {
             "pendingAplications": applications.filter(status=Application.Status.PENDING).count(),
-            "acceptedApplications": applications.filter(status=Application.Status.ACCEPTED, is_validated_by_admin=True).count(),
+            "acceptedApplications": applications.filter(status__in=[Application.Status.VALIDATED, Application.Status.COMPLETE]).count(),
             "totalApplications": applications.count(),
         }
         
@@ -529,14 +556,18 @@ class StudentDashboardView(generics.GenericAPIView):
         
         # Mapping statuses to frontend expectations
         status_map = {
-            Application.Status.PENDING: "In progress",
+            Application.Status.PENDING: "Pending",
             Application.Status.ACCEPTED: "Accepted",
+            Application.Status.VALIDATED: "Validated",
+            Application.Status.COMPLETE: "Completed",
             Application.Status.REJECTED: "Rejected",
+            Application.Status.CANCELLED: "Cancelled",
         }
         
         recent_apps_data = [
             {
                 "id": app.id,
+                "internship": app.internship.id,
                 "offer": app.internship.title,
                 "status": status_map.get(app.status, app.status),
                 "appliedDate": app.application_date.strftime("%Y-%m-%d"),
@@ -564,7 +595,7 @@ class CompanyDashboardView(generics.GenericAPIView):
 
         stats = {
             "pendingApplications": applications.filter(status=Application.Status.PENDING).count(),
-            "acceptedApplications": applications.filter(status=Application.Status.ACCEPTED, is_validated_by_admin=True).count(),
+            "acceptedApplications": applications.filter(status__in=[Application.Status.VALIDATED, Application.Status.COMPLETE]).count(),
             "totalInternships": internships.count(),
         }
 
@@ -575,9 +606,12 @@ class CompanyDashboardView(generics.GenericAPIView):
 
         # Mapping statuses to frontend expectations
         status_map = {
-            Application.Status.PENDING: "In progress",
+            Application.Status.PENDING: "Pending",
             Application.Status.ACCEPTED: "Accepted",
+            Application.Status.VALIDATED: "Validated",
+            Application.Status.COMPLETE: "Completed",
             Application.Status.REJECTED: "Rejected",
+            Application.Status.CANCELLED: "Cancelled",
         }
 
         recent_apps_data = []
@@ -623,7 +657,7 @@ class AdminUnivDashboardView(generics.GenericAPIView):
             "totalStudents": User.objects.filter(role=User.Role.STUDENT).count(),
             "totalCompanies": User.objects.filter(role=User.Role.COMPANY).count(),
             "pendingValidations": applications.filter(status=Application.Status.ACCEPTED, is_validated_by_admin=False).count(),
-            "validatedInternships": applications.filter(status=Application.Status.ACCEPTED, is_validated_by_admin=True).count(),
+            "validatedInternships": applications.filter(status__in=[Application.Status.VALIDATED, Application.Status.COMPLETE], is_validated_by_admin=True).count(),
         }
 
         # Recent applications pending validation
@@ -720,6 +754,7 @@ class AdminValidateApplicationView(generics.GenericAPIView):
 
     def post(self, request, pk):
         application = get_object_or_404(Application, pk=pk, status=Application.Status.ACCEPTED)
+        application.status = Application.Status.VALIDATED
         application.is_validated_by_admin = True
         application.admin_validation_date = timezone.now()
         application.save()
@@ -727,7 +762,7 @@ class AdminValidateApplicationView(generics.GenericAPIView):
         # Notify student
         Notification.objects.get_or_create(
             recipient=application.student,
-            notification_type=Notification.NotificationType.APPLICATION_ACCEPTED,
+            notification_type=Notification.NotificationType.APPLICATION_VALIDATED,
             application=application,
             defaults={
                 "message": f"Your internship at {application.internship.company.name} has been validated by the administration! You can now download your agreement."
@@ -737,7 +772,7 @@ class AdminValidateApplicationView(generics.GenericAPIView):
         # Notify company
         Notification.objects.get_or_create(
             recipient=application.internship.company,
-            notification_type=Notification.NotificationType.APPLICATION_ACCEPTED,
+            notification_type=Notification.NotificationType.APPLICATION_VALIDATED,
             application=application,
             defaults={
                 "message": f"The internship for {application.student.first_name} {application.student.last_name} has been validated by the administration."
@@ -780,7 +815,7 @@ class AdminStatsView(generics.GenericAPIView):
         # Use User model to count by role to be more reliable
         total_students = User.objects.filter(role=User.Role.STUDENT).count()
         placed_students = Application.objects.filter(
-            status=Application.Status.ACCEPTED,
+            status__in=[Application.Status.VALIDATED, Application.Status.COMPLETE],
             is_validated_by_admin=True
         ).values('student').distinct().count()
         
@@ -815,13 +850,6 @@ class AdminStatsView(generics.GenericAPIView):
             "apps_by_month": final_chart_data
         })
 
-from io import BytesIO
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A4
-from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table as RLTable, TableStyle
-
 class GenerateInternshipAgreementView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
 
@@ -836,6 +864,9 @@ class GenerateInternshipAgreementView(generics.GenericAPIView):
 
         if not application.is_validated_by_admin:
             return Response({"error": "This internship has not been validated by the administration yet."}, status=400)
+
+        if application.status not in [Application.Status.ACCEPTED, Application.Status.VALIDATED, Application.Status.COMPLETE]:
+            return Response({"error": "Agreement is not available for this application status."}, status=400)
 
         buffer = BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=A4)
@@ -897,6 +928,83 @@ class GenerateInternshipAgreementView(generics.GenericAPIView):
         
         return FileResponse(buffer, as_attachment=True, filename=f"Convention_{application.student.first_name}.pdf")
 
+# Certificate Generation View (only for validated and completed internships)
+class GenerateInternshipCertificateView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        application = get_object_or_404(Application, pk=pk)
+
+        # Check permissions: Student, Company, or Admin
+        if not (
+            request.user.role in [User.Role.ADMIN_DEPT, User.Role.ADMIN_UNIV]
+            or request.user.id == application.student.id
+            or request.user.id == application.internship.company.id
+        ):
+            raise PermissionDenied("You do not have permission to view this document.")
+
+        if application.status != Application.Status.COMPLETE:
+            return Response(
+                {"error": "Certificate is available only after internship completion."},
+                status=400,
+            )
+
+        if not application.is_validated_by_admin:
+            return Response(
+                {"error": "Certificate requires an admin-validated internship."},
+                status=400,
+            )
+
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4)
+        styles = getSampleStyleSheet()
+        elements = []
+
+        student = application.student
+        student_name = f"{student.first_name} {student.last_name}".strip() or student.username or student.email
+
+        elements.append(Paragraph("INTERNSHIP COMPLETION CERTIFICATE", styles["Title"]))
+        elements.append(Spacer(1, 24))
+        elements.append(
+            Paragraph(
+                f"This certifies that <b>{student_name}</b> has successfully completed the internship at "
+                f"<b>{application.internship.company.name}</b> for the position "
+                f"<b>{application.internship.title}</b>.",
+                styles["Normal"],
+            )
+        )
+        elements.append(Spacer(1, 12))
+        elements.append(
+            Paragraph(
+                f"Internship period: {application.internship.offer_start_date} to {application.internship.offer_end_date}",
+                styles["Normal"],
+            )
+        )
+        elements.append(
+            Paragraph(
+                f"Validated on: {application.admin_validation_date.strftime('%Y-%m-%d') if application.admin_validation_date else '-'}",
+                styles["Normal"],
+            )
+        )
+        elements.append(Spacer(1, 48))
+
+        sig_data = [
+            ["Company Signature", "University Signature"],
+            ["\n\n\n________________", "\n\n\n________________"],
+        ]
+        sig_table = RLTable(sig_data, colWidths=[240, 240])
+        elements.append(sig_table)
+
+        doc.build(elements)
+        buffer.seek(0)
+
+        return FileResponse(
+            buffer,
+            as_attachment=True,
+            filename=f"Certificate_{application.student.first_name}.pdf",
+        )
+
+# CV Generation View 
 class GenerateCVView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
 
@@ -1040,10 +1148,6 @@ class GenerateCVView(generics.GenericAPIView):
         return FileResponse(buffer, as_attachment=True, filename=f"{cv.first_name}_{cv.last_name}_CV.pdf")
 
 
-# forgot password and reset password
-import random
-from rest_framework.views import APIView
-
 class ForgotPasswordView(APIView):
     permission_classes = [AllowAny]
     
@@ -1094,8 +1198,15 @@ class ResetPasswordView(APIView):
             user = User.objects.filter(email__iexact=email).first()
             if not user:
                 return Response({"error": "User not found."}, status=404)
-
-            reset_request = PasswordReset.objects.filter(user=user, code=code, is_used=False).last()
+            
+            #code of forget password last 10 minutes
+            valid_time = timezone.now() - timedelta(minutes=10)
+            reset_request = PasswordReset.objects.filter(
+                user=user, 
+                code=code, 
+                is_used=False,
+                created_at__gte=valid_time,
+            ).last()
             
             if reset_request:
                 user.set_password(new_password)
@@ -1180,4 +1291,3 @@ class FollowedCompaniesInternshipsView(generics.ListAPIView):
             company_id__in=followed_companies,
             status=InternshipOffer.Status.OPEN_FOR_APPLICATION
         ).order_by('-id')
-

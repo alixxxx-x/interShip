@@ -17,9 +17,11 @@ export default function AdminValidations() {
       setLoading(true);
       const res = await api.get("/applications/");
       const allApps = res.data.results || res.data;
-      // Show Accepted applications (waiting for admin) and applications explicitly Rejected by Admin
+      // Show Accepted applications (waiting for admin) plus validated/completed ones
       const filtered = allApps.filter(app => 
-        app.status === 'ACCEPTED' || 
+        app.status === 'ACCEPTED' ||
+        app.status === 'VALIDATED' ||
+        app.status === 'COMPLETE' ||
         (app.status === 'REJECTED' && app.is_validated_by_admin)
       );
       setValidations(filtered);
@@ -104,7 +106,7 @@ export default function AdminValidations() {
                       <Badge variant="destructive" className="gap-1 bg-red-100 text-red-700 border-red-200">
                         <XCircle className="h-3 w-3" /> Rejected by Admin
                       </Badge>
-                    ) : app.is_validated_by_admin ? (
+                    ) : app.status === 'VALIDATED' || app.status === 'COMPLETE' || app.is_validated_by_admin ? (
                       <Badge variant="success" className="gap-1">
                         <CheckCircle className="h-3 w-3" /> Validated
                       </Badge>
@@ -178,4 +180,3 @@ export default function AdminValidations() {
     </div>
   );
 }
-

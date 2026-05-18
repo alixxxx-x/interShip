@@ -75,6 +75,8 @@ export default function Notifications() {
         return <User className="h-5 w-5 text-primary" />;
       case "APPLICATION_ACCEPTED":
         return <CheckCheck className="h-5 w-5 text-green-500" />;
+      case "APPLICATION_VALIDATED":
+        return <Briefcase className="h-5 w-5 text-blue-500" />;
       case "APPLICATION_REJECTED":
         return <BellOff className="h-5 w-5 text-red-500" />;
       default:
@@ -88,6 +90,8 @@ export default function Notifications() {
         return "New Application";
       case "APPLICATION_ACCEPTED":
         return "Accepted";
+      case "APPLICATION_VALIDATED":
+        return "Validated";
       case "APPLICATION_REJECTED":
         return "Rejected";
       default:
@@ -101,6 +105,8 @@ export default function Notifications() {
         return "purple";
       case "APPLICATION_ACCEPTED":
         return "success";
+      case "APPLICATION_VALIDATED":
+        return "info";
       case "APPLICATION_REJECTED":
         return "destructive";
       default:

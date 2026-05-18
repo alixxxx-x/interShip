@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import {
@@ -55,23 +54,6 @@ export default function MyApplications() {
   }
 
 
-  const getStatusBadge = (status) => {
-    const normalized = String(status || "")
-      .trim()
-      .toLowerCase();
-
-    const variants = {
-      "In progress": "purple",
-      "Accepted": "success",
-      "Rejected": "destructive",
-      pending: "purple",
-      accepted: "success",
-      rejected: "destructive",
-    };
-
-    return variants[status] || variants[normalized] || "outline";
-  };
-
   return (
     <div className="space-y-6 p-6">
 
@@ -107,9 +89,10 @@ export default function MyApplications() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Offer</TableHead>
-                  <TableHead className="w-[250px]">Status</TableHead>
-                  <TableHead>Applied Date</TableHead>
-                  <TableHead className="text-right">Agreement</TableHead>
+                  <TableHead className="w-[360px]">Status</TableHead>
+                  <TableHead className="w-[180px]">Applied Date</TableHead>
+                  <TableHead className="w-[130px] text-right">Agreement</TableHead>
+                  <TableHead className="w-[130px] text-right">Certificate</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -120,32 +103,48 @@ export default function MyApplications() {
                     application.internship_title ||
                     (application.internship ? `Internship #${application.internship}` : "-");
 
-                  const statusText = application.statusLabel || application.status || "-";
+                  const statusRaw = String(application.status || "").trim().toUpperCase();
                   const appliedDate = application.appliedDate || application.application_date || "-";
+                  const offerId = application.internship;
+
+                  let currentStep = 1;
+                  if (statusRaw === "ACCEPTED") currentStep = 2;
+                  if (statusRaw === "VALIDATED") currentStep = 3;
+                  if (statusRaw === "COMPLETE") currentStep = 4;
+                  if (statusRaw === "REJECTED" || statusRaw === "CANCELLED") currentStep = 2;
 
                   return (
                     <TableRow key={application.id}>
-                      <TableCell className="font-medium">{offer}</TableCell>
-                      <TableCell>
-                        <div className="py-2 -translate-x-24">
+                      <TableCell className="font-medium pr-6">
+                        {offerId ? (
+                          <Button
+                            variant="link"
+                            className="p-0 h-auto"
+                            onClick={() => navigate(`/internships/${offerId}`)}
+                          >
+                            {offer}
+                          </Button>
+                        ) : (
+                          offer
+                        )}
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <div className="py-1">
                           <Stepper 
                             steps={[
                               { label: "Applied" },
-                              { label: application.status === 'PENDING' ? "Pending" : "Accepted" },
-                              { label: application.is_validated_by_admin ? "Validated" : application.status === 'ACCEPTED' ? "Pending" : "Validated" }
+                              { label: "Accepted" },
+                              { label: "Validated" },
+                              { label: "Completed" }
                             ]}
-                            currentStep={
-                              application.status === 'REJECTED' ? 2 :
-                              (application.is_validated_by_admin ? 4 : 
-                                (application.status === 'ACCEPTED' ? 3 : 2))
-                            }
-                            status={application.status}
+                            currentStep={currentStep}
+                            status={statusRaw}
                           />
                         </div>
                       </TableCell>
                       <TableCell>{appliedDate}</TableCell>
                       <TableCell className="text-right">
-                        {application.status === 'ACCEPTED' && application.is_validated_by_admin && (
+                        {application.is_validated_by_admin && ["ACCEPTED", "VALIDATED", "COMPLETE"].includes(statusRaw) && (
                           <Button
                             variant="outline"
                             size="sm"
@@ -165,6 +164,34 @@ export default function MyApplications() {
                                 window.URL.revokeObjectURL(url);
                               } catch (err) {
                                 console.error("Failed to download agreement:", err);
+                              }
+                            }}
+                          >
+                            PDF
+                          </Button>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {statusRaw === "COMPLETE" && application.is_validated_by_admin && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-1 h-8 px-2"
+                            onClick={async () => {
+                              try {
+                                const res = await api.get(`/admin/applications/${application.id}/certificate/`, {
+                                  responseType: "blob",
+                                });
+                                const url = window.URL.createObjectURL(new Blob([res.data]));
+                                const link = document.createElement("a");
+                                link.href = url;
+                                link.setAttribute("download", `Certificate_${application.id}.pdf`);
+                                document.body.appendChild(link);
+                                link.click();
+                                link.remove();
+                                window.URL.revokeObjectURL(url);
+                              } catch (err) {
+                                console.error("Failed to download certificate:", err);
                               }
                             }}
                           >

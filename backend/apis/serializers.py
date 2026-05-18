@@ -73,7 +73,7 @@ class UserSerializer(serializers.ModelSerializer):
         profile_map = {
             User.Role.STUDENT: ('student', ['university_id', 'wilaya', 'phone', 'major']),
             User.Role.COMPANY: ('company', ['name', 'logo', 'description', 'location', 'website', 'company_field', 'founded_year']),
-            User.Role.ADMIN_DEPT: ('administrator', ['department']),
+            User.Role.ADMIN_DEPT: ('admindept', ['department']),
             User.Role.ADMIN_UNIV: ('adminuniv', ['university_name', 'departments']),
         }
         
@@ -124,7 +124,7 @@ class UserSerializer(serializers.ModelSerializer):
         models_map = {
             User.Role.STUDENT: Student,
             User.Role.COMPANY: Company,
-            User.Role.ADMIN_DEPT: Administrator,
+            User.Role.ADMIN_DEPT: AdminDept,
             User.Role.ADMIN_UNIV: AdminUniv,
         }
         
@@ -184,8 +184,8 @@ class UserSerializer(serializers.ModelSerializer):
                 company.founded_year = validated_data.get('founded_year')
             company.save()
             
-        elif instance.role == User.Role.ADMIN_DEPT and hasattr(instance, 'administrator'):
-            admin = instance.administrator
+        elif instance.role == User.Role.ADMIN_DEPT and hasattr(instance, 'admindept'):
+            admin = instance.admindept
             if 'department' in validated_data:
                 admin.department = validated_data.get('department')
             admin.save()
@@ -296,7 +296,10 @@ class InternshipSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'internship_duration', 'company']
 
     def get_accepted_count(self, obj):
-        return obj.application_set.filter(status='ACCEPTED', is_validated_by_admin=True).count()
+        return obj.application_set.filter(
+            status__in=[Application.Status.VALIDATED, Application.Status.COMPLETE],
+            is_validated_by_admin=True
+        ).count()
 
     def create(self, validated_data):
         # Map frontend fields to backend fields
@@ -405,16 +408,38 @@ class ApplicationSerializer(serializers.ModelSerializer):
             # 2. Check if already applied
             if Application.objects.filter(student=student, internship=internship).exists():
                 raise serializers.ValidationError("You have already applied for this internship")
+
+            # 2.1 Block overlapping internship dates: student cannot apply if new internship start date
+            # falls within or conflicts with an existing active internship period.
+            # Active = not REJECTED/CANCELLED and internship not FINISHED
+            conflicting_apps = Application.objects.filter(
+                student=student
+            ).exclude(
+                status__in=[Application.Status.REJECTED, Application.Status.CANCELLED]
+            ).filter(
+                internship__status__in=[
+                    InternshipOffer.Status.OPEN_FOR_APPLICATION,
+                    InternshipOffer.Status.CLOSED_FOR_APPLICATION,
+                    InternshipOffer.Status.ONGOING
+                ]
+            ).filter(
+                internship__offer_end_date__gte=internship.offer_start_date
+            )
+            
+            if conflicting_apps.exists():
+                raise serializers.ValidationError(
+                    "You already have an active internship application with overlapping dates. "
+                    "You can only apply to this internship after your current internship ends, or if your current application is rejected/cancelled."
+                )
             
             # 3. Check if internship is open
-            from .models import InternshipOffer
             if internship.status != InternshipOffer.Status.OPEN_FOR_APPLICATION:
                 raise serializers.ValidationError("This internship is no longer accepting applications.")
             
             # 4. Check if full (Only count those validated by ADMIN)
             accepted_apps = Application.objects.filter(
                 internship=internship,
-                status='ACCEPTED',
+                status__in=[Application.Status.VALIDATED, Application.Status.COMPLETE],
                 is_validated_by_admin=True
             ).count()
             
@@ -458,7 +483,6 @@ class SkillsSerializer(serializers.ModelSerializer):
 # digital cv serializers
 
 class DigitalCVSerializer(serializers.ModelSerializer):
-    image = serializers.ImageField(required=False)
     pdfFile = serializers.FileField(source='cv_file', required=False)
     github_link = serializers.URLField(source='github', required=False, allow_blank=True, allow_null=True)
     phone_number = serializers.CharField(source='phone', required=False, allow_blank=True)
@@ -469,11 +493,9 @@ class DigitalCVSerializer(serializers.ModelSerializer):
     class Meta:
         model = DigitalCV
         fields = [
-            'id', 'student', 'first_name', 'last_name', 'image', 'phone_number',
+            'id', 'student', 'first_name', 'last_name', 'phone_number',
             'email', 'linkedin', 'github_link', 'portfolio_link', 'education', 'skills', 
-            'any_experience', 'profile_summary', 'address', 'languages',
-            'wilaya', 'university_id', 'date_of_birth', 
-            'nationality', 'pdfFile'
+            'any_experience', 'profile_summary', 'address', 'languages', 'pdfFile'
         ]
         read_only_fields = ['id', 'student']
 
@@ -492,22 +514,6 @@ class DigitalCVSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         self._strip_non_model_fields(validated_data)
         instance = super().create(validated_data)
-        
-        # Sync fields back to student profile
-        update_fields = []
-        student = instance.student
-        
-        if 'wilaya' in validated_data:
-            student.wilaya = validated_data['wilaya']
-            update_fields.append('wilaya')
-            
-        if 'university_id' in validated_data:
-            student.university_id = validated_data['university_id']
-            update_fields.append('university_id')
-            
-        if update_fields:
-            student.save(update_fields=update_fields)
-            
         return instance
 
     def update(self, instance, validated_data):
@@ -515,20 +521,4 @@ class DigitalCVSerializer(serializers.ModelSerializer):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
-        
-        # Sync fields back to student profile
-        update_fields = []
-        student = instance.student
-        
-        if 'wilaya' in validated_data:
-            student.wilaya = validated_data['wilaya']
-            update_fields.append('wilaya')
-            
-        if 'university_id' in validated_data:
-            student.university_id = validated_data['university_id']
-            update_fields.append('university_id')
-            
-        if update_fields:
-            student.save(update_fields=update_fields)
-            
         return instance

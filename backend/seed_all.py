@@ -7,25 +7,25 @@ from datetime import date, timedelta
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
-from apis.models import User, Student, Company, Administrator, InternshipOffer, Application, DigitalCV, Notification, Message
+from apis.models import User, Student, Company, AdminDept, AdminUniv, InternshipOffer, Application, DigitalCV, Notification, Message
 
 def seed_database():
-    print("🚀 Starting full database seeding...")
+    print("Starting full database seeding...")
 
     # 1. Create Admin
     admin_email = 'admin@stag.io'
     if not User.objects.filter(email=admin_email).exists():
-        admin = Administrator.objects.create_superuser(
+        admin = AdminDept.objects.create_superuser(
             email=admin_email,
             username='admin',
             password='admin123',
-            role=User.Role.ADMIN,
+            role=User.Role.ADMIN_DEPT,
             department='Information Technology'
         )
-        print(f"✅ Admin created: {admin_email}")
+        print(f"Admin created: {admin_email}")
     else:
         admin = User.objects.get(email=admin_email)
-        print(f"ℹ️ Admin already exists: {admin_email}")
+        print(f" Admin already exists: {admin_email}")
 
     # 2. Create Companies
     companies_data = [
@@ -51,7 +51,7 @@ def seed_database():
                 website=f"https://www.{c_data['name'].lower()}.dz"
             )
             companies.append(company)
-            print(f"✅ Company created: {c_data['name']}")
+            print(f"Company created: {c_data['name']}")
         else:
             companies.append(Company.objects.get(email=c_data['email']))
 
@@ -96,7 +96,7 @@ def seed_database():
             )
             
             students.append(student)
-            print(f"✅ Student created: {s_data['first']} {s_data['last']}")
+            print(f"Student created: {s_data['first']} {s_data['last']}")
         else:
             students.append(Student.objects.get(email=s_data['email']))
 
@@ -127,7 +127,7 @@ def seed_database():
                 wilaya=company.location
             )
             internships.append(internship)
-            print(f"✅ Internship created: {internship.title}")
+            print(f"Internship created: {internship.title}")
 
     # 5. Create Applications
     for student in students:
@@ -146,7 +146,7 @@ def seed_database():
                 app.admin_validation_date = django.utils.timezone.now()
                 app.save()
             
-            print(f"✅ Application created: {student.first_name} -> {internship.title}")
+            print(f"Application created: {student.first_name} -> {internship.title}")
 
     # 6. Create some Notifications
     for user in User.objects.all():
@@ -169,7 +169,7 @@ def seed_database():
             content="Hello Ahmed! Sure, please check the description or visit our website for more info."
         )
 
-    print("\n✨ Database seeding completed successfully!")
+    print("\n Database seeding completed successfully!")
 
 if __name__ == "__main__":
     seed_database()

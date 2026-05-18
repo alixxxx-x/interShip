@@ -8,7 +8,8 @@ const Stepper = ({ steps, currentStep, status }) => {
       {steps.map((step, index) => {
         const isCompleted = index < currentStep - 1;
         const isCurrent = index === currentStep - 1;
-        const isRejected = status === "REJECTED";
+        const isRejected = status === "REJECTED" || status === "CANCELLED";
+        const rejectedLabel = status === "CANCELLED" ? "Cancelled" : "Rejected";
 
         return (
           <React.Fragment key={step.label}>
@@ -45,7 +46,7 @@ const Stepper = ({ steps, currentStep, status }) => {
                     : "text-muted-foreground opacity-70"
                 )}
               >
-                {isRejected && isCurrent ? "Rejected" : step.label}
+                {isRejected && isCurrent ? rejectedLabel : step.label}
               </span>
             </div>
             {index < steps.length - 1 && (

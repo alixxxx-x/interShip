@@ -1,4 +1,4 @@
-admin Dept : 
+super admin : 
   email :[admin@stag.io]
   password : [admin123]
 
@@ -37,26 +37,12 @@ companies :
   password : [google]
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  student : 
-      email:[ali@univ.dz]
-      password:[[password]]
+student : 
+  email:[ali@univ.dz]
+  password:[[password123]]
       
-      email:[[EMAIL_ADDRESS]]
-      password:[[PASSWORD]]
+  email:[[EMAIL_ADDRESS]]
+  password:[[PASSWORD]]
       
-      email:[[EMAIL_ADDRESS]]
-      password:[[PASSWORD]]
+  email:[[EMAIL_ADDRESS]]
+  password:[[PASSWORD]]

@@ -31,7 +31,7 @@ class ApisConfig(AppConfig):
                 for offer in closed_offers:
                     validated_count = Application.objects.filter(
                         internship=offer,
-                        status='ACCEPTED',
+                        status__in=['VALIDATED', 'COMPLETE'],
                         is_validated_by_admin=True
                     ).count()
                     
