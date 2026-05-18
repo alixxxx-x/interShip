@@ -15,8 +15,7 @@ import {
   Trash2,
   X,
   MoreVertical,
-  Reply,
-  Smile
+  Reply
 } from "lucide-react";
 import api from "@/api/api";
 import { cn } from "@/lib/utils";
@@ -36,19 +35,12 @@ export default function CompanyMessages() {
   const [editingMessageId, setEditingMessageId] = useState(null);
   const [editingText, setEditingText] = useState("");
   const [openMenuId, setOpenMenuId] = useState(null);
-  const [openEmojiId, setOpenEmojiId] = useState(null);
-  const [openInputEmoji, setOpenInputEmoji] = useState(false);
   const [replyingTo, setReplyingTo] = useState(null);
-  const emojiPickerRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target)) {
-        setOpenInputEmoji(false);
-      }
-      if (!event.target.closest('.menu-container') && !event.target.closest('.emoji-container')) {
+      if (!event.target.closest('.menu-container')) {
         setOpenMenuId(null);
-        setOpenEmojiId(null);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -519,36 +511,6 @@ export default function CompanyMessages() {
                               <button onClick={() => setReplyingTo(msg)} className="p-1.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Reply">
                                 <Reply className="h-4 w-4" />
                               </button>
-                              <div className="relative emoji-container">
-                                <button 
-                                  onClick={() => setOpenEmojiId(openEmojiId === msg.id ? null : msg.id)}
-                                  className="p-1.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="React">
-                                  <Smile className="h-4 w-4" />
-                                </button>
-                                {openEmojiId === msg.id && (
-                                  <div className="absolute bottom-9 left-1/2 -translate-x-1/2 z-50 bg-popover border border-border rounded-full shadow-xl overflow-hidden p-1.5 flex gap-1">
-                                    {['👍', '❤️', '😂', '😮', '😢', '👏'].map(emoji => (
-                                      <button 
-                                        key={emoji} 
-                                        className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted text-lg transition-colors"
-                                        onClick={() => {
-                                          const parts = msg.content.split('|REACT:');
-                                          const baseText = parts[0];
-                                          const currentReaction = parts[1];
-                                          if (currentReaction === emoji) {
-                                            handleEditMessage(msg.id, baseText);
-                                          } else {
-                                            handleEditMessage(msg.id, baseText + '|REACT:' + emoji);
-                                          }
-                                          setOpenEmojiId(null);
-                                        }}
-                                      >
-                                        {emoji}
-                                      </button>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
                             </div>
                           )}
                         </div>
@@ -578,34 +540,8 @@ export default function CompanyMessages() {
                     autoComplete="off"
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
-                    className="w-full bg-muted/20 border-none shadow-none focus-visible:ring-1 h-11 pl-10"
+                    className="w-full bg-muted/20 border-none shadow-none focus-visible:ring-1 h-11"
                   />
-                  <div ref={emojiPickerRef} className="absolute left-2 top-1/2 -translate-y-1/2">
-                    <button 
-                      type="button"
-                      onClick={() => setOpenInputEmoji(!openInputEmoji)}
-                      className="p-1.5 rounded-full hover:bg-muted text-muted-foreground transition-colors"
-                    >
-                      <Smile className="h-5 w-5" />
-                    </button>
-                    {openInputEmoji && (
-                      <div className="absolute bottom-10 left-0 bg-popover border border-border p-2 rounded-xl shadow-xl flex flex-wrap w-[220px] gap-1 z-50">
-                        {['😀','😂','😅','😍','😒','😔','😘','😜','😡','😢','👍','👎','❤️','🔥','✨','🎉'].map(emoji => (
-                          <button
-                            key={emoji}
-                            type="button"
-                            className="w-8 h-8 flex items-center justify-center hover:bg-muted rounded-md text-xl"
-                            onClick={() => {
-                              setNewMessage(prev => prev + emoji);
-                              setOpenInputEmoji(false);
-                            }}
-                          >
-                            {emoji}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
                 </div>
                 <Button type="submit" size="icon" className="h-11 w-11 shadow-lg shadow-primary/20" disabled={loading || !newMessage.trim()}>
                   <Send className="h-5 w-5" />
