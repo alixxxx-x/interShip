@@ -45,7 +45,8 @@ function Login() {
             navigate("/");
         } catch (error) {
             console.error("Login Error:", error.response?.data || error.message);
-            toast.error("Login failed. Please check your credentials.");
+            const backendError = error.response?.data?.detail;
+            toast.error(backendError || "Login failed. Please check your credentials.");
         } finally {
             setLoading(false);
         }

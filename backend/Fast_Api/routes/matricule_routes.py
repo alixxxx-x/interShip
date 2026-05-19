@@ -15,13 +15,19 @@ async def get_matriculations():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+from pydantic import BaseModel
+from typing import List
+
+class GenerateMatriculesRequest(BaseModel):
+    companies: List[str]
+
 @router.post("/generate")
-async def generate_matriculations():
+async def generate_matriculations(request: GenerateMatriculesRequest):
     """
-    Generates matricules for all companies that do not have one yet.
+    Generates matricules for a provided list of company names.
     """
     try:
-        data = await matricule_service.generate_matriculation_for_all_companies()
+        data = await matricule_service.generate_matricules_for_names(request.companies)
         return JSONResponse(status_code=200, content={
             "message": f"Successfully generated {len(data)} matriculations.",
             "data": data
