@@ -79,7 +79,7 @@
         .student-section {
             border: 2px solid #000;
             padding: 0;
-            margin-top: 20px;
+            margin-top: 5px;
         }
 
         .student-title {
@@ -90,15 +90,15 @@
         }
 
         .student-fields {
-            padding: 15px;
+            padding: 5px;
         }
 
         .student-line {
-            margin-bottom: 12px;
+            margin-bottom: 5px;
         }
 
         .article {
-            margin-top: 20px;
+            margin-top: 10px;
         }
 
         .article-title {
@@ -145,7 +145,7 @@
 <body>
 
 <!-- PAGE 1 -->
-<div class="page">
+<div class="article">
 
     <!-- HEADER (kept exactly as your version) -->
     <div class="header">
@@ -175,14 +175,13 @@
             <td style="width:42%;" class="box">
 
                 <div class="box-title">
-                    L'Université {{ university_name }}<<br/>
-                    Campus {{ campus }}, {{ wilaya }} - Algérie
+                    L'Université {{ university_name }}<br/>
                 </div>
 
-                <div style="text-align: center;">
-                    Représentée par :<<br/><br/>
-                    {{ university_supervisor }}<<br/><br/>
-                    Tél/Fax : {{ university_phone }}<<br/><br/>
+                <div>
+                    Représentée par :<br/>
+                    {{ university_supervisor }}<br/>
+                    Tél: {{ university_phone }}<br/>
                     Mail : <a href="mailto:{{ university_email }}">{{ university_email }}</a>
                 </div>
 
@@ -195,17 +194,12 @@
             <td style="width:42%;" class="box">
 
                 <div class="box-title">
-                    L'entreprise (Nom et Adresse)
+                    L'entreprise {{ company_name }}
                 </div>
 
                 <div style="text-align: center;">
-                    <span class="dotted" style="min-width: 250px;">&nbsp;</span><br/><br/>
-                    <span class="dotted" style="min-width: 250px;">&nbsp;</span><br/><br/>
-                    Représentée par :<<br/><br/>
-                    Mme/M. <span class="dotted" style="min-width: 180px;">&nbsp;</span><br/><br/>
-                    Tél : <span class="dotted" style="min-width: 100px;">&nbsp;</span>, 
-                    Fax : <span class="dotted" style="min-width: 100px;">&nbsp;</span><br/><br/>
-                    Mail : <span class="dotted" style="min-width: 200px;">&nbsp;</span>
+                    Tél : {{ company_phone }}<br/>
+                    Mail : <a href="mailto:{{ university_email }}">{{ university_email }}</a>
                 </div>
 
             </td>
@@ -214,7 +208,7 @@
     </table>
 
     <!-- STUDENT SECTION - All in ONE box -->
-    <div class="student-section">
+    <div class="article">
 
         <!-- Title inside the same box -->
         <div class="student-title">
@@ -226,16 +220,12 @@
             <div class="student-line">Nom et Prénom : {{ student_name }}</div>
             <div class="student-line">Faculté/Institut : {{ faculty }}</div>
             <div class="student-line">Département : {{ department }}</div>
-            <div class="student-line">Carte d'étudiant(e) N° : {{ student_card }} ; N° de Sécurité Sociale : {{ social_security }}</div>
             <div class="student-line">Tél : {{ student_phone }}</div>
             <div class="student-line">Email : {{ student_email }}</div>
-            <div class="student-line">Diplôme préparé : {{ diploma }}</div>
             <div class="student-line">Thème du stage : {{ internship_theme }}</div>
-            <div class="student-line">Responsable pédagogique : {{ pedagogic_supervisor }}</div>
-            <div class="student-line">Enseignant(e) chargé(e) du suivi du stage de l'étudiant(e) : {{ academic_supervisor }}</div>
-            <div class="student-line">Personne chargée du suivi du stage de l'étudiant(e) au niveau de l'entreprise : {{ company_supervisor }}</div>
             <div class="student-line">Durée du stage : {{ duration }}</div>
-            <div class="student-line">Date de début du stage : {{ start_date }} ; Date de fin de stage : {{ end_date }}</div>
+            <div class="student-line">Date de début du stage : {{ start_date }} </div>
+            <div class="student-line">Date de fin de stage : {{ end_date }}</div>
         </div>
 
         <!-- SIGNATURES INSIDE THE SAME BOX -->
@@ -260,7 +250,7 @@
 </div>
 
 <!-- PAGE 2 -->
-<div style="page-break-before: always;" class="page">
+<div style="page-break-before: always;">
 
     <div class="article">
         <div class="article-title">Article 1 : Objet</div>
