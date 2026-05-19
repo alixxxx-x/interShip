@@ -323,3 +323,16 @@ class PasswordReset(models.Model):
     def is_valid(self):
         # Temporarily simple check for testing
         return not self.is_used
+
+class Matriculation(models.Model):
+    company = models.OneToOneField(Company, on_delete=models.SET_NULL, related_name='matriculation', null=True, blank=True)
+    matricule = models.CharField(max_length=50, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name_plural = "Matriculations"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.company.name} - {self.matricule}"
