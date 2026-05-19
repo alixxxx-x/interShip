@@ -38,8 +38,8 @@ companies :
 
 
 student :       
-  email:[[ahmed.ziri@univ.dz]]
-  password:[[password123]]
+  email:[ahmed.ziri@univ.dz]
+  password:[password123]
       
-  email:[[EMAIL_ADDRESS]]
-  password:[[password123]]
+  email:[samy.amir@univ.dz]
+  password:[password123]

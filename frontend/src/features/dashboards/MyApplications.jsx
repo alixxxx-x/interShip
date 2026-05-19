@@ -108,9 +108,9 @@ export default function MyApplications() {
                   const offerId = application.internship;
 
                   let currentStep = 1;
-                  if (statusRaw === "ACCEPTED") currentStep = 2;
-                  if (statusRaw === "VALIDATED") currentStep = 3;
-                  if (statusRaw === "COMPLETE") currentStep = 4;
+                  if (statusRaw === "ACCEPTED") currentStep = 3;
+                  if (statusRaw === "VALIDATED") currentStep = 4;
+                  if (statusRaw === "COMPLETE") currentStep = 5;
                   if (statusRaw === "REJECTED" || statusRaw === "CANCELLED") currentStep = 2;
 
                   return (
@@ -167,7 +167,7 @@ export default function MyApplications() {
                               }
                             }}
                           >
-                            PDF
+                            Download
                           </Button>
                         )}
                       </TableCell>
@@ -195,7 +195,7 @@ export default function MyApplications() {
                               }
                             }}
                           >
-                            PDF
+                            Download
                           </Button>
                         )}
                       </TableCell>

@@ -20,7 +20,7 @@ const Stepper = ({ steps, currentStep, status }) => {
                   isCompleted
                     ? "bg-primary border-primary text-primary-foreground"
                     : isCurrent
-                    ? isRejected 
+                    ? isRejected
                       ? "bg-destructive border-destructive text-destructive-foreground"
                       : "bg-orange-500 border-orange-500 text-white shadow-[0_0_10px_rgba(249,115,22,0.3)]"
                     : "border-muted text-muted-foreground"
@@ -38,11 +38,15 @@ const Stepper = ({ steps, currentStep, status }) => {
                   <span className="text-[9px]">{index + 1}</span>
                 )}
               </div>
-              <span 
+              <span
                 className={cn(
                   "absolute -bottom-4 left-1/2 -translate-x-1/2 text-[9px] font-medium whitespace-nowrap",
-                  isCurrent 
-                    ? (isRejected ? "text-destructive" : "text-orange-500 font-semibold") 
+                  isCompleted
+                    ? "text-primary"
+                    : isCurrent
+                    ? isRejected
+                      ? "text-destructive"
+                      : "text-orange-500 font-semibold"
                     : "text-muted-foreground opacity-70"
                 )}
               >
