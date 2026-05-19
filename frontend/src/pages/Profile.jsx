@@ -250,14 +250,52 @@ export default function Profile() {
                                             </div>
                                         </div>
                                     </>
+                                ) : profile.role === 'ADMIN_DEPT' ? (
+                                    <>
+                                        <div className="space-y-2">
+                                            <span className="text-[11px] font-bold text-primary tracking-wider uppercase flex items-center gap-2">
+                                                <Building className="w-3.5 h-3.5" /> {t("universityName")}
+                                            </span>
+                                            <div className="text-slate-800 font-semibold text-[15px] pt-1 ml-2">
+                                                {profile.university_name || <span className="text-slate-400 italic font-medium">{t("notSpecified")}</span>}
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <span className="text-[11px] font-bold text-primary tracking-wider uppercase flex items-center gap-2">
+                                                <Globe className="w-3.5 h-3.5" /> {t("wilaya")}
+                                            </span>
+                                            <div className="text-slate-800 font-semibold text-[15px] pt-1 ml-2">
+                                                {profile.wilaya || <span className="text-slate-400 italic font-medium">{t("notSpecified")}</span>}
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <span className="text-[11px] font-bold text-primary tracking-wider uppercase flex items-center gap-2">
+                                                <Mail className="w-3.5 h-3.5" /> {t("emailAddress")}
+                                            </span>
+                                            <div className="text-slate-800 font-semibold text-[15px] pt-1 ml-2">
+                                                {profile.email}
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <span className="text-[11px] font-bold text-primary tracking-wider uppercase flex items-center gap-2">
+                                                <GraduationCap className="w-3.5 h-3.5" /> {t("department")}
+                                            </span>
+                                            <div className="text-slate-800 font-semibold text-[15px] pt-1 ml-2">
+                                                {profile.department || <span className="text-slate-400 italic font-medium">{t("notSpecified")}</span>}
+                                            </div>
+                                        </div>
+                                    </>
                                 ) : (
                                     <>
                                         <div className="space-y-2">
                                             <span className="text-[11px] font-bold text-primary tracking-wider uppercase flex items-center gap-2">
-                                                <Building className="w-3.5 h-3.5" /> {t("universityID")}
+                                                <Building className="w-3.5 h-3.5" /> {t("universityName")}
                                             </span>
                                             <div className="text-slate-800 font-semibold text-[15px] pt-1 ml-2">
-                                                {profile.university_id || <span className="text-slate-400 italic font-medium">{t("notSpecified")}</span>}
+                                                {profile.university_name || <span className="text-slate-400 italic font-medium">{t("notSpecified")}</span>}
                                             </div>
                                         </div>
 

@@ -198,6 +198,12 @@ export function AppSidebar({ ...props }) {
           isActive: location.pathname.startsWith("/studentdashboard/MyApplications"),
         },
         {
+          title: "Track Internships",
+          url: "/studentdashboard/TrackInternships",
+          icon: CheckCircle,
+          isActive: location.pathname.startsWith("/studentdashboard/TrackInternships"),
+        },
+        {
           title: t("sidebarMessages"),
           url: "/studentdashboard/messages",
           icon: MessageSquare,
@@ -296,6 +302,11 @@ export function AppSidebar({ ...props }) {
           title: t("sidebarApplications"),
           url: "/companydashboard/applications",
           icon: Users,
+        },
+        {
+          title: "Track Internships",
+          url: "/companydashboard/TrackInternships",
+          icon: CheckCircle,
         },
         {
           title: t("sidebarMessages"),

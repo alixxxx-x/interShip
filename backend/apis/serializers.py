@@ -617,12 +617,12 @@ class ApplicationSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'student', 'internship', 'status', 'application_date', 
             'candidate', 'offer', 'company_name', 'email', 'cv', 
-            'is_validated_by_admin', 'admin_validation_date'
+            'is_validated_by_admin', 'admin_validation_date', 'admin_rejection_date'
         ]
         read_only_fields = [
             'id', 'student', 'internship', 'application_date', 
             'candidate', 'offer', 'company_name', 'email', 'cv',
-            'is_validated_by_admin', 'admin_validation_date'
+            'is_validated_by_admin', 'admin_validation_date', 'admin_rejection_date'
         ]
 
     def get_candidate(self, obj):

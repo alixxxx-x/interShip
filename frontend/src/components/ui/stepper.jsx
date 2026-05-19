@@ -2,14 +2,17 @@ import * as React from "react"
 import { Check, X, Clock } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-const Stepper = ({ steps, currentStep, status }) => {
+const Stepper = ({ steps, currentStep, status, rejectedByAdmin }) => {
   return (
     <div className="flex items-center w-full min-w-[140px] max-w-[200px] space-x-1.5 pb-4 pt-1">
       {steps.map((step, index) => {
         const isCompleted = index < currentStep - 1;
         const isCurrent = index === currentStep - 1;
         const isRejected = status === "REJECTED" || status === "CANCELLED";
-        const rejectedLabel = status === "CANCELLED" ? "Cancelled" : "Rejected";
+        let rejectedLabel = status === "CANCELLED" ? "Cancelled" : "Rejected";
+        if (isRejected && rejectedByAdmin) {
+          rejectedLabel = "Rejected by Admin";
+        }
 
         return (
           <React.Fragment key={step.label}>
@@ -20,7 +23,7 @@ const Stepper = ({ steps, currentStep, status }) => {
                   isCompleted
                     ? "bg-primary border-primary text-primary-foreground"
                     : isCurrent
-                    ? isRejected 
+                    ? isRejected
                       ? "bg-destructive border-destructive text-destructive-foreground"
                       : "bg-orange-500 border-orange-500 text-white shadow-[0_0_10px_rgba(249,115,22,0.3)]"
                     : "border-muted text-muted-foreground"
@@ -38,11 +41,15 @@ const Stepper = ({ steps, currentStep, status }) => {
                   <span className="text-[9px]">{index + 1}</span>
                 )}
               </div>
-              <span 
+              <span
                 className={cn(
                   "absolute -bottom-4 left-1/2 -translate-x-1/2 text-[9px] font-medium whitespace-nowrap",
-                  isCurrent 
-                    ? (isRejected ? "text-destructive" : "text-orange-500 font-semibold") 
+                  isCompleted
+                    ? "text-primary"
+                    : isCurrent
+                    ? isRejected
+                      ? "text-destructive"
+                      : "text-orange-500 font-semibold"
                     : "text-muted-foreground opacity-70"
                 )}
               >

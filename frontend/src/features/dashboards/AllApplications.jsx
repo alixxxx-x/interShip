@@ -25,7 +25,13 @@ export default function AllApplications() {
         const response = await api.get('/applications/');
         const applications = response.data.results || response.data;
 
-        const grouped = applications.reduce((acc, app) => {
+        const filteredApplications = applications.filter(app => {
+          const status = String(app.status || "").trim().toUpperCase();
+          // Filter out validated and completed to put them in the tracking tab
+          return status !== "VALIDATED" && status !== "COMPLETE" && status !== "CANCELLED" && app.is_validated_by_admin === false;
+        });
+
+        const grouped = filteredApplications.reduce((acc, app) => {
           const { offer } = app;
           if (!acc[offer]) {
             acc[offer] = [];
@@ -59,7 +65,8 @@ export default function AllApplications() {
     }
   };
 
-  const getStatusBadge = (status) => {
+  const getStatusBadge = (application) => {
+    const status = application.status;
     const variants = {
       "PENDING": "purple",
       "ACCEPTED": "info",
@@ -71,7 +78,11 @@ export default function AllApplications() {
     return variants[status] || "outline";
   };
 
-  const getStatusLabel = (status) => {
+  const getStatusLabel = (application) => {
+    const status = application.status;
+    const isAdminRejected = status === "REJECTED" && !!application.admin_rejection_date;
+    if (isAdminRejected) return "Rejected by Admin";
+
     const labels = {
       "PENDING": "Pending",
       "ACCEPTED": "Accepted",
@@ -115,8 +126,8 @@ export default function AllApplications() {
                     <TableRow key={application.id}>
                       <TableCell>{application.candidate}</TableCell>
                       <TableCell>
-                        <Badge variant={getStatusBadge(application.status)}>
-                          {getStatusLabel(application.status)}
+                        <Badge variant={getStatusBadge(application)}>
+                          {getStatusLabel(application)}
                         </Badge>
                       </TableCell>
                       <TableCell>{application.application_date}</TableCell>
@@ -161,15 +172,6 @@ export default function AllApplications() {
                               <X className="h-4 w-4" />
                             </Button>
                           </div>
-                        ) : application.status === "VALIDATED" ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-green-600"
-                            onClick={() => handleStatusChange(offer, application.id, 'COMPLETE')}
-                          >
-                            Complete
-                          </Button>
                         ) : application.status === "ACCEPTED" ? (
                           <span
                             className={application.is_validated_by_admin ? "cursor-not-allowed inline-block" : ""}
