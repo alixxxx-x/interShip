@@ -19,6 +19,7 @@ function Register() {
     const [confirmPassword, setConfirmPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [matricule, setMatricule] = useState("");
     const [role, setRole] = useState("STUDENT");
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
@@ -128,7 +129,7 @@ function Register() {
                         university_name: selectedUniv,
                         department: selectedDept
                       }
-                    : { username, name: username })
+                    : { username, name: username, matricule })
             };
             await api.post("/auth/register/", payload);
             navigate("/login");
@@ -273,18 +274,37 @@ function Register() {
                                     </div>
                                 </div>
                             ) : (
-                                <div className="space-y-1">
-                                    <label className="text-[11px] font-semibold text-black ml-1">{role === "COMPANY" ? (t("companyName") || "Company Name") : t("username")}</label>
-                                    <div className="relative">
-                                        <input
-                                            type="text"
-                                            placeholder={role === "COMPANY" ? "Name of Company" : "johndoe"}
-                                            value={username}
-                                            onChange={(e) => { setUsername(e.target.value); setErrors(prev => ({ ...prev, username: null })) }}
-                                            className="w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans"
-                                        />
+                                <div className="space-y-3">
+                                    <div className="space-y-1">
+                                        <label className="text-[11px] font-semibold text-black ml-1">{role === "COMPANY" ? (t("companyName") || "Company Name") : t("username")}</label>
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                placeholder={role === "COMPANY" ? "Name of Company" : "johndoe"}
+                                                value={username}
+                                                onChange={(e) => { setUsername(e.target.value); setErrors(prev => ({ ...prev, username: null })) }}
+                                                className="w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans"
+                                            />
+                                        </div>
+                                        {errors.username && <p className="text-[10px] text-red-500 ml-1">{errors.username}</p>}
+                                        {errors.name && <p className="text-[10px] text-red-500 ml-1">{errors.name}</p>}
                                     </div>
-                                    {errors.username && <p className="text-[10px] text-red-500 ml-1">{errors.username}</p>}
+                                    
+                                    {role === "COMPANY" && (
+                                        <div className="space-y-1">
+                                            <label className="text-[11px] font-semibold text-black ml-1">Registration Number (Optional)</label>
+                                            <div className="relative">
+                                                <input
+                                                    type="text"
+                                                    placeholder="MAT-XXXXXXXX"
+                                                    value={matricule}
+                                                    onChange={(e) => { setMatricule(e.target.value); setErrors(prev => ({ ...prev, matricule: null })) }}
+                                                    className="w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans"
+                                                />
+                                            </div>
+                                            {errors.matricule && <p className="text-[10px] text-red-500 ml-1">{errors.matricule}</p>}
+                                        </div>
+                                    )}
                                 </div>
                             )}
 

@@ -19,13 +19,12 @@ def _generate_unique_matricule():
 
 @sync_to_async
 def get_all_matriculations():
-    # We use select_related to avoid N+1 queries when fetching the company name
-    matriculations = Matriculation.objects.select_related('company').all()
+    matriculations = Matriculation.objects.all()
     
     result = []
     for m in matriculations:
         result.append({
-            "company_name": m.company.name,
+            "company_name": m.company_name or "Unknown",
             "matricule": m.matricule,
             "created_at": m.created_at.isoformat(),
             "expires_at": m.expires_at.isoformat() if m.expires_at else None
@@ -33,24 +32,26 @@ def get_all_matriculations():
     return result
 
 @sync_to_async
-def generate_matriculation_for_all_companies():
-    """Generates matriculations for companies that don't have one."""
-    companies_without_matricule = Company.objects.filter(matriculation__isnull=True)
+def generate_matricules_for_names(company_names):
+    """Generates matriculations for a list of company names."""
     generated = []
     now = timezone.now()
     expires = now + timedelta(days=90)
     
-    for company in companies_without_matricule:
-        matricule = _generate_unique_matricule()
-        m = Matriculation.objects.create(
-            company=company,
-            matricule=matricule,
-            expires_at=expires
-        )
-        generated.append({
-            "company_name": company.name,
-            "matricule": m.matricule
-        })
+    for name in company_names:
+        # Check if a matricule already exists for this exact name
+        exists = Matriculation.objects.filter(company_name__iexact=name).exists()
+        if not exists:
+            matricule = _generate_unique_matricule()
+            m = Matriculation.objects.create(
+                company_name=name,
+                matricule=matricule,
+                expires_at=expires
+            )
+            generated.append({
+                "company_name": m.company_name,
+                "matricule": m.matricule
+            })
     return generated
 
 @sync_to_async
@@ -66,8 +67,10 @@ def force_refresh_matriculations():
         m.created_at = now
         m.expires_at = expires
         m.save()
+        
+        name = m.company_name or "Unknown"
         refreshed.append({
-            "company_name": m.company.name,
+            "company_name": name,
             "matricule": m.matricule
         })
     return refreshed

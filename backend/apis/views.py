@@ -1426,3 +1426,81 @@ class FollowedCompaniesInternshipsView(generics.ListAPIView):
             company_id__in=followed_companies,
             status=InternshipOffer.Status.OPEN_FOR_APPLICATION
         ).order_by('-id')
+
+# ------------------------------------------------------------------------------------------
+# Super Admin: Pending Companies Approvals
+# ------------------------------------------------------------------------------------------
+
+import uuid
+from datetime import timedelta
+from django.utils import timezone
+
+def _generate_unique_matricule():
+    return f"MAT-{str(uuid.uuid4()).upper()[:8]}"
+
+class AdminPendingCompaniesView(generics.ListAPIView):
+    """
+    Returns a list of companies that registered without a valid matricule and are waiting for approval.
+    Accessible only to SUPER ADMIN (or users with specific role if super admin role exists, assuming ADMIN_UNIV or custom).
+    For now, we just require IsAuthenticated, but you should restrict it to your super admin role.
+    """
+    serializer_class = CompanySerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Pending companies have is_active=False
+        return Company.objects.filter(is_active=False).order_by('-date_joined')
+
+class AdminAcceptCompanyView(APIView):
+    """
+    Accepts a pending company. Generates a matricule for it, adds it to the Matriculation table, 
+    and sets the company to active.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        company = get_object_or_404(Company, pk=pk)
+        
+        if company.is_active:
+            return Response({"error": "This company is already active."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Generate a matricule for the company
+        matricule = _generate_unique_matricule()
+        expires = timezone.now() + timedelta(days=90)
+        
+        # Save it to the matriculation table
+        Matriculation.objects.create(
+            company_name=company.name,
+            matricule=matricule,
+            expires_at=expires
+        )
+        
+        # Activate the company
+        company.is_active = True
+        company.save()
+        
+        return Response({
+            "message": f"Company '{company.name}' has been accepted and activated.",
+            "matricule": matricule
+        }, status=status.HTTP_200_OK)
+
+class AdminRejectCompanyView(APIView):
+    """
+    Rejects a pending company. Deletes the company from the database.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        company = get_object_or_404(Company, pk=pk)
+        
+        if company.is_active:
+            return Response({"error": "Cannot reject an already active company."}, status=status.HTTP_400_BAD_REQUEST)
+
+        company_name = company.name
+        
+        # Deleting the company will also delete the User because of multi-table inheritance
+        company.delete()
+        
+        return Response({
+            "message": f"Company '{company_name}' has been rejected and removed from the database."
+        }, status=status.HTTP_200_OK)

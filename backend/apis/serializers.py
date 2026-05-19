@@ -14,11 +14,32 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         return token
 
     def validate(self, attrs):
-        # We allow both 'username' and 'email' in the request, mapping to the model's identifier
+        from django.db.models import Q
+        from rest_framework_simplejwt.exceptions import AuthenticationFailed
+        
+        # We allow both 'username' and 'email' in the request
+        username_or_email = attrs.get("username") or attrs.get("email")
+        
+        # Check if user exists but is inactive (pending admin approval)
+        if username_or_email:
+            user = User.objects.filter(Q(username=username_or_email) | Q(email=username_or_email)).first()
+            if user and not user.is_active:
+                if user.role == User.Role.COMPANY:
+                    raise AuthenticationFailed(
+                        "Your company registration is pending .",
+                        code="user_inactive"
+                    )
+                else:
+                    raise AuthenticationFailed(
+                        "Your account is currently inactive. Please contact support.",
+                        code="user_inactive"
+                    )
+
         username = attrs.get("username")
         if not username:
              # If frontend sends 'email', map it to 'username' for SimpleJWT's internal logic
              attrs["username"] = attrs.get("email")
+             
         return super().validate(attrs)
 
 class UserSerializer(serializers.ModelSerializer):
@@ -40,13 +61,15 @@ class UserSerializer(serializers.ModelSerializer):
     university_name = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
     email_domain = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
     departments = serializers.JSONField(required=False, write_only=True, allow_null=True)
+    matricule = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
+    
     class Meta:
         model = User
         fields = [
             'id', 'username', 'email', 'role', 'profile_picture', 'password',
             'first_name', 'last_name', 'is_active', 'university_id', 'wilaya', 'phone',
             'name', 'logo', 'description', 'location', 'website', 'company_field', 'founded_year', 'department',
-            'department_id', 'university_name', 'email_domain', 'departments'
+            'department_id', 'university_name', 'email_domain', 'departments', 'matricule'
         ]
         read_only_fields = ['id']
     def _normalize_domain(self, domain):
@@ -148,6 +171,57 @@ class UserSerializer(serializers.ModelSerializer):
                     "email_domain": "University email domain is required"
                 })
 
+        if role == User.Role.COMPANY and not self.instance:
+            company_name = attrs.get('name')
+            matricule_input = attrs.get('matricule') 
+            
+            if not company_name:
+                raise serializers.ValidationError({
+                    "name": "Company name is required for registration"
+                })
+                
+            matriculation = None
+            
+            # Check if it is already registered in the Company table
+            if Company.objects.filter(name__iexact=company_name).exists():
+                raise serializers.ValidationError({
+                    "name": f"The company '{company_name}' is already registered."
+                })
+                
+            # If they provide a matricule, validate it
+            if matricule_input:
+                matriculation = Matriculation.objects.filter(
+                    company_name__iexact=company_name
+                ).first()
+                
+                if not matriculation:
+                    raise serializers.ValidationError({
+                        "matricule": f"The company '{company_name}' is not found in the authorized matriculation list."
+                    })
+                    
+                if matriculation.matricule != matricule_input:
+                    raise serializers.ValidationError({
+                        "matricule": "Invalid Registration Number (Matricule) for this company."
+                    })
+                
+                attrs['_is_pending_company'] = False
+            else:
+                # If they DON'T provide a matricule
+                matriculation = Matriculation.objects.filter(
+                    company_name__iexact=company_name
+                ).first()
+                
+                if matriculation:
+                    raise serializers.ValidationError({
+                        "matricule": f"The company '{company_name}' is in the authorized list. You must provide the Registration Number."
+                    })
+                
+                # It's not in the list, so they are requesting to be added
+                attrs['_is_pending_company'] = True
+                    
+            if matriculation:
+                attrs['_resolved_matriculation'] = matriculation
+
         return attrs
 
     def to_representation(self, instance):
@@ -209,6 +283,11 @@ class UserSerializer(serializers.ModelSerializer):
         departments = validated_data.pop('departments', None)
 
         resolved_department = validated_data.pop('_resolved_department', None)
+        resolved_matriculation = validated_data.pop('_resolved_matriculation', None)
+        is_pending_company = validated_data.pop('_is_pending_company', False)
+        
+        # Pop matricule so it doesn't get passed to create_user
+        validated_data.pop('matricule', None)
 
         # Use provided username if available, otherwise fallback to email
         username = validated_data.pop('username', None) or validated_data.get('email')
@@ -235,10 +314,14 @@ class UserSerializer(serializers.ModelSerializer):
                 })
             validated_data['department'] = department
 
+        # If it's a pending company, set is_active=False
+        is_active = False if is_pending_company else True
+
         user = model_class.objects.create_user(
             username=username,
             password=password,
             role=role,
+            is_active=is_active,
             **validated_data
         )
 
