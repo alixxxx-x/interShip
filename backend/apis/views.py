@@ -1,5 +1,6 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status, filters
+from rest_framework import response
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -18,22 +19,17 @@ import json
 # forgot password and reset password
 import random
 from rest_framework.views import APIView
-#cv generation to pdf
-from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
-from reportlab.lib.units import cm
+# cv generation to pdf
+from reportlab.lib.styles import getSampleStyleSheet
 from io import BytesIO
-from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table as RLTable, TableStyle
-#internship agreement 
-from io import BytesIO
-from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table as RLTable, TableStyle
 # Prepare chart data with proper month names
 import calendar
+# agreement generation
+from django.template.loader import render_to_string
+from django.http import HttpResponse
 
 def _scope_applications_for_admin(queryset, user):
     if user.role == User.Role.ADMIN_DEPT:
@@ -894,7 +890,8 @@ class AdminValidateApplicationView(generics.GenericAPIView):
             }
         )
         
-        return Response({"status": "validated"})
+        serializer = ApplicationSerializer(application, context={'request': request})
+        return Response({"status": "validated", "application": serializer.data})
 
 class AdminRejectApplicationView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated, IsAdmin]
@@ -923,7 +920,8 @@ class AdminRejectApplicationView(generics.GenericAPIView):
             application=application
         )
         
-        return Response({"status": "rejected"})
+        serializer = ApplicationSerializer(application, context={'request': request})
+        return Response({"status": "rejected", "application": serializer.data})
 
 class AdminStatsView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated, IsAdmin]
@@ -997,71 +995,56 @@ class GenerateInternshipAgreementView(generics.GenericAPIView):
         elif request.user.id != application.student.id and request.user.id != application.internship.company.id:
             raise PermissionDenied("You do not have permission to view this document.")
 
-        if not application.is_validated_by_admin:
-            return Response({"error": "This internship has not been validated by the administration yet."}, status=400)
-
-        if application.status not in [Application.Status.ACCEPTED, Application.Status.VALIDATED, Application.Status.COMPLETE]:
-            return Response({"error": "Agreement is not available for this application status."}, status=400)
-
-        buffer = BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=A4)
-        styles = getSampleStyleSheet()
-        elements = []
-
-        # Title
-        elements.append(Paragraph("CONVENTION DE STAGE", styles['Title']))
-        elements.append(Spacer(1, 20))
-
-        # Participants
-        student = application.student
-        student_name = f"{student.first_name} {student.last_name}".strip()
-        if not student_name:
-            student_name = student.username or student.email
-
-        data = [
-            ["STUDENT:", student_name],
-            ["COMPANY:", application.internship.company.name],
-            ["INTERNSHIP:", application.internship.title],
-            ["DURATION:", f"{application.internship.internship_duration}"],
-            ["START DATE:", f"{application.internship.offer_start_date}"],
-            ["VALIDATED ON:", f"{application.admin_validation_date.strftime('%Y-%m-%d')}"],
-        ]
+        # Refresh application from database to get latest state
+        application.refresh_from_db()
         
-        t = RLTable(data, colWidths=[150, 300])
-        t.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
-            ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
-            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, -1), 12),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black)
-        ]))
-        elements.append(t)
-        elements.append(Spacer(1, 40))
-
-        # Terms
-        terms = """
-        This agreement defines the relationship between the student, the host company, and the university.
-        The student commits to following the company's internal rules and completing the assigned tasks.
-        The company commits to providing a learning environment and supervising the student.
-        """
-        elements.append(Paragraph("Terms and Conditions", styles['Heading2']))
-        elements.append(Paragraph(terms, styles['Normal']))
-        elements.append(Spacer(1, 60))
-
-        # Signatures
-        sig_data = [
-            ["Student Signature", "Company Signature", "University Signature"],
-            ["\n\n\n________________", "\n\n\n________________", "\n\n\n________________"]
+        is_admin_validated = application.is_validated_by_admin or application.status in [
+            Application.Status.VALIDATED,
+            Application.Status.COMPLETE,
         ]
-        sig_table = RLTable(sig_data, colWidths=[160, 160, 160])
-        elements.append(sig_table)
 
-        doc.build(elements)
-        buffer.seek(0)
+        if not is_admin_validated:
+            return Response({"error": "This internship has not been validated by the administration yet."}, status=status.HTTP_403_FORBIDDEN)
+
+        if application.status not in [Application.Status.VALIDATED, Application.Status.COMPLETE]:
+            return Response({"error": f"Agreement is not available for applications in {application.status} status. Only validated or completed applications can download agreements."}, status=status.HTTP_400_BAD_REQUEST)
         
-        return FileResponse(buffer, as_attachment=True, filename=f"Convention_{application.student.first_name}.pdf")
+        html_string = render_to_string(
+            'internships/agreement.html',
+            {
+                'student_name': 'student_name',
+                'student_email': 'student.email',
+
+                'company_name': 'application.internship.company.name',
+                'company_email': 'application.internship.company.email',
+                'company_phone': 'application.internship.company.phone',
+                'company_wilaya': 'application.internship.company.wilaya',
+
+                'internship_theme': 'application.internship.title',
+                'faculty': 'Informatique',
+                'department': 'Computer Science',
+                'start_date': 'application.internship.offer_start_date',
+                'end_date': 'application.internship.offer_end_date',
+                'university_name': 'application.student.university.name',
+                'university_supervisor': 'Mr XXX',
+                'university_phone': '036000000',
+                'university_email': 'contact@univ.dz',
+                'company_supervisor': 'Mme XXX',
+                'pedagogic_supervisor': 'Dr XXX',
+            }
+        )
+        pdf_file = HTML(
+            string=html_string
+        ).write_pdf()
+        response = HttpResponse(
+            pdf_file,
+            content_type='application/pdf'
+        )
+        response['Content-Disposition'] = (
+            f'attachment; filename="Convention_{student.first_name}.pdf"'
+        )
+        
+        return response
 
 # Certificate Generation View (only for validated and completed internships)
 class GenerateInternshipCertificateView(generics.GenericAPIView):
@@ -1077,16 +1060,19 @@ class GenerateInternshipCertificateView(generics.GenericAPIView):
         elif request.user.id != application.student.id and request.user.id != application.internship.company.id:
             raise PermissionDenied("You do not have permission to view this document.")
 
+        # Refresh application from database to get latest state
+        application.refresh_from_db()
+
         if application.status != Application.Status.COMPLETE:
             return Response(
                 {"error": "Certificate is available only after internship completion."},
-                status=400,
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         if not application.is_validated_by_admin:
             return Response(
                 {"error": "Certificate requires an admin-validated internship."},
-                status=400,
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         buffer = BytesIO()
@@ -1139,6 +1125,7 @@ class GenerateInternshipCertificateView(generics.GenericAPIView):
         )
 
 # CV Generation View 
+
 class GenerateCVView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
 

@@ -18,7 +18,7 @@ export default function AdminValidations() {
       const res = await api.get("/applications/");
       const allApps = res.data.results || res.data;
       // Show Accepted applications (waiting for admin) plus validated/completed ones
-      const filtered = allApps.filter(app => 
+      const filtered = allApps.filter(app =>
         app.status === 'ACCEPTED' ||
         app.status === 'VALIDATED' ||
         app.status === 'COMPLETE' ||
@@ -38,8 +38,16 @@ export default function AdminValidations() {
 
   const handleValidate = async (id) => {
     try {
-      await api.post(`/admin/applications/${id}/validate/`);
-      fetchValidations();
+      const response = await api.post(`/admin/applications/${id}/validate/`);
+      // Update the application in state immediately with the returned data
+      if (response.data.application) {
+        setValidations(validations.map(app => 
+          app.id === id ? response.data.application : app
+        ));
+      } else {
+        // Fallback to refetching if data not in response
+        fetchValidations();
+      }
     } catch (error) {
       console.error("Validation failed:", error);
     }
@@ -48,8 +56,16 @@ export default function AdminValidations() {
   const handleReject = async (id) => {
     if (window.confirm("Are you sure you want to reject this application?")) {
       try {
-        await api.post(`/admin/applications/${id}/reject/`);
-        fetchValidations();
+        const response = await api.post(`/admin/applications/${id}/reject/`);
+        // Update the application in state immediately with the returned data
+        if (response.data.application) {
+          setValidations(validations.map(app => 
+            app.id === id ? response.data.application : app
+          ));
+        } else {
+          // Fallback to refetching if data not in response
+          fetchValidations();
+        }
       } catch (error) {
         console.error("Rejection failed:", error);
       }
@@ -68,9 +84,17 @@ export default function AdminValidations() {
       document.body.appendChild(link);
       link.click();
       link.remove();
+      window.URL.revokeObjectURL(url);
     } catch (error) {
-      toast.error("Agreement not available or internship not yet validated.");
+      const errorMsg = error.response?.data?.error || "Agreement not available or internship not yet validated.";
+      toast.error(errorMsg);
+      console.error("Download failed:", error);
     }
+  };
+
+  const canDownloadAgreement = (app) => {
+    const statusRaw = String(app.status || "").trim().toUpperCase();
+    return app.is_validated_by_admin || statusRaw === "VALIDATED" || statusRaw === "COMPLETE";
   };
 
   if (loading) return <div className="p-6">Loading validation workflow...</div>;
@@ -165,7 +189,7 @@ export default function AdminValidations() {
                       variant="outline"
                       size="sm"
                       className="gap-1"
-                      disabled={!app.is_validated_by_admin}
+                      disabled={!canDownloadAgreement(app)}
                       onClick={() => handleDownload(app.id)}
                     >
                       <FileDown className="h-3 w-3" /> Agreement
