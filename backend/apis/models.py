@@ -165,6 +165,7 @@ class Application(models.Model):
     application_date = models.DateField(auto_now_add=True)
     is_validated_by_admin = models.BooleanField(default=False)
     admin_validation_date = models.DateTimeField(null=True, blank=True)
+    admin_rejection_date = models.DateTimeField(null=True, blank=True)
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)

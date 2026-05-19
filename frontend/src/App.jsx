@@ -26,6 +26,7 @@ import CompanyListings from "@/features/dashboards/CompanyListings";
 import AllApplications from "@/features/dashboards/AllApplications";
 import StudentDashboard from "@/features/dashboards/StudentDashboard";
 import MyApplications from "@/features/dashboards/MyApplications";
+import TrackInternships from "@/features/dashboards/TrackInternships";
 import StudentRoute from "@/routes/StudentRoute";
 import DashboardRedirect from "@/routes/DashboardRedirect";
 import MyCv from "@/features/dashboards/MyCv";
@@ -35,6 +36,7 @@ import AdminUsers from "@/features/dashboards/AdminUsers";
 import AdminCompanies from "@/features/dashboards/AdminCompanies";
 import AdminValidations from "@/features/dashboards/AdminValidations";
 import AdminAnalytics from "@/features/dashboards/AdminAnalytics";
+import CompanyTrackInternships from "@/features/dashboards/CompanyTrackInternships";
 import AdminMessages from "@/features/dashboards/AdminMessages";
 import Notifications from "@/features/dashboards/Notifications";
 import Settings from "@/pages/Settings";
@@ -148,6 +150,7 @@ function App() {
             <Route path="/companydashboard/analytics" element={<CompanyAnalytics />} />
             <Route path="/companydashboard/listings" element={<CompanyListings />} />
             <Route path="/companydashboard/applications" element={<AllApplications />} />
+            <Route path="/companydashboard/TrackInternships" element={<CompanyTrackInternships />} />
             <Route path="/companydashboard/messages" element={<CompanyMessages />} />
             <Route path="/companydashboard/notifications" element={<Notifications />} />
           </Route>
@@ -157,6 +160,7 @@ function App() {
             <Route path="/studentdashboard" element={<StudentDashboard />} />
             <Route path="/studentdashboard/cv" element={<MyCv />} />
             <Route path="/studentdashboard/MyApplications" element={<MyApplications />} />
+            <Route path="/studentdashboard/TrackInternships" element={<TrackInternships />} />
             <Route path="/studentdashboard/messages" element={<StudentMessages />} />
             <Route path="/studentdashboard/notifications" element={<Notifications />} />
           </Route>

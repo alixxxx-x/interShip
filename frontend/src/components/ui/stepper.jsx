@@ -2,14 +2,17 @@ import * as React from "react"
 import { Check, X, Clock } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-const Stepper = ({ steps, currentStep, status }) => {
+const Stepper = ({ steps, currentStep, status, rejectedByAdmin }) => {
   return (
     <div className="flex items-center w-full min-w-[140px] max-w-[200px] space-x-1.5 pb-4 pt-1">
       {steps.map((step, index) => {
         const isCompleted = index < currentStep - 1;
         const isCurrent = index === currentStep - 1;
         const isRejected = status === "REJECTED" || status === "CANCELLED";
-        const rejectedLabel = status === "CANCELLED" ? "Cancelled" : "Rejected";
+        let rejectedLabel = status === "CANCELLED" ? "Cancelled" : "Rejected";
+        if (isRejected && rejectedByAdmin) {
+          rejectedLabel = "Rejected by Admin";
+        }
 
         return (
           <React.Fragment key={step.label}>

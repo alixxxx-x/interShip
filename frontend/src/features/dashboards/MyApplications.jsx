@@ -92,7 +92,6 @@ export default function MyApplications() {
                   <TableHead className="w-[360px]">Status</TableHead>
                   <TableHead className="w-[180px]">Applied Date</TableHead>
                   <TableHead className="w-[130px] text-right">Agreement</TableHead>
-                  <TableHead className="w-[130px] text-right">Certificate</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -110,12 +109,14 @@ export default function MyApplications() {
                     statusRaw === "COMPLETE";
                   const appliedDate = application.appliedDate || application.application_date || "-";
                   const offerId = application.internship;
+                  const isAdminRejected = statusRaw === "REJECTED" && !!application.admin_rejection_date;
 
                   let currentStep = 1;
                   if (statusRaw === "ACCEPTED") currentStep = 3;
-                  if (statusRaw === "VALIDATED") currentStep = 4;
-                  if (statusRaw === "COMPLETE") currentStep = 5;
-                  if (statusRaw === "REJECTED" || statusRaw === "CANCELLED") currentStep = 2;
+                  if (statusRaw === "VALIDATED" || statusRaw === "COMPLETE" || application.is_validated_by_admin) currentStep = 4;
+                  if (statusRaw === "REJECTED" || statusRaw === "CANCELLED") {
+                    currentStep = isAdminRejected ? 3 : 2;
+                  }
 
                   return (
                     <TableRow key={application.id}>
@@ -138,11 +139,11 @@ export default function MyApplications() {
                             steps={[
                               { label: "Applied" },
                               { label: "Accepted" },
-                              { label: "Validated" },
-                              { label: "Completed" }
+                              { label: "Validated" }
                             ]}
                             currentStep={currentStep}
                             status={statusRaw}
+                            rejectedByAdmin={isAdminRejected}
                           />
                         </div>
                       </TableCell>
@@ -168,34 +169,6 @@ export default function MyApplications() {
                                 window.URL.revokeObjectURL(url);
                               } catch (err) {
                                 console.error("Failed to download agreement:", err);
-                              }
-                            }}
-                          >
-                            Download
-                          </Button>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {statusRaw === "COMPLETE" && application.is_validated_by_admin && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="gap-1 h-8 px-2"
-                            onClick={async () => {
-                              try {
-                                const res = await api.get(`/admin/applications/${application.id}/certificate/`, {
-                                  responseType: "blob",
-                                });
-                                const url = window.URL.createObjectURL(new Blob([res.data]));
-                                const link = document.createElement("a");
-                                link.href = url;
-                                link.setAttribute("download", `Certificate_${application.id}.pdf`);
-                                document.body.appendChild(link);
-                                link.click();
-                                link.remove();
-                                window.URL.revokeObjectURL(url);
-                              } catch (err) {
-                                console.error("Failed to download certificate:", err);
                               }
                             }}
                           >

@@ -44,5 +44,5 @@ student :
   email:[samy.amir@univ.dz]
   password:[password123]
 
-  email:[]
+  email:[lina.kaced@univ.dz]
   password:[password123]

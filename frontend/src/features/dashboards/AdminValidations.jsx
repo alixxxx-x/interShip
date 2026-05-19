@@ -5,12 +5,22 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FileDown, CheckCircle, Clock, XCircle } from "lucide-react";
 import api from "@/api/api";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/custom-toast";
 
 export default function AdminValidations() {
   const toast = useToast();
   const [validations, setValidations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isConfirmRejectOpen, setIsConfirmRejectOpen] = useState(false);
+  const [appToReject, setAppToReject] = useState(null);
 
   const fetchValidations = async () => {
     try {
@@ -22,7 +32,7 @@ export default function AdminValidations() {
         app.status === 'ACCEPTED' ||
         app.status === 'VALIDATED' ||
         app.status === 'COMPLETE' ||
-        (app.status === 'REJECTED' && app.is_validated_by_admin)
+        app.status === 'REJECTED' // Show rejected applications as well to allow re-validation
       );
       setValidations(filtered);
     } catch (error) {
@@ -53,22 +63,29 @@ export default function AdminValidations() {
     }
   };
 
-  const handleReject = async (id) => {
-    if (window.confirm("Are you sure you want to reject this application?")) {
-      try {
-        const response = await api.post(`/admin/applications/${id}/reject/`);
-        // Update the application in state immediately with the returned data
-        if (response.data.application) {
-          setValidations(validations.map(app => 
-            app.id === id ? response.data.application : app
-          ));
-        } else {
-          // Fallback to refetching if data not in response
-          fetchValidations();
-        }
-      } catch (error) {
-        console.error("Rejection failed:", error);
+  const confirmReject = (id) => {
+    setAppToReject(id);
+    setIsConfirmRejectOpen(true);
+  };
+
+  const handleReject = async () => {
+    if (!appToReject) return;
+    try {
+      const response = await api.post(`/admin/applications/${appToReject}/reject/`);
+      // Update the application in state immediately with the returned data
+      if (response.data.application) {
+        setValidations(validations.map(app => 
+          app.id === appToReject ? response.data.application : app
+        ));
+      } else {
+        // Fallback: just remove it from the list
+        fetchValidations();
       }
+    } catch (error) {
+      console.error("Rejection failed:", error);
+    } finally {
+      setIsConfirmRejectOpen(false);
+      setAppToReject(null);
     }
   };
 
@@ -95,6 +112,14 @@ export default function AdminValidations() {
   const canDownloadAgreement = (app) => {
     const statusRaw = String(app.status || "").trim().toUpperCase();
     return app.is_validated_by_admin || statusRaw === "VALIDATED" || statusRaw === "COMPLETE";
+  };
+
+  const isWithin48h = (dateStr) => {
+    if (!dateStr) return false;
+    const rejectionDate = new Date(dateStr);
+    const now = new Date();
+    const diffHours = (now - rejectionDate) / (1000 * 60 * 60);
+    return diffHours <= 48;
   };
 
   if (loading) return <div className="p-6">Loading validation workflow...</div>;
@@ -149,12 +174,17 @@ export default function AdminValidations() {
                         <Button
                           size="sm"
                           variant="destructive"
-                          onClick={() => handleReject(app.id)}
+                          onClick={() => confirmReject(app.id)}
                           className="bg-red-500 hover:bg-red-600 text-white"
                         >
                           Reject
                         </Button>
                       </>
+                    )}
+                    {app.status === 'REJECTED' && isWithin48h(app.admin_rejection_date) && (
+                      <Button size="sm" onClick={() => handleValidate(app.id)}>
+                        Validate
+                      </Button>
                     )}
                     <Button
                       variant="outline"
@@ -201,6 +231,24 @@ export default function AdminValidations() {
           </Table>
         </CardContent>
       </Card>
+      
+      {/* Reject Confirmation Dialog */}
+      <Dialog open={isConfirmRejectOpen} onOpenChange={setIsConfirmRejectOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject Application</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to reject this application?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setIsConfirmRejectOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleReject}>
+              Yes, Reject
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

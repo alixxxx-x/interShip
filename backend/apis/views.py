@@ -520,6 +520,18 @@ class ApplicationListView(generics.ListAPIView):
     
     def get_queryset(self):
         queryset = super().get_queryset()
+        
+        from django.utils import timezone
+        # Auto-complete validated internships whose end date has passed
+        completed_apps = queryset.filter(
+            status=Application.Status.VALIDATED,
+            internship__offer_end_date__lt=timezone.now().date()
+        )
+        if completed_apps.exists():
+            completed_apps.update(status=Application.Status.COMPLETE)
+            
+        # Re-fetch after update
+        queryset = super().get_queryset()
         user = self.request.user
         
         if user.role in [User.Role.ADMIN_DEPT, User.Role.ADMIN_UNIV]:
@@ -862,9 +874,18 @@ class AdminValidateApplicationView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated, IsAdmin]
 
     def post(self, request, pk):
-        application = get_object_or_404(Application, pk=pk, status=Application.Status.ACCEPTED)
+        application = get_object_or_404(Application, pk=pk, status__in=[Application.Status.ACCEPTED, Application.Status.REJECTED])
         if not _scope_applications_for_admin(Application.objects.filter(pk=application.pk), request.user).exists():
             raise PermissionDenied("You do not have permission to validate this application.")
+        # Check if it can be validated
+        if application.status not in [Application.Status.ACCEPTED, Application.Status.REJECTED]:
+            raise PermissionDenied("Invalid status for validation.")
+            
+        if application.status == Application.Status.REJECTED:
+            # Check 48h rule
+            if not application.admin_rejection_date or (timezone.now() - application.admin_rejection_date).total_seconds() > 48 * 3600:
+                return Response({"error": "Cannot validate a rejected application after 48 hours."}, status=status.HTTP_400_BAD_REQUEST)
+
         application.status = Application.Status.VALIDATED
         application.is_validated_by_admin = True
         application.admin_validation_date = timezone.now()
@@ -902,6 +923,7 @@ class AdminRejectApplicationView(generics.GenericAPIView):
             raise PermissionDenied("You do not have permission to reject this application.")
         application.status = Application.Status.REJECTED
         application.is_validated_by_admin = False
+        application.admin_rejection_date = timezone.now()
         application.save()
         
         # Notify student
@@ -1051,6 +1073,7 @@ class GenerateInternshipAgreementView(generics.GenericAPIView):
                 'internship_theme': application.internship.title,
                 'start_date': application.internship.offer_start_date,
                 'end_date': application.internship.offer_end_date,
+                'duration': application.internship.duration,
 
                 'university_name': application.student.department.university.name,
             }
@@ -1111,54 +1134,50 @@ class GenerateInternshipCertificateView(generics.GenericAPIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        buffer = BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=A4)
-        styles = getSampleStyleSheet()
-        elements = []
-
+        # =========================
+        # HTML TEMPLATE CONTEXT
+        # =========================
         student = application.student
         student_name = f"{student.first_name} {student.last_name}".strip() or student.username or student.email
 
-        elements.append(Paragraph("INTERNSHIP COMPLETION CERTIFICATE", styles["Title"]))
-        elements.append(Spacer(1, 24))
-        elements.append(
-            Paragraph(
-                f"This certifies that <b>{student_name}</b> has successfully completed the internship at "
-                f"<b>{application.internship.company.name}</b> for the position "
-                f"<b>{application.internship.title}</b>.",
-                styles["Normal"],
-            )
+        html_string = render_to_string(
+            'internship_certificate.html', 
+            {
+                'student_name': student_name,
+                'company_name': application.internship.company.name,
+                'internship_title': application.internship.title,
+                'start_date': application.internship.offer_start_date,
+                'end_date': application.internship.offer_end_date,
+                'university_name': application.student.department.university.name,
+                'certificate_date': datetime.now().date(),
+            }
         )
-        elements.append(Spacer(1, 12))
-        elements.append(
-            Paragraph(
-                f"Internship period: {application.internship.offer_start_date} to {application.internship.offer_end_date}",
-                styles["Normal"],
-            )
-        )
-        elements.append(
-            Paragraph(
-                f"Validated on: {application.admin_validation_date.strftime('%Y-%m-%d') if application.admin_validation_date else '-'}",
-                styles["Normal"],
-            )
-        )
-        elements.append(Spacer(1, 48))
 
-        sig_data = [
-            ["Company Signature", "University Signature"],
-            ["\n\n\n________________", "\n\n\n________________"],
-        ]
-        sig_table = RLTable(sig_data, colWidths=[240, 240])
-        elements.append(sig_table)
+        # =========================
+        # PDF GENERATION (xhtml2pdf)
+        # =========================
+        result = io.BytesIO()
 
-        doc.build(elements)
-        buffer.seek(0)
-
-        return FileResponse(
-            buffer,
-            as_attachment=True,
-            filename=f"Certificate_{application.student.first_name}.pdf",
+        pdf = pisa.pisaDocument(
+            io.BytesIO(html_string.encode("UTF-8")),
+            result
         )
+
+        if pdf.err:
+            return Response(
+                {"error": "PDF generation failed"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        # =========================
+        # RESPONSE
+        # =========================
+        response = HttpResponse(result.getvalue(), content_type='application/pdf')
+        response['Content-Disposition'] = (
+            f'attachment; filename="Certificate_{application.student.first_name}.pdf"'
+        )
+
+        return response
 
 # CV Generation View 
 

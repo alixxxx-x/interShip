@@ -1,5 +1,4 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 
 <html xmlns="http://www.w3.org/1999/xhtml" lang="fr">
 
@@ -7,7 +6,6 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 
     <style type="text/css">
-
         @page {
             size: A4;
             margin: 20px;
@@ -137,188 +135,196 @@
         .clear {
             clear: both;
         }
-
     </style>
 
 </head>
 
 <body>
 
-<!-- PAGE 1 -->
-<div class="article">
-
-    <!-- HEADER (kept exactly as your version) -->
-    <div class="header">
-        <div class="header-left">
-            <img src="https://upload.wikimedia.org/wikipedia/fr/5/59/Logo-univ-setif-1.png"
-                alt="logo"
-                style="width:80px;" 
-            />
-        </div>
-        <div class="header-right">
-            Année Universitaire {{ academic_year }}
-        </div>
-        <div class="clear"></div>
-    </div>
-
-    <p class="title">
-        Convention de Stage
-    </p>
-
-    <p class="entre">
-        ENTRE
-    </p>
-
-    <!-- BOXES -->
-    <table style="width:100%; margin-bottom:20px; border-collapse: collapse;">
-        <tr>
-            <td style="width:42%;" class="box">
-
-                <div class="box-title">
-                    L'Université {{ university_name }}<br/>
-                </div>
-
-                <div>
-                    Représentée par :<br/>
-                    {{ university_supervisor }}<br/>
-                    Tél: {{ university_phone }}<br/>
-                    Mail : <a href="mailto:{{ university_email }}">{{ university_email }}</a>
-                </div>
-
-            </td>
-
-            <td style="width:16%; text-align:center; font-size:36px; font-weight:bold; vertical-align: middle;">
-                ET
-            </td>
-
-            <td style="width:42%;" class="box">
-
-                <div class="box-title">
-                    L'entreprise {{ company_name }}
-                </div>
-
-                <div style="text-align: center;">
-                    Tél : {{ company_phone }}<br/>
-                    Mail : <a href="mailto:{{ university_email }}">{{ university_email }}</a>
-                </div>
-
-            </td>
-
-        </tr>
-    </table>
-
-    <!-- STUDENT SECTION - All in ONE box -->
+    <!-- PAGE 1 -->
     <div class="article">
 
-        <!-- Title inside the same box -->
-        <div class="student-title">
-            Données Relatives à l'Étudiant
+        <!-- HEADER (kept exactly as your version) -->
+        <div class="header">
+            <div class="header-left">
+                <img src="https://upload.wikimedia.org/wikipedia/fr/5/59/Logo-univ-setif-1.png" alt="logo"
+                    style="width:80px;" />
+            </div>
+            <div class="header-right">
+                Année Universitaire {{ academic_year }}
+            </div>
+            <div class="clear"></div>
         </div>
 
-        <!-- All fields in one container, NO individual borders -->
-        <div class="student-fields">
-            <div class="student-line">Nom et Prénom : {{ student_name }}</div>
-            <div class="student-line">Faculté/Institut : {{ faculty }}</div>
-            <div class="student-line">Département : {{ department }}</div>
-            <div class="student-line">Tél : {{ student_phone }}</div>
-            <div class="student-line">Email : {{ student_email }}</div>
-            <div class="student-line">Thème du stage : {{ internship_theme }}</div>
-            <div class="student-line">Durée du stage : {{ duration }}</div>
-            <div class="student-line">Date de début du stage : {{ start_date }} </div>
-            <div class="student-line">Date de fin de stage : {{ end_date }}</div>
-        </div>
+        <p class="title">
+            Convention de Stage
+        </p>
 
-        <!-- SIGNATURES INSIDE THE SAME BOX -->
-        <table class="signatures-table">
+        <p class="entre">
+            ENTRE
+        </p>
+
+        <!-- BOXES -->
+        <table style="width:100%; margin-bottom:20px; border-collapse: collapse;">
             <tr>
-                <td>Chef de Département</td>
-                <td>Le Stagiaire</td>
-                <td>Pour l'Entreprise</td>
+                <td style="width:42%;" class="box">
+
+                    <div class="box-title">
+                        L'Université {{ university_name }}<br />
+                    </div>
+
+                    <div>
+                        Représentée par : {{ university_supervisor }}<br />
+                        Tél: {{ university_phone }}<br />
+                        Mail : <a href="mailto:{{ university_email }}">{{ university_email }}</a>
+                    </div>
+
+                </td>
+
+                <td style="width:16%; text-align:center; font-size:36px; font-weight:bold; vertical-align: middle;">
+                    ET
+                </td>
+
+                <td style="width:42%;" class="box">
+
+                    <div class="box-title">
+                        L'entreprise {{ company_name }}
+                    </div>
+
+                    <div>
+                        Tél : {{ company_phone }}<br />
+                        Mail : <a href="mailto:{{ company_email }}">{{ company_email }}</a>
+                    </div>
+
+                </td>
+
             </tr>
         </table>
 
-    </div>
+        <!-- STUDENT SECTION - All in ONE box -->
+        <div class="article">
 
-    <!-- FOOTER -->
-    <div class="footer-line">
-        <div class="footer-left">
-            Fait à {{ university_wilaya }}, le : <span class="dotted" style="min-width: 100px;">&nbsp;</span>
+            <!-- Title inside the same box -->
+            <div class="student-title">
+                Données Relatives à l'Étudiant
+            </div>
+
+            <!-- All fields in one container, NO individual borders -->
+            <div class="student-fields">
+                <div class="student-line">Nom et Prénom : {{ student_name }}</div>
+                <div class="student-line">Faculté/Institut : {{ faculty }}</div>
+                <div class="student-line">Département : {{ department }}</div>
+                <div class="student-line">Tél : {{ student_phone }}</div>
+                <div class="student-line">Email : {{ student_email }}</div>
+                <div class="student-line">Thème du stage : {{ internship_theme }}</div>
+                <div class="student-line">Durée du stage : {{ duration }}</div>
+                <div class="student-line">Date de début du stage : {{ start_date }} </div>
+                <div class="student-line">Date de fin de stage : {{ end_date }}</div>
+            </div>
+
+            <!-- SIGNATURES INSIDE THE SAME BOX -->
+            <table class="signatures-table">
+                <tr>
+                    <td>Chef de Département</td>
+                    <td>Le Stagiaire</td>
+                    <td>Pour l'Entreprise</td>
+                </tr>
+            </table>
+
         </div>
-        <div class="clear"></div>
+
+        <!-- FOOTER -->
+        <div class="footer-line">
+            <div class="footer-left">
+                Fait à {{ university_wilaya }}, le : <span class="dotted" style="min-width: 100px;">&nbsp;</span>
+            </div>
+            <div class="clear"></div>
+        </div>
+
     </div>
 
-</div>
+    <!-- PAGE 2 -->
+    <div style="page-break-before: always;">
 
-<!-- PAGE 2 -->
-<div style="page-break-before: always;">
+        <div class="article">
+            <div class="article-title">Article 1 : Objet</div>
+            La présente convention a pour objet de définir les conditions de stage de l'étudiant(e) susnommé(e) au sein
+            de l'entreprise {{ company_name }}.
+        </div>
 
-    <div class="article">
-        <div class="article-title">Article 1 : Objet</div>
-        La présente convention a pour objet de définir les conditions de stage de l'étudiant(e) susnommé(e) au sein de l'entreprise {{ company_name }}.
+        <div class="article">
+            <div class="article-title">Article 2 : But du Stage</div>
+            Le stage permet l'application pratique des connaissances acquises au cours de la formation universitaire. Il
+            s'inscrit dans le cadre du projet pédagogique de l'université.
+        </div>
+
+        <div class="article">
+            <div class="article-title">Article 3 : Statut de l'étudiant</div>
+            L'étudiant conserve son statut universitaire durant toute la période du stage. Il reste sous la
+            responsabilité de l'université pour les aspects pédagogiques et sous la responsabilité de l'entreprise pour
+            les aspects professionnels.
+        </div>
+
+        <div class="article">
+            <div class="article-title">Article 4 : Discipline</div>
+            L'étudiant respecte le règlement intérieur de l'entreprise, notamment en matière de discipline, de sécurité
+            et de confidentialité. Toute faute grave peut entraîner la rupture du stage.
+        </div>
+
+        <div class="article">
+            <div class="article-title">Article 5 : Confidentialité</div>
+            L'étudiant s'engage à respecter la confidentialité des informations auxquelles il aura accès durant son
+            stage. Cette obligation persiste après la fin du stage.
+        </div>
+
+        <div class="article">
+            <div class="article-title">Article 6 : Durée et Horaires</div>
+            La durée du stage est fixée à {{ duration }}, du {{ start_date }} au {{ end_date }}. Les horaires de travail
+            sont ceux en vigueur dans l'entreprise.
+        </div>
+
+        <div class="article">
+            <div class="article-title">Article 7 : Assurance</div>
+            L'étudiant est couvert par la sécurité sociale étudiante. L'entreprise s'engage à souscrire une assurance
+            responsabilité civile couvrant les dommages causés par l'étudiant durant son stage.
+        </div>
+
+        <div class="article">
+            <div class="article-title">Article 8 : Gratification</div>
+            En contrepartie du stage, l'étudiant percevra une gratification dont le montant est fixé conformément à la
+            législation en vigueur.
+        </div>
+
+        <div class="article">
+            <div class="article-title">Article 9 : Évaluation</div>
+            À l'issue du stage, l'étudiant remettra un rapport de stage. Une évaluation sera effectuée conjointement par
+            l'enseignant responsable et le maître de stage dans l'entreprise.
+        </div>
+
+        <div class="article">
+            <div class="article-title">Article 10 : Résiliation</div>
+            La présente convention peut être résiliée à tout moment par l'une des trois parties (université, entreprise,
+            étudiant) moyennant un préavis écrit de huit jours.
+        </div>
+
+        <div style="margin-top: 60px; text-align: center;">
+            <table style="width: 100%;">
+                <tr>
+                    <td style="width: 33%; text-align: center;">
+                        <strong>Pour l'Université</strong><br /><br /><br /><br />
+                    </td>
+                    <td style="width: 33%; text-align: center;">
+                        <strong>L'Étudiant(e)</strong><br /><br /><br /><br />
+                    </td>
+                    <td style="width: 33%; text-align: center;">
+                        <strong>Pour l'Entreprise</strong><br /><br /><br /><br />
+                    </td>
+                </tr>
+            </table>
+        </div>
+
     </div>
-
-    <div class="article">
-        <div class="article-title">Article 2 : But du Stage</div>
-        Le stage permet l'application pratique des connaissances acquises au cours de la formation universitaire. Il s'inscrit dans le cadre du projet pédagogique de l'université.
-    </div>
-
-    <div class="article">
-        <div class="article-title">Article 3 : Statut de l'étudiant</div>
-        L'étudiant conserve son statut universitaire durant toute la période du stage. Il reste sous la responsabilité de l'université pour les aspects pédagogiques et sous la responsabilité de l'entreprise pour les aspects professionnels.
-    </div>
-
-    <div class="article">
-        <div class="article-title">Article 4 : Discipline</div>
-        L'étudiant respecte le règlement intérieur de l'entreprise, notamment en matière de discipline, de sécurité et de confidentialité. Toute faute grave peut entraîner la rupture du stage.
-    </div>
-
-    <div class="article">
-        <div class="article-title">Article 5 : Confidentialité</div>
-        L'étudiant s'engage à respecter la confidentialité des informations auxquelles il aura accès durant son stage. Cette obligation persiste après la fin du stage.
-    </div>
-
-    <div class="article">
-        <div class="article-title">Article 6 : Durée et Horaires</div>
-        La durée du stage est fixée à {{ duration }}, du {{ start_date }} au {{ end_date }}. Les horaires de travail sont ceux en vigueur dans l'entreprise.
-    </div>
-
-    <div class="article">
-        <div class="article-title">Article 7 : Assurance</div>
-        L'étudiant est couvert par la sécurité sociale étudiante. L'entreprise s'engage à souscrire une assurance responsabilité civile couvrant les dommages causés par l'étudiant durant son stage.
-    </div>
-
-    <div class="article">
-        <div class="article-title">Article 8 : Gratification</div>
-        En contrepartie du stage, l'étudiant percevra une gratification dont le montant est fixé conformément à la législation en vigueur.
-    </div>
-
-    <div class="article">
-        <div class="article-title">Article 9 : Évaluation</div>
-        À l'issue du stage, l'étudiant remettra un rapport de stage. Une évaluation sera effectuée conjointement par l'enseignant responsable et le maître de stage dans l'entreprise.
-    </div>
-
-    <div class="article">
-        <div class="article-title">Article 10 : Résiliation</div>
-        La présente convention peut être résiliée à tout moment par l'une des trois parties (université, entreprise, étudiant) moyennant un préavis écrit de huit jours.
-    </div>
-
-    <div style="margin-top: 60px; text-align: center;">
-        <table style="width: 100%;">
-            <tr>
-                <td style="width: 33%; text-align: center;">
-                    <strong>Pour l'Université</strong><br/><br/><br/><br/>
-                </td>
-                <td style="width: 33%; text-align: center;">
-                    <strong>L'Étudiant(e)</strong><br/><br/><br/><br/>
-                </td>
-                <td style="width: 33%; text-align: center;">
-                    <strong>Pour l'Entreprise</strong><br/><br/><br/><br/>
-                </td>
-            </tr>
-        </table>
-    </div>
-
-</div>
 
 </body>
+
 </html>

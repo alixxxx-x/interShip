@@ -21,6 +21,14 @@ import api from '@/api/api';
 import { ACCESS_TOKEN } from '@/constants';
 import { useLanguage } from '@/components/language-provider';
 import { useToast } from "@/components/ui/custom-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function InternshipDetails() {
   const { t } = useLanguage();
@@ -38,6 +46,7 @@ export default function InternshipDetails() {
   const [isLiked, setIsLiked] = useState(false);
   const [userRole, setUserRole] = useState(null);
   const [hasCV, setHasCV] = useState(false);
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchDetails = async () => {
@@ -152,7 +161,6 @@ export default function InternshipDetails() {
   };
 
   const handleCancel = async () => {
-    if (!window.confirm("Are you sure?")) return;
     try {
       setIsApplying(true);
       await api.delete(`/applications/cancel/${id}/`);
@@ -163,6 +171,7 @@ export default function InternshipDetails() {
       toast.error("Failed to cancel.");
     } finally {
       setIsApplying(false);
+      setIsCancelDialogOpen(false);
     }
   };
 
@@ -371,7 +380,7 @@ export default function InternshipDetails() {
                       <Button
                         variant="outline"
                         className="w-full border-red-200 text-red-500 hover:bg-red-50 hover:text-red-600 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/30"
-                        onClick={handleCancel}
+                        onClick={() => setIsCancelDialogOpen(true)}
                         disabled={isApplying}
                       >
                         {isApplying ? t("wait") : t("cancelApplication")}
@@ -441,6 +450,24 @@ export default function InternshipDetails() {
 
         </div>
       </div>
+
+      {/* Cancel Confirmation Dialog */}
+      <Dialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel Application</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to cancel your application? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setIsCancelDialogOpen(false)}>Keep it</Button>
+            <Button variant="destructive" onClick={handleCancel} disabled={isApplying}>
+              {isApplying ? "Cancelling..." : "Yes, Cancel"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
