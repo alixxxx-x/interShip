@@ -981,69 +981,105 @@ class AdminStatsView(generics.GenericAPIView):
         })
 
 # Document generation views
+import io
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from django.template.loader import render_to_string
+from rest_framework import status, generics
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from xhtml2pdf import pisa
 
 class GenerateInternshipAgreementView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk):
         application = get_object_or_404(Application, pk=pk)
-        
-        # Check permissions: Student, Company, or Admin
-        if request.user.role in [User.Role.ADMIN_DEPT, User.Role.ADMIN_UNIV]:
-            if not _scope_applications_for_admin(Application.objects.filter(pk=application.pk), request.user).exists():
-                raise PermissionDenied("You do not have permission to view this document.")
-        elif request.user.id != application.student.id and request.user.id != application.internship.company.id:
-            raise PermissionDenied("You do not have permission to view this document.")
 
-        # Refresh application from database to get latest state
+        # =========================
+        # PERMISSIONS CHECK
+        # =========================
+        if request.user.role in [User.Role.ADMIN_DEPT, User.Role.ADMIN_UNIV]:
+            if not _scope_applications_for_admin(
+                Application.objects.filter(pk=application.pk),
+                request.user
+            ).exists():
+                raise PermissionDenied("No permission to view this document.")
+
+        elif request.user.id != application.student.id and request.user.id != application.internship.company.id:
+            raise PermissionDenied("No permission to view this document.")
+
         application.refresh_from_db()
-        
-        is_admin_validated = application.is_validated_by_admin or application.status in [
-            Application.Status.VALIDATED,
-            Application.Status.COMPLETE,
-        ]
+
+        is_admin_validated = (
+            application.is_validated_by_admin or
+            application.status in [
+                Application.Status.VALIDATED,
+                Application.Status.COMPLETE
+            ]
+        )
 
         if not is_admin_validated:
-            return Response({"error": "This internship has not been validated by the administration yet."}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"error": "Not validated by administration yet."},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
-        if application.status not in [Application.Status.VALIDATED, Application.Status.COMPLETE]:
-            return Response({"error": f"Agreement is not available for applications in {application.status} status. Only validated or completed applications can download agreements."}, status=status.HTTP_400_BAD_REQUEST)
-        
+        if application.status not in [
+            Application.Status.VALIDATED,
+            Application.Status.COMPLETE
+        ]:
+            return Response(
+                {"error": f"Invalid status: {application.status}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # =========================
+        # HTML TEMPLATE CONTEXT
+        # =========================
         html_string = render_to_string(
-            'internships/agreement.html',
+            'internship_agreement.html', 
             {
-                'student_name': 'student_name',
-                'student_email': 'student.email',
+                'student_name': application.student.first_name,
+                'student_email': application.student.email,
 
-                'company_name': 'application.internship.company.name',
-                'company_email': 'application.internship.company.email',
-                'company_phone': 'application.internship.company.phone',
-                'company_wilaya': 'application.internship.company.wilaya',
+                'company_name': application.internship.company.name,
+                'company_email': application.internship.company.email,
+                'company_phone': '0555555555',
+                'company_wilaya': 'wilaya',
 
-                'internship_theme': 'application.internship.title',
-                'faculty': 'Informatique',
-                'department': 'Computer Science',
-                'start_date': 'application.internship.offer_start_date',
-                'end_date': 'application.internship.offer_end_date',
-                'university_name': 'application.student.university.name',
-                'university_supervisor': 'Mr XXX',
-                'university_phone': '036000000',
-                'university_email': 'contact@univ.dz',
-                'company_supervisor': 'Mme XXX',
-                'pedagogic_supervisor': 'Dr XXX',
+                'internship_theme': application.internship.title,
+                'start_date': application.internship.offer_start_date,
+                'end_date': application.internship.offer_end_date,
+
+                'university_name': application.student.department.university.name,
             }
         )
-        pdf_file = HTML(
-            string=html_string
-        ).write_pdf()
-        response = HttpResponse(
-            pdf_file,
-            content_type='application/pdf'
+
+        # =========================
+        # PDF GENERATION (xhtml2pdf)
+        # =========================
+        result = io.BytesIO()
+
+        pdf = pisa.pisaDocument(
+            io.BytesIO(html_string.encode("UTF-8")),
+            result
         )
+
+        if pdf.err:
+            return Response(
+                {"error": "PDF generation failed"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        # =========================
+        # RESPONSE
+        # =========================
+        response = HttpResponse(result.getvalue(), content_type='application/pdf')
         response['Content-Disposition'] = (
-            f'attachment; filename="Convention_{student.first_name}.pdf"'
+            f'attachment; filename="Convention_{application.student.first_name}.pdf"'
         )
-        
+
         return response
 
 # Certificate Generation View (only for validated and completed internships)
