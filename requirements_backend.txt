@@ -11,4 +11,3 @@ psycopg2-binary
 pytz
 python-dotenv
 Pillow
-weasyprint
