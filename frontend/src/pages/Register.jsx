@@ -8,6 +8,24 @@ import premiumPhoto from "@/assets/premium_photo-1725534270555-84e4b39e6b90.avif
 import { useLanguage } from "@/components/language-provider";
 import { useToast } from "@/components/ui/custom-toast";
 
+const fallbackUniversities = [
+    { id: 6, name: "Université Abdelhamid Mehri - Constantine 2", email_domain: "@univ-constantine2.dz" },
+    { id: 7, name: "Université des Frères Mentouri - Constantine 1", email_domain: "@univ-constantine1.dz" }
+];
+
+const fallbackDepartments = {
+    6: [
+        { id: 101, name: "Informatique (NTIC)" },
+        { id: 102, name: "Mathématiques" },
+        { id: 103, name: "Économie" }
+    ],
+    7: [
+        { id: 201, name: "Sciences de la Nature et de la Vie" },
+        { id: 202, name: "Droit" },
+        { id: 203, name: "Lettres et Langues" }
+    ]
+};
+
 function Register() {
     const { t } = useLanguage();
     const toast = useToast();
@@ -24,7 +42,7 @@ function Register() {
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
     const navigate = useNavigate();
-    
+
     const memoizedThreads = useMemo(() => (
         <Threads
             color={[0.06, 0.27, 0.54]}
@@ -47,56 +65,41 @@ function Register() {
     };
 
     useEffect(() => {
-        const fallbackUniversities = [
-            {
-                id: 6,
-                university_name: "Université Abdelhamid Mehri - Constantine 2",
-                departments: ["Informatique (NTIC)", "Mathématiques", "Économie"]
-            },
-            {
-                id: 7,
-                university_name: "Université des Frères Mentouri - Constantine 1",
-                departments: ["Sciences de la Nature et de la Vie", "Droit", "Lettres et Langues"]
-            }
-        ];
-
-        const fetchUniversities = async () => {
-            try {
-                const url = `${import.meta.env.VITE_API_URL}universities/`.replace(/([^:]\/)\/+/g, "$1");
-                const res = await axios.get(url);
-                const data = res.data.results || res.data;
-                if (data && data.length > 0) {
-                    setUniversities(data);
+        api.get("/universities/")
+            .then((res) => {
+                if (res.data && res.data.length > 0) {
+                    setUniversities(res.data);
                 } else {
+                    console.log("Empty university list from API, using fallback.");
                     setUniversities(fallbackUniversities);
                 }
-            } catch (error) {
-                console.error("Failed to fetch universities, using database fallback:", error);
+            })
+            .catch((err) => {
+                console.error("Failed to fetch universities, using fallback:", err);
                 setUniversities(fallbackUniversities);
-            }
-        };
-        fetchUniversities();
+            });
     }, []);
 
-    const handleUnivChange = async (univName) => {
-        setSelectedUniv(univName);
+    const handleUnivChange = (univId) => {
+        setSelectedUniv(univId);
         setErrors(prev => ({ ...prev, university: null }));
-        const univ = universities.find(u => (u.name || u.university_name) === univName);
-        if (univ) {
-            setSelectedUnivDomain(normalizeDomain(univ.email_domain || ""));
-            if (univ.id) {
-                try {
-                    const url = `${import.meta.env.VITE_API_URL}departments/?university_id=${univ.id}`.replace(/([^:]\/)\/+/g, "$1");
-                    const res = await axios.get(url);
-                    const data = res.data.results || res.data;
-                    setDepartments(data);
-                } catch (error) {
-                    console.error("Failed to fetch departments", error);
-                    setDepartments(univ.departments || []);
-                }
-            } else {
-                setDepartments(univ.departments || []);
-            }
+        
+        if (univId) {
+            api.get(`/departments/?university_id=${univId}`)
+                .then((res) => {
+                    if (res.data && res.data.length > 0) {
+                        setDepartments(res.data);
+                    } else {
+                        console.log("Empty department list from API, using fallback.");
+                        setDepartments(fallbackDepartments[univId] || []);
+                    }
+                })
+                .catch((err) => {
+                    console.error("Failed to fetch departments, using fallback:", err);
+                    setDepartments(fallbackDepartments[univId] || []);
+                });
+            const univ = [...universities, ...fallbackUniversities].find(u => String(u.id) === String(univId));
+            setSelectedUnivDomain(normalizeDomain(univ?.email_domain || ""));
         } else {
             setDepartments([]);
             setSelectedUnivDomain("");
@@ -144,12 +147,11 @@ function Register() {
                 password,
                 role,
                 ...(role === "STUDENT"
-                    ? { 
-                        first_name: firstName, 
+                    ? {
+                        first_name: firstName,
                         last_name: lastName,
-                        university_name: selectedUniv,
-                        department: selectedDept
-                      }
+                        department_id: Number(selectedDept)
+                    }
                     : { username, name: username, matricule })
             };
             await api.post("/auth/register/", payload);
@@ -263,41 +265,49 @@ function Register() {
                                             {errors.lastName && <p className="text-[10px] text-red-500 ml-1">{errors.lastName}</p>}
                                         </div>
                                     </div>
+
                                     <div className="space-y-1">
-                                        <label className="text-[11px] font-semibold text-black ml-1">University</label>
+                                        <label className="text-[11px] font-semibold text-black ml-1">{t("university") || "University"}</label>
                                         <div className="relative">
                                             <select
                                                 value={selectedUniv}
                                                 onChange={(e) => handleUnivChange(e.target.value)}
-                                                className="w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 bg-white transition-all text-[13px] font-medium text-slate-700 font-sans appearance-none"
+                                                className={`w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans cursor-pointer appearance-none pr-10 ${selectedUniv ? "text-black" : "text-slate-400"}`}
+                                                style={{
+                                                    backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238e8e93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                                                    backgroundRepeat: "no-repeat",
+                                                    backgroundPosition: "right 14px center",
+                                                    backgroundSize: "14px",
+                                                }}
                                             >
-                                                <option value="">Select your university</option>
-                                                {universities.map(u => (
-                                                    <option key={u.id} value={u.name || u.university_name}>{u.name || u.university_name}</option>
+                                                <option value="" disabled className="text-slate-400">Select your university</option>
+                                                {universities.map((u) => (
+                                                    <option key={u.id} value={u.id} className="text-black">{u.name}</option>
                                                 ))}
                                             </select>
-                                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                                <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                                            </div>
                                         </div>
                                         {errors.university && <p className="text-[10px] text-red-500 ml-1">{errors.university}</p>}
                                     </div>
+
                                     <div className="space-y-1">
+                                        <label className="text-[11px] font-semibold text-black ml-1">{t("department") || "Department"}</label>
                                         <div className="relative">
                                             <select
                                                 value={selectedDept}
                                                 onChange={(e) => { setSelectedDept(e.target.value); setErrors(prev => ({ ...prev, department: null })) }}
-                                                className="w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 bg-white transition-all text-[13px] font-medium text-slate-700 font-sans appearance-none"
-                                                disabled={!selectedUniv}
+                                                className={`w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans cursor-pointer appearance-none pr-10 ${selectedDept ? "text-black" : "text-slate-400"}`}
+                                                style={{
+                                                    backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238e8e93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                                                    backgroundRepeat: "no-repeat",
+                                                    backgroundPosition: "right 14px center",
+                                                    backgroundSize: "14px",
+                                                }}
                                             >
-                                                <option value="">Select your department</option>
-                                                {departments.map((d, i) => (
-                                                    <option key={d.id || i} value={d.name || d}>{d.name || d}</option>
+                                                <option value="" disabled className="text-slate-400">Select your department</option>
+                                                {departments.map((d) => (
+                                                    <option key={d.id} value={d.id} className="text-black">{d.name}</option>
                                                 ))}
                                             </select>
-                                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                                <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                                            </div>
                                         </div>
                                         {errors.department && <p className="text-[10px] text-red-500 ml-1">{errors.department}</p>}
                                     </div>
@@ -314,7 +324,7 @@ function Register() {
                                             className="w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans"
                                         />
                                     </div>
-                                    
+
                                     {role === "COMPANY" && (
                                         <div className="space-y-1">
                                             <label className="text-[11px] font-semibold text-black ml-1">Registration Number (Optional)</label>
