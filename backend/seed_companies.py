@@ -11,16 +11,9 @@ def seed_companies():
     print("Starting company seeding...")
 
     companies_data = [
-        {"name": "Sonatrach", "field": "Energy & Oil", "location": "Algiers"},
         {"name": "Djezzy", "field": "Telecommunications", "location": "Algiers"},
         {"name": "Ooredoo", "field": "Telecommunications", "location": "Algiers"},
-        {"name": "Mobilis", "field": "Telecommunications", "location": "Algiers"},
-        {"name": "Cevital", "field": "Agro-industry", "location": "Bejaia"},
-        {"name": "Sonelgaz", "field": "Energy & Electricity", "location": "Algiers"},
-        {"name": "Yassir", "field": "Technology & Transport", "location": "Algiers"},
-        {"name": "Heetch", "field": "Technology & Transport", "location": "Algiers"},
-        {"name": "Condor", "field": "Electronics", "location": "Bordj Bou Arreridj"},
-        {"name": "Sidi-Ali", "field": "Food Industry", "location": "Algiers"},
+        {"name": "Google", "field": "Technology & Internet", "location": "Algiers"},
     ]
 
     for data in companies_data:

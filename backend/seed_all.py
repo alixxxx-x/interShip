@@ -90,11 +90,9 @@ def seed_database():
 
     # 3. Create Companies
     companies_data = [
-        {"name": "Sonatrach", "field": "Energy & Oil", "location": "Algiers", "email": "sonatrach@gmail.com"},
         {"name": "Djezzy", "field": "Telecommunications", "location": "Algiers", "email": "djezzy@gmail.com"},
         {"name": "Ooredoo", "field": "Telecommunications", "location": "Algiers", "email": "ooredoo@gmail.com"},
-        {"name": "Mobilis", "field": "Telecommunications", "location": "Algiers", "email": "mobilis@gmail.com"},
-        {"name": "Cevital", "field": "Agro-industry", "location": "Bejaia", "email": "cevital@gmail.com"},
+        {"name": "Google", "field": "Technology & Internet", "location": "Algiers", "email": "google@gmail.com"},
     ]
 
     companies = []

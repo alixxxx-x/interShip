@@ -83,7 +83,7 @@ function Register() {
     const handleUnivChange = (univId) => {
         setSelectedUniv(univId);
         setErrors(prev => ({ ...prev, university: null }));
-        
+
         if (univId) {
             api.get(`/departments/?university_id=${univId}`)
                 .then((res) => {
