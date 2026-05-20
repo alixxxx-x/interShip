@@ -16,7 +16,9 @@ export default function DashboardRedirect() {
         const role = res.data.role;
         if (role === "COMPANY") setTarget("/companydashboard");
         else if (role === "STUDENT") setTarget("/studentdashboard");
-        else if (role === "ADMIN") setTarget("/admindashboard");
+        else if (role === "ADMIN_DEPT") setTarget("/admindashboard");
+        else if (role === "ADMIN_UNIV") setTarget("/adminunivdashboard");
+        else if (role === "ADMIN") setTarget("/superadmindashboard");
         else setTarget("/");
       })
       .catch(() => {

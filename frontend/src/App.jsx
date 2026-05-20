@@ -28,14 +28,19 @@ import CompanyListings from "@/features/dashboards/CompanyListings";
 import AllApplications from "@/features/dashboards/AllApplications";
 import StudentDashboard from "@/features/dashboards/StudentDashboard";
 import MyApplications from "@/features/dashboards/MyApplications";
+import TrackInternships from "@/features/dashboards/TrackInternships";
 import StudentRoute from "@/routes/StudentRoute";
 import DashboardRedirect from "@/routes/DashboardRedirect";
 import MyCv from "@/features/dashboards/MyCv";
 import AdminDashboard from "@/features/dashboards/AdminDashboard";
+import AdminUnivDashboard from "@/features/dashboards/AdminUnivDashboard";
+import SuperAdminDashboard from "@/features/dashboards/SuperAdminDashboard";
+import SuperAdminUniversities from "@/features/dashboards/SuperAdminUniversities";
 import AdminUsers from "@/features/dashboards/AdminUsers";
 import AdminCompanies from "@/features/dashboards/AdminCompanies";
 import AdminValidations from "@/features/dashboards/AdminValidations";
 import AdminAnalytics from "@/features/dashboards/AdminAnalytics";
+import CompanyTrackInternships from "@/features/dashboards/CompanyTrackInternships";
 import AdminMessages from "@/features/dashboards/AdminMessages";
 import Notifications from "@/features/dashboards/Notifications";
 import Settings from "@/pages/Settings";
@@ -120,6 +125,41 @@ function App() {
           </Route>
 
           <Route
+            path="/adminunivdashboard"
+            element={
+              <AdminRoute>
+                <DashboardLayout />
+              </AdminRoute>
+            }
+          >
+            <Route index element={<AdminUnivDashboard />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="companies" element={<AdminCompanies />} />
+            <Route path="validations" element={<AdminValidations />} />
+            <Route path="analytics" element={<AdminAnalytics />} />
+            <Route path="messages" element={<AdminMessages />} />
+            <Route path="notifications" element={<Notifications />} />
+          </Route>
+
+          <Route
+            path="/superadmindashboard"
+            element={
+              <AdminRoute>
+                <DashboardLayout />
+              </AdminRoute>
+            }
+          >
+            <Route index element={<SuperAdminDashboard />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="companies" element={<AdminCompanies />} />
+            <Route path="universities" element={<SuperAdminUniversities />} />
+            <Route path="validations" element={<AdminValidations />} />
+            <Route path="analytics" element={<AdminAnalytics />} />
+            <Route path="messages" element={<AdminMessages />} />
+            <Route path="notifications" element={<Notifications />} />
+          </Route>
+
+          <Route
             path="/dashboard"
             element={
               <ProtectedRoute>
@@ -136,6 +176,7 @@ function App() {
             <Route path="/companydashboard/analytics" element={<CompanyAnalytics />} />
             <Route path="/companydashboard/listings" element={<CompanyListings />} />
             <Route path="/companydashboard/applications" element={<AllApplications />} />
+            <Route path="/companydashboard/TrackInternships" element={<CompanyTrackInternships />} />
             <Route path="/companydashboard/messages" element={<CompanyMessages />} />
             <Route path="/companydashboard/notifications" element={<Notifications />} />
           </Route>
@@ -145,6 +186,7 @@ function App() {
             <Route path="/studentdashboard" element={<StudentDashboard />} />
             <Route path="/studentdashboard/cv" element={<MyCv />} />
             <Route path="/studentdashboard/MyApplications" element={<MyApplications />} />
+            <Route path="/studentdashboard/TrackInternships" element={<TrackInternships />} />
             <Route path="/studentdashboard/messages" element={<StudentMessages />} />
             <Route path="/studentdashboard/notifications" element={<Notifications />} />
           </Route>

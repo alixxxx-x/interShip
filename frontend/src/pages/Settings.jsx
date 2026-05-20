@@ -32,9 +32,13 @@ export default function Settings() {
     company_field: "",
     founded_year: "",
     university_id: "",
+    university_name: "",
     wilaya: "",
     phone: "",
-    major: ""
+    department: "",
+    status_required: "",
+    message: "",
+    size: ""
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -55,7 +59,7 @@ export default function Settings() {
           email: res.data.email || "",
           first_name: res.data.first_name || "",
           last_name: res.data.last_name || "",
-          profile_picture: res.data.profile_picture || null,
+          profile_picture: res.data.role === "COMPANY" ? (res.data.logo || res.data.profile_picture || null) : (res.data.profile_picture || null),
           role: res.data.role || "STUDENT",
           name: res.data.name || "",
           description: res.data.description || "",
@@ -64,9 +68,13 @@ export default function Settings() {
           company_field: res.data.company_field || "",
           founded_year: res.data.founded_year || "",
           university_id: res.data.university_id || "",
+          university_name: res.data.university_name || "",
           wilaya: res.data.wilaya || "",
           phone: res.data.phone || "",
-          major: res.data.major || "",
+          department: res.data.department || "",
+          status_required: res.data.status_required || "",
+          message: res.data.message || "",
+          size: res.data.size || ""
         });
       } catch (error) {
         console.error("Failed to fetch profile:", error);
@@ -100,13 +108,17 @@ export default function Settings() {
         formData.append("website", profileData.website);
         formData.append("company_field", profileData.company_field);
         formData.append("founded_year", profileData.founded_year);
+        formData.append("phone", profileData.phone);
+        formData.append("status_required", profileData.status_required);
+        formData.append("message", profileData.message);
+        formData.append("size", profileData.size);
       } else {
         formData.append("first_name", profileData.first_name);
         formData.append("last_name", profileData.last_name);
         formData.append("university_id", profileData.university_id);
         formData.append("wilaya", profileData.wilaya);
         formData.append("phone", profileData.phone);
-        formData.append("major", profileData.major);
+        formData.append("department", profileData.department);
       }
 
       if (selectedFile) {
@@ -166,8 +178,8 @@ export default function Settings() {
   const getTabClass = (tabName) => {
     const isActive = activeTab === tabName;
     return `w-full flex items-center justify-start py-3 px-4 gap-3 font-bold transition-all ${isActive
-        ? "text-[#1a3a6b] bg-[#f0f4fa] dark:bg-[rgba(255,255,255,0.08)] dark:text-[#f8fafc] border-l-4 border-[#1a3a6b] dark:border-[#93c5fd] rounded-r-lg"
-        : "text-[#5f6c80] hover:bg-[#f0f4fa]/50 hover:text-[#1a3a6b] dark:text-slate-400 dark:hover:text-[#f8fafc] dark:hover:bg-[rgba(255,255,255,0.03)] rounded-lg"
+      ? "text-[#1a3a6b] bg-[#f0f4fa] dark:bg-[rgba(255,255,255,0.08)] dark:text-[#f8fafc] border-l-4 border-[#1a3a6b] dark:border-[#93c5fd] rounded-r-lg"
+      : "text-[#5f6c80] hover:bg-[#f0f4fa]/50 hover:text-[#1a3a6b] dark:text-slate-400 dark:hover:text-[#f8fafc] dark:hover:bg-[rgba(255,255,255,0.03)] rounded-lg"
       }`;
   };
 
@@ -388,7 +400,7 @@ export default function Settings() {
                     {profileData.role === "COMPANY" ? (
                       <>
                         <div>
-                          <label className="settings-label" htmlFor="companyName">{t("companyName") || "Company Name"}</label>
+                          <label className="settings-label" htmlFor="companyName">Organization Name</label>
                           <input
                             id="companyName"
                             value={profileData.name}
@@ -397,11 +409,11 @@ export default function Settings() {
                           />
                         </div>
                         <div>
-                          <label className="settings-label" htmlFor="email">{t("emailAddress")}</label>
+                          <label className="settings-label" htmlFor="email">Email</label>
                           <input id="email" value={profileData.email} disabled className="settings-input opacity-70 cursor-not-allowed" />
                         </div>
                         <div>
-                          <label className="settings-label" htmlFor="location">{t("companyLocation") || "Location"}</label>
+                          <label className="settings-label" htmlFor="location">Address</label>
                           <input
                             id="location"
                             value={profileData.location}
@@ -410,7 +422,7 @@ export default function Settings() {
                           />
                         </div>
                         <div>
-                          <label className="settings-label" htmlFor="companyField">{t("companyField") || "Industry / Field"}</label>
+                          <label className="settings-label" htmlFor="companyField">Type Of Organization</label>
                           <input
                             id="companyField"
                             value={profileData.company_field}
@@ -419,7 +431,7 @@ export default function Settings() {
                           />
                         </div>
                         <div className="md:col-span-2">
-                          <label className="settings-label" htmlFor="website">{t("companyWebsite") || "Website"}</label>
+                          <label className="settings-label" htmlFor="website">Website</label>
                           <input
                             id="website"
                             type="url"
@@ -429,27 +441,76 @@ export default function Settings() {
                           />
                         </div>
                         <div>
-                          <label className="settings-label" htmlFor="foundedYear">{t("founded") || "Founded Year"}</label>
+                          <label className="settings-label" htmlFor="foundedYear">Founded Year</label>
                           <select
                             id="foundedYear"
                             value={profileData.founded_year}
                             onChange={(e) => setProfileData({ ...profileData, founded_year: e.target.value })}
                             className="settings-input"
                           >
-                            <option value="">{t("selectYear") || "Select Year"}</option>
+                            <option value="">Select Year</option>
                             {Array.from({ length: new Date().getFullYear() - 1900 + 1 }, (_, i) => new Date().getFullYear() - i).map(year => (
                               <option key={year} value={year}>{year}</option>
                             ))}
                           </select>
                         </div>
+                        <div>
+                          <label className="settings-label" htmlFor="phone">Phone Number</label>
+                          <input
+                            id="phone"
+                            value={profileData.phone}
+                            onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                            className="settings-input"
+                            placeholder="05 / 06 / 07 ..."
+                          />
+                        </div>
+                        <div>
+                          <label className="settings-label" htmlFor="statusRequired">Status Required</label>
+                          <input
+                            id="statusRequired"
+                            value={profileData.status_required}
+                            onChange={(e) => setProfileData({ ...profileData, status_required: e.target.value })}
+                            className="settings-input"
+                            placeholder="e.g. Corporate Verification"
+                          />
+                        </div>
+                        <div>
+                          <label className="settings-label" htmlFor="message">Message</label>
+                          <input
+                            id="message"
+                            value={profileData.message}
+                            onChange={(e) => setProfileData({ ...profileData, message: e.target.value })}
+                            className="settings-input"
+                            placeholder="e.g. Active partner organization"
+                          />
+                        </div>
+                        <div>
+                          <label className="settings-label" htmlFor="companySize">Company Size</label>
+                          <select
+                            id="companySize"
+                            value={profileData.size}
+                            onChange={(e) => setProfileData({ ...profileData, size: e.target.value })}
+                            className="settings-input"
+                          >
+                            <option value="">Select Company Size</option>
+                            <option value="1-9 Employees">1-9 Employees</option>
+                            <option value="10-50 Employees">10-50 Employees</option>
+                            <option value="51-200 Employees">51-200 Employees</option>
+                            <option value="201-500 Employees">201-500 Employees</option>
+                            <option value="501-1000 Employees">501-1000 Employees</option>
+                            <option value="1001-5000 Employees">1001-5000 Employees</option>
+                            <option value="5000+ Employees">5000+ Employees</option>
+                          </select>
+                        </div>
                         <div className="md:col-span-2">
-                          <label className="settings-label" htmlFor="description">{t("companyDescription") || "Description"}</label>
+                          <label className="settings-label" htmlFor="description">Corporate Statement</label>
                           <textarea
                             id="description"
                             rows={3}
                             value={profileData.description}
                             onChange={(e) => setProfileData({ ...profileData, description: e.target.value })}
                             className="settings-input min-h-[80px]"
+                            placeholder="Write your corporate statement here..."
                           />
                         </div>
                       </>

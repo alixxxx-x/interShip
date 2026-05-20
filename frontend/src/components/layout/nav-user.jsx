@@ -71,7 +71,7 @@ export function NavUser({
                     )}
                   </div>
                   <span className="truncate text-xs text-muted-foreground">
-                    {user.role === 'COMPANY' ? t('company') : t(user.role?.toLowerCase()) || user.role}
+                    {user.role === 'ADMIN' ? 'Super Admin' : user.role === 'ADMIN_UNIV' ? 'University Admin' : user.role === 'ADMIN_DEPT' ? 'Department Admin' : user.role === 'COMPANY' ? t('company') : t(user.role?.toLowerCase()) || user.role}
                   </span>
                 </div>
                 <ChevronsUpDown className="ml-auto size-4" />
@@ -106,7 +106,7 @@ export function NavUser({
                     )}
                   </div>
                   <span className="truncate text-xs text-muted-foreground">
-                    {user.role === 'COMPANY' ? t('company') : t(user.role?.toLowerCase()) || user.role}
+                    {user.role === 'ADMIN' ? 'Super Admin' : user.role === 'ADMIN_UNIV' ? 'University Admin' : user.role === 'ADMIN_DEPT' ? 'Department Admin' : user.role === 'COMPANY' ? t('company') : t(user.role?.toLowerCase()) || user.role}
                   </span>
                 </div>
               </div>

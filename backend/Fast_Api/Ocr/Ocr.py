@@ -78,7 +78,6 @@ def generate_gemini_content(contents):
 
 async def parse_cv_with_ai(file_bytes: bytes, mime_type: str):
     provider = getattr(settings, 'OCR_PROVIDER', 'gemini')
-    
     prompt = """
     Extract the following information from this CV. 
     Return ONLY a valid JSON object with these exact keys (use null or empty string if not found):
@@ -87,6 +86,7 @@ async def parse_cv_with_ai(file_bytes: bytes, mime_type: str):
     Extract the detailed blocks of text for 'experience', 'education', and 'profile_summary'.
     Do not hallucinate data; if it is not in the CV, leave it empty.
     """
+
 
     if provider == 'openai':
         if not openai_client:

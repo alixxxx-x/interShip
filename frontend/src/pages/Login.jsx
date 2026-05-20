@@ -91,12 +91,16 @@ function Login() {
         setErrors({});
         setLoading(true);
         try {
+
             const res = await api.post("/auth/login/", { username: email, email, password });
+
             localStorage.setItem(ACCESS_TOKEN, res.data.access);
             localStorage.setItem(REFRESH_TOKEN, res.data.refresh);
             navigate("/");
         } catch (error) {
-            toast.error("Login failed. Please check your credentials.");
+            console.error("Login Error:", error.response?.data || error.message);
+            const backendError = error.response?.data?.detail;
+            toast.error(backendError || "Login failed. Please check your credentials.");
         } finally {
             setLoading(false);
         }

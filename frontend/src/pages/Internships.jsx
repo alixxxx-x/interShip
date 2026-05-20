@@ -10,6 +10,7 @@ const WILAYAS = ["Adrar","Chlef","Laghouat","Oum El Bouaghi","Batna","Bejaia","B
 const SKILLS = ["React","Node.js","Python","UI/UX Design","Marketing","Data Science","Java","C++","SQL","Graphic Design","Project Management","JavaScript","TypeScript","HTML/CSS","PHP","Laravel","Flutter","AWS","Docker","Machine Learning","Figma"];
 const F = "'SF Pro Display', 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 
+
 export default function Internships() {
   const { t } = useLanguage();
   const { theme } = useTheme();
@@ -60,7 +61,6 @@ export default function Internships() {
     }
     return num;
   };
-
   const getDurationInDays = (dStr) => {
     if (!dStr) return 90; // Default 3 months = 90 days
     const str = String(dStr).toLowerCase();
@@ -87,7 +87,6 @@ export default function Internships() {
     }
     return num; // Treat as days
   };
-
   const getPageNumbers = () => {
     const range = [];
     const maxVisible = 5;
