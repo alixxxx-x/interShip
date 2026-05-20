@@ -71,6 +71,13 @@ export default function CompaniesDetails() {
 
         if (foundCompany) {
           setCompany(foundCompany);
+          // Check real follow status from the backend
+          try {
+            const followRes = await api.get(`/companies/${id}/follow/`);
+            setIsFollowing(followRes.data.is_following);
+          } catch (followErr) {
+            console.error("Error checking follow status:", followErr);
+          }
         } else {
           setError("Company not found.");
         }
@@ -85,16 +92,23 @@ export default function CompaniesDetails() {
     fetchCompanyDetails();
   }, [id]);
 
-  const toggleFollow = () => {
-    setIsFollowing(p => {
-      const next = !p;
-      try {
-        localStorage.setItem(`followed_company_${id}`, String(next));
-      } catch (e) {
-        console.error(e);
+  const toggleFollow = async () => {
+    const prev = isFollowing;
+    setIsFollowing(!prev);
+    try {
+      if (prev) {
+        // Unfollow on backend
+        await api.delete(`/companies/${id}/unfollow/`);
+        localStorage.setItem(`followed_company_${id}`, "false");
+      } else {
+        // Follow on backend
+        await api.post(`/companies/${id}/follow/toggle/`);
+        localStorage.setItem(`followed_company_${id}`, "true");
       }
-      return next;
-    });
+    } catch (e) {
+      console.error("Error toggling follow:", e);
+      setIsFollowing(prev); // Revert on failure
+    }
   };
 
   const toggleLike = () => {
@@ -541,31 +555,55 @@ export default function CompaniesDetails() {
               </div>
 
               {/* Card B: Recruitment Timeline & Progress Bar */}
-              <div className="premium-card">
-                <h2 style={{ fontSize: 18, fontWeight: 800, margin: "0 0 8px", display: "flex", alignItems: "center", gap: 10, color: txt, letterSpacing: "-0.01em" }}>
-                  <Clock size={20} style={{ color: txt2 }} />
-                  Hiring & Recruitment Cycle
-                </h2>
-                <p style={{ fontSize: 13, color: txt2, margin: "0 0 24px" }}>
-                  Deadline: <span style={{ fontWeight: 600, color: txt }}>Start: March 15, 2026 | End: May 30, 2026</span>
-                </p>
+              {(() => {
+                const openCount = company.open_for_application_count || 0;
+                const ongoingCount = company.ongoing_count || 0;
+                const finishedCount = company.finished_count || 0;
+                const total = openCount + ongoingCount + finishedCount;
 
-                <div style={{ position: "relative", marginBottom: 12 }}>
-                  {/* Colorful Multi-segment Progress Bar */}
-                  <div style={{ height: 8, width: "100%", borderRadius: 4, background: bdr, display: "flex", overflow: "hidden" }}>
-                    <div style={{ width: "40%", background: "#10b981" }} /> {/* Applications Open (Green) */}
-                    <div style={{ width: "35%", background: "#f59e0b" }} /> {/* Screening & Interviews (Yellow) */}
-                    <div style={{ width: "15%", background: "#ef4444" }} /> {/* Offer Extensions (Red) */}
-                    <div style={{ width: "10%", background: bdr }} />
+                let appPercent = "40%";
+                let ongoingPercent = "35%";
+                let finishedPercent = "15%";
+                let isCalculated = false;
+
+                if (total > 0) {
+                  appPercent = `${Math.round((openCount / total) * 100)}%`;
+                  ongoingPercent = `${Math.round((ongoingCount / total) * 100)}%`;
+                  finishedPercent = `${Math.round((finishedCount / total) * 100)}%`;
+                  isCalculated = true;
+                }
+
+                return (
+                  <div className="premium-card">
+                    <h2 style={{ fontSize: 18, fontWeight: 800, margin: "0 0 8px", display: "flex", alignItems: "center", gap: 10, color: txt, letterSpacing: "-0.01em" }}>
+                      <Clock size={20} style={{ color: txt2 }} />
+                      Hiring & Recruitment Cycle
+                    </h2>
+                    <p style={{ fontSize: 13, color: txt2, margin: "0 0 24px" }}>
+                      {isCalculated ? (
+                        <span>Based on <strong style={{ color: txt }}>{total}</strong> active internships:</span>
+                      ) : (
+                        <span>Deadline: <span style={{ fontWeight: 600, color: txt }}>Start: March 15, 2026 | End: May 30, 2026</span></span>
+                      )}
+                    </p>
+
+                    <div style={{ position: "relative", marginBottom: 12 }}>
+                      {/* Colorful Multi-segment Progress Bar */}
+                      <div style={{ height: 8, width: "100%", borderRadius: 4, background: bdr, display: "flex", overflow: "hidden" }}>
+                        <div style={{ width: appPercent, background: "#10b981", transition: "width 0.4s ease" }} /> {/* Open Application (Green) */}
+                        <div style={{ width: ongoingPercent, background: "#f59e0b", transition: "width 0.4s ease" }} /> {/* Ongoing (Yellow) */}
+                        <div style={{ width: finishedPercent, background: "#ef4444", transition: "width 0.4s ease" }} /> {/* Finished (Red) */}
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, fontSize: 12, fontWeight: 600, color: txt2 }}>
+                      <span style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "#10b981" }} />Open Application ({openCount})</span>
+                      <span style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "#f59e0b" }} />Ongoing ({ongoingCount})</span>
+                      <span style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "#ef4444" }} />Finished ({finishedCount})</span>
+                    </div>
                   </div>
-                </div>
-
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, fontSize: 12, fontWeight: 600, color: txt2 }}>
-                  <span style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "#10b981" }} />Applications (Open)</span>
-                  <span style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "#f59e0b" }} />Interviews (Active)</span>
-                  <span style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "#ef4444" }} />Final Selection</span>
-                </div>
-              </div>
+                );
+              })()}
 
               {/* Card C: Document Downloads */}
               <div className="premium-card">
@@ -575,37 +613,67 @@ export default function CompaniesDetails() {
                 </h2>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                  <div className="download-resource-card">
-                    <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                      <div style={{ width: 40, height: 40, borderRadius: 10, background: dk ? "rgba(255,255,255,0.03)" : "#f3f4f6", display: "flex", alignItems: "center", justifySelf: "center", justifyContent: "center", color: accentColor }}>
-                        <FileText size={18} />
+                  {(company.resources?.length > 0 || company.guidelines_handbook || company.agreement_template) ? (
+                    <>
+                      {company.guidelines_handbook && (
+                      <div className="download-resource-card">
+                        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                          <div style={{ width: 40, height: 40, borderRadius: 10, background: dk ? "rgba(255,255,255,0.03)" : "#f3f4f6", display: "flex", alignItems: "center", justifySelf: "center", justifyContent: "center", color: accentColor }}>
+                            <FileText size={18} />
+                          </div>
+                          <div>
+                            <h4 style={{ fontSize: 14, fontWeight: 700, color: txt, margin: "0 0 2px" }}>Internship Guidelines handbook</h4>
+                            <p style={{ fontSize: 11, color: txt2, margin: 0 }}>Official guidelines</p>
+                          </div>
+                        </div>
+                        <a href={company.guidelines_handbook} target="_blank" rel="noopener noreferrer" style={{textDecoration: 'none', height: 36, padding: '0 14px', display: 'flex', alignItems: 'center', gap: 6, borderRadius: 12}} className="btn-premium-outline">
+                          <Download size={14} />
+                          Download
+                        </a>
                       </div>
-                      <div>
-                        <h4 style={{ fontSize: 14, fontWeight: 700, color: txt, margin: "0 0 2px" }}>Internship Guidelines handbook</h4>
-                        <p style={{ fontSize: 11, color: txt2, margin: 0 }}>PDF (2.4 MB) • Updated 2 weeks ago</p>
-                      </div>
-                    </div>
-                    <button className="btn-premium-outline" style={{ height: 36, padding: "0 14px", display: "flex", gap: 6, borderRadius: 12 }}>
-                      <Download size={14} />
-                      Download
-                    </button>
-                  </div>
+                      )}
 
-                  <div className="download-resource-card">
-                    <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                      <div style={{ width: 40, height: 40, borderRadius: 10, background: dk ? "rgba(255,255,255,0.03)" : "#f3f4f6", display: "flex", alignItems: "center", justifySelf: "center", justifyContent: "center", color: accentColor }}>
-                        <FileText size={18} />
+                      {company.agreement_template && (
+                      <div className="download-resource-card">
+                        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                          <div style={{ width: 40, height: 40, borderRadius: 10, background: dk ? "rgba(255,255,255,0.03)" : "#f3f4f6", display: "flex", alignItems: "center", justifySelf: "center", justifyContent: "center", color: accentColor }}>
+                            <FileText size={18} />
+                          </div>
+                          <div>
+                            <h4 style={{ fontSize: 14, fontWeight: 700, color: txt, margin: "0 0 2px" }}>Standard Internship Agreement Template</h4>
+                            <p style={{ fontSize: 11, color: txt2, margin: 0 }}>Official template</p>
+                          </div>
+                        </div>
+                        <a href={company.agreement_template} target="_blank" rel="noopener noreferrer" style={{textDecoration: 'none', height: 36, padding: '0 14px', display: 'flex', alignItems: 'center', gap: 6, borderRadius: 12}} className="btn-premium-outline">
+                          <Download size={14} />
+                          Download
+                        </a>
                       </div>
-                      <div>
-                        <h4 style={{ fontSize: 14, fontWeight: 700, color: txt, margin: "0 0 2px" }}>Standard Internship Agreement Template</h4>
-                        <p style={{ fontSize: 11, color: txt2, margin: 0 }}>PDF (1.1 MB) • Official template</p>
+                      )}
+
+                      {company.resources?.map((res, index) => (
+                      <div key={`res-${index}`} className="download-resource-card">
+                        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                          <div style={{ width: 40, height: 40, borderRadius: 10, background: dk ? "rgba(255,255,255,0.03)" : "#f3f4f6", display: "flex", alignItems: "center", justifySelf: "center", justifyContent: "center", color: accentColor }}>
+                            <FileText size={18} />
+                          </div>
+                          <div>
+                            <h4 style={{ fontSize: 14, fontWeight: 700, color: txt, margin: "0 0 2px" }}>{res.name}</h4>
+                            <p style={{ fontSize: 11, color: txt2, margin: 0 }}>Company Resource</p>
+                          </div>
+                        </div>
+                        <a href={res.file} target="_blank" rel="noopener noreferrer" style={{textDecoration: 'none', height: 36, padding: '0 14px', display: 'flex', alignItems: 'center', gap: 6, borderRadius: 12}} className="btn-premium-outline">
+                          <Download size={14} />
+                          Download
+                        </a>
                       </div>
+                      ))}
+                    </>
+                  ) : (
+                    <div style={{ textAlign: "center", padding: "24px 12px", color: txt2, fontSize: 13.5, border: `1px dashed ${bdr}`, borderRadius: 16 }}>
+                      No resources or downloads available yet.
                     </div>
-                    <button className="btn-premium-outline" style={{ height: 36, padding: "0 14px", display: "flex", gap: 6, borderRadius: 12 }}>
-                      <Download size={14} />
-                      Download
-                    </button>
-                  </div>
+                  )}
                 </div>
               </div>
 
