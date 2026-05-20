@@ -15,6 +15,11 @@ urlpatterns = [
     path('auth/change-password/', ChangePasswordView.as_view(), name='change_password'),
     path('users/', UserListView.as_view(), name='user-list'),
     path('users/<int:pk>/', UserAdminUpdateView.as_view(), name='user-admin-update'),
+    
+    # Public endpoints for registration
+    path('universities/', UniversityPublicListView.as_view(), name='public-universities'),
+    path('departments/', DepartmentPublicListView.as_view(), name='public-departments'),
+
     path('companies/', CompanyListView.as_view(), name='company-list'),
     path('companies/<int:company_id>/follow/', FollowStatusView.as_view(), name='follow-status'),
     path('companies/<int:company_id>/follow/toggle/', FollowCompanyView.as_view(), name='follow-company'),

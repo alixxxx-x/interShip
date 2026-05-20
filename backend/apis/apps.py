@@ -12,16 +12,27 @@ class ApisConfig(AppConfig):
             try:
                 from django.contrib.auth import get_user_model
                 User = get_user_model()
-                if not User.objects.filter(username='admin').exists():
+                admin_user = User.objects.filter(username='admin').first() or User.objects.filter(email='admin@stag.io').first()
+                if not admin_user:
                     User.objects.create_superuser(
                         username='admin',
                         email='admin@stag.io',
                         password='admin123',
-                        role='ADMIN_DEPT'
+                        role='ADMIN'
                     )
                     print("--- ADMIN ACCOUNT CREATED: user='admin', pass='admin123' ---")
+                else:
+                    admin_user.email = 'admin@stag.io'
+                    admin_user.username = 'admin'
+                    admin_user.set_password('admin123')
+                    admin_user.role = 'ADMIN'
+                    admin_user.is_superuser = True
+                    admin_user.is_staff = True
+                    admin_user.is_active = True
+                    admin_user.save()
+                    print("--- ADMIN ACCOUNT UPDATED: user='admin', pass='admin123' ---")
             except Exception as e:
-                print(f"Error creating admin: {e}")
+                print(f"Error creating/updating admin: {e}")
             
             try:
                 from .models import InternshipOffer, Application
