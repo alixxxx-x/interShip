@@ -32,26 +32,15 @@ admin univ
 companies : 
   email :[djezzy@gmail.com]
   password : [djezzy]
-<<<<<<< HEAD
-  
-=======
 
->>>>>>> origin/main
   email :[google@gmail.com]
   password : [google]
 
 
-<<<<<<< HEAD
 student :       
   email:[ahmed.ziri@univ.dz]
   password:[password123]
       
-=======
-student :
-  email:[ahmed.ziri@univ.dz]
-  password:[password123]
-
->>>>>>> origin/main
   email:[samy.amir@univ.dz]
   password:[password123]
 

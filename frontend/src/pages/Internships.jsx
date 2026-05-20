@@ -553,19 +553,6 @@ export default function Internships() {
           </div>
         </div>
       </div>
-
-      {!loading && !isSearchActive && visibleCount < filteredInternships.length && (
-        <div className="mt-12 flex justify-center pb-8">
-          <Button 
-            variant="outline" 
-            size="lg" 
-            className="rounded-full px-8 font-bold border-primary text-primary hover:bg-primary hover:text-white transition-all shadow-sm"
-            onClick={() => setVisibleCount(filteredInternships.length)}
-          >
-            {t("viewAll") || "View All"}
-          </Button>
-        </div>
-      )}
     </div>
     </>
   );
