@@ -213,9 +213,9 @@ export default function AdminValidations() {
       </div>
 
       {/* Main Table Container */}
-      <div className="bg-white dark:bg-zinc-900 border border-gray-150 dark:border-zinc-800/80 rounded-xl shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div className="bg-white dark:bg-zinc-900 border border-gray-150 dark:border-zinc-800/80 rounded-xl shadow-sm overflow-visible animate-in fade-in slide-in-from-bottom-2 duration-300">
         
-        <div className="overflow-x-auto">
+        <div className="w-full">
           {filteredValidations.length === 0 ? (
             <div className="p-10 text-center flex flex-col items-center justify-center space-y-3 bg-gray-50/50 dark:bg-zinc-900/50">
               <span className="text-gray-400 dark:text-zinc-600">

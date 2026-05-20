@@ -412,7 +412,7 @@ export default function AdminDeptDashboard() {
           </div>
         </div>
 
-        <div className="overflow-x-auto rounded-lg border border-border">
+        <div className="w-full rounded-lg border border-border overflow-visible">
           <Table>
             <TableHeader className="bg-muted/30">
               <TableRow className="border-b border-border hover:bg-transparent">

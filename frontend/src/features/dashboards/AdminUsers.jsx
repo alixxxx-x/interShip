@@ -239,9 +239,9 @@ export default function AdminUsers() {
       </div>
 
       {/* Main Table Container */}
-      <div className="bg-white dark:bg-zinc-900 border border-gray-150 dark:border-zinc-800/80 rounded-xl shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div className="bg-white dark:bg-zinc-900 border border-gray-150 dark:border-zinc-800/80 rounded-xl shadow-sm overflow-visible animate-in fade-in slide-in-from-bottom-2 duration-300">
         
-        <div className="overflow-x-auto">
+        <div className="w-full">
           {filteredUsers.length === 0 ? (
             <div className="p-10 text-center flex flex-col items-center justify-center space-y-3 bg-gray-50/50 dark:bg-zinc-900/50">
               <span className="text-gray-400 dark:text-zinc-600">
@@ -253,13 +253,13 @@ export default function AdminUsers() {
             </div>
           ) : (
             <table className="w-full table-fixed border-collapse text-left">
-              <thead>
-                <tr className="bg-blue-50 dark:bg-zinc-900 border-b border-blue-100 dark:border-zinc-800">
-                  <th className="text-[11px] font-bold tracking-wider text-blue-600 dark:text-blue-400 py-3.5 px-6 w-[240px]">User Profile</th>
-                  <th className="text-[11px] font-bold tracking-wider text-blue-600 dark:text-blue-400 py-3.5 px-6 text-left w-40">Role</th>
-                  <th className="text-[11px] font-bold tracking-wider text-blue-600 dark:text-blue-400 py-3.5 px-6 text-left w-40">Status</th>
-                  <th className="hidden lg:table-cell text-[11px] font-bold tracking-wider text-blue-600 dark:text-blue-400 py-3.5 px-6 text-left">Account Details</th>
-                  <th className="text-[11px] font-bold tracking-wider text-blue-600 dark:text-blue-400 py-3.5 px-6 text-right w-24">Actions</th>
+                <thead>
+                  <tr className="bg-blue-50 dark:bg-zinc-900 border-b border-blue-100 dark:border-zinc-800">
+                    <th className="text-[11px] font-bold tracking-wider text-blue-600 dark:text-blue-400 py-3.5 px-6 w-[240px] rounded-tl-xl">User Profile</th>
+                    <th className="text-[11px] font-bold tracking-wider text-blue-600 dark:text-blue-400 py-3.5 px-6 text-left w-40">Role</th>
+                    <th className="text-[11px] font-bold tracking-wider text-blue-600 dark:text-blue-400 py-3.5 px-6 text-left w-40">Status</th>
+                    <th className="hidden lg:table-cell text-[11px] font-bold tracking-wider text-blue-600 dark:text-blue-400 py-3.5 px-6 text-left">Account Details</th>
+                    <th className="text-[11px] font-bold tracking-wider text-blue-600 dark:text-blue-400 py-3.5 px-6 text-right w-24 rounded-tr-xl">Actions</th>
                 </tr>
               </thead>
               <tbody>

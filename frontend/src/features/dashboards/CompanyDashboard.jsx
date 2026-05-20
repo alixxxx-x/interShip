@@ -235,107 +235,80 @@ export default function CompanyDashboard() {
           
           {/* Highlight 1: Pending Applications */}
           <Card className="rounded-2xl border border-border bg-card shadow-sm hover:shadow-md transition-shadow">
-            <CardContent className="p-2 sm:p-3 md:p-3.5 lg:p-2.5 xl:p-4 2xl:p-5 flex flex-col justify-between">
-              {/* Row 1: Icon + Label + Badge */}
+            <CardContent className="p-3 sm:p-4 md:p-5 flex flex-col justify-between h-full">
               <div className="flex items-center gap-1.5 min-w-0">
-                <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-4.5 md:w-4.5 lg:h-3.5 lg:w-3.5 xl:h-4.5 xl:w-4.5 2xl:h-5 2xl:w-5 text-slate-500/80 flex-shrink-0" />
-                <span className="text-[9px] sm:text-[10px] md:text-[11px] lg:text-[10px] xl:text-xs 2xl:text-sm font-semibold text-slate-600 dark:text-slate-300 truncate leading-tight">Pending Reviews</span>
-                <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-none text-[8px] sm:text-[9px] md:text-[10px] lg:text-[8px] xl:text-[10px] 2xl:text-xs px-1 sm:px-1.5 py-0.5 rounded font-semibold shadow-none flex-shrink-0 ml-auto">+12%</Badge>
+                <Users className="h-4 w-4 md:h-5 md:w-5 text-slate-500/80 flex-shrink-0" />
+                <span className="text-[10px] sm:text-[11px] md:text-xs font-semibold text-slate-600 dark:text-slate-300 truncate leading-tight">
+                  Pending Reviews
+                </span>
               </div>
-              
-              {/* Row 2: Value + Sparkline */}
-              <div className="flex items-end justify-between mt-2 sm:mt-2.5 md:mt-3 lg:mt-2.5 xl:mt-4 2xl:mt-5">
-                <span className="text-lg sm:text-xl md:text-2xl lg:text-lg xl:text-2xl 2xl:text-3xl font-bold tracking-tight text-slate-900 dark:text-white leading-none">
+              <div className="flex flex-col mt-3 sm:mt-4">
+                <span className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-slate-900 dark:text-white leading-none">
                   {String(stats?.pendingApplications ?? 0).padStart(2, '0')}
                 </span>
-                {/* Mini Bar Chart with Thin Bars */}
-                <div className="w-10 h-5 sm:w-12 sm:h-6 md:w-14 md:h-7 lg:w-10 lg:h-5 xl:w-16 xl:h-8 2xl:w-20 2xl:h-10 flex-shrink-0">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={barData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                      <Bar dataKey="value" fill="#38bdf8" barSize={3.5} radius={[1, 1, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+                <span className="text-[9px] sm:text-[10px] text-muted-foreground mt-1.5">
+                  Applications awaiting review
+                </span>
               </div>
             </CardContent>
           </Card>
 
           {/* Highlight 2: Shortlisted Talent */}
           <Card className="rounded-2xl border border-border bg-card shadow-sm hover:shadow-md transition-shadow">
-            <CardContent className="p-2 sm:p-3 md:p-3.5 lg:p-2.5 xl:p-4 2xl:p-5 flex flex-col justify-between">
-              {/* Row 1: Icon + Label + Badge */}
+            <CardContent className="p-3 sm:p-4 md:p-5 flex flex-col justify-between h-full">
               <div className="flex items-center gap-1.5 min-w-0">
-                <GraduationCap className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-4.5 md:w-4.5 lg:h-3.5 lg:w-3.5 xl:h-4.5 xl:w-4.5 2xl:h-5 2xl:w-5 text-slate-500/80 flex-shrink-0" />
-                <span className="text-[9px] sm:text-[10px] md:text-[11px] lg:text-[10px] xl:text-xs 2xl:text-sm font-semibold text-slate-600 dark:text-slate-300 truncate leading-tight">Shortlisted Talent</span>
-                <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-none text-[8px] sm:text-[9px] md:text-[10px] lg:text-[8px] xl:text-[10px] 2xl:text-xs px-1 sm:px-1.5 py-0.5 rounded font-semibold shadow-none flex-shrink-0 ml-auto">+5%</Badge>
+                <GraduationCap className="h-4 w-4 md:h-5 md:w-5 text-slate-500/80 flex-shrink-0" />
+                <span className="text-[10px] sm:text-[11px] md:text-xs font-semibold text-slate-600 dark:text-slate-300 truncate leading-tight">
+                  Shortlisted Talent
+                </span>
               </div>
-
-              {/* Row 2: Value + Sparkline */}
-              <div className="flex items-end justify-between mt-2 sm:mt-2.5 md:mt-3 lg:mt-2.5 xl:mt-4 2xl:mt-5">
-                <span className="text-lg sm:text-xl md:text-2xl lg:text-lg xl:text-2xl 2xl:text-3xl font-bold tracking-tight text-slate-900 dark:text-white leading-none">
+              <div className="flex flex-col mt-3 sm:mt-4">
+                <span className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-slate-900 dark:text-white leading-none">
                   {String(stats?.acceptedApplications ?? 0).padStart(2, '0')}
                 </span>
-                {/* Mini Sparkline Line Chart */}
-                <div className="w-10 h-5 sm:w-12 sm:h-6 md:w-14 md:h-7 lg:w-10 lg:h-5 xl:w-16 xl:h-8 2xl:w-20 2xl:h-10 flex-shrink-0">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={lineData1} margin={{ top: 3, right: 1, left: 1, bottom: 3 }}>
-                      <Line type="monotone" dataKey="value" stroke="#38bdf8" strokeWidth={1.5} dot={false} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
+                <span className="text-[9px] sm:text-[10px] text-muted-foreground mt-1.5">
+                  Candidates accepted
+                </span>
               </div>
             </CardContent>
           </Card>
 
           {/* Highlight 3: Active Listings */}
           <Card className="rounded-2xl border border-border bg-card shadow-sm hover:shadow-md transition-shadow">
-            <CardContent className="p-2 sm:p-3 md:p-3.5 lg:p-2.5 xl:p-4 2xl:p-5 flex flex-col justify-between">
-              {/* Row 1: Icon + Label + Badge */}
+            <CardContent className="p-3 sm:p-4 md:p-5 flex flex-col justify-between h-full">
               <div className="flex items-center gap-1.5 min-w-0">
-                <Briefcase className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-4.5 md:w-4.5 lg:h-3.5 lg:w-3.5 xl:h-4.5 xl:w-4.5 2xl:h-5 2xl:w-5 text-slate-500/80 flex-shrink-0" />
-                <span className="text-[9px] sm:text-[10px] md:text-[11px] lg:text-[10px] xl:text-xs 2xl:text-sm font-semibold text-slate-600 dark:text-slate-300 truncate leading-tight">Active Postings</span>
-                <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-none text-[8px] sm:text-[9px] md:text-[10px] lg:text-[8px] xl:text-[10px] 2xl:text-xs px-1 sm:px-1.5 py-0.5 rounded font-semibold shadow-none flex-shrink-0 ml-auto">+10%</Badge>
+                <Briefcase className="h-4 w-4 md:h-5 md:w-5 text-slate-500/80 flex-shrink-0" />
+                <span className="text-[10px] sm:text-[11px] md:text-xs font-semibold text-slate-600 dark:text-slate-300 truncate leading-tight">
+                  Active Postings
+                </span>
               </div>
-
-              {/* Row 2: Value + Sparkline */}
-              <div className="flex items-end justify-between mt-2 sm:mt-2.5 md:mt-3 lg:mt-2.5 xl:mt-4 2xl:mt-5">
-                <span className="text-lg sm:text-xl md:text-2xl lg:text-lg xl:text-2xl 2xl:text-3xl font-bold tracking-tight text-slate-900 dark:text-white leading-none">
+              <div className="flex flex-col mt-3 sm:mt-4">
+                <span className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-slate-900 dark:text-white leading-none">
                   {String(stats?.totalInternships ?? 0).padStart(2, '0')}
                 </span>
-                {/* Mini Sparkline 2 */}
-                <div className="w-10 h-5 sm:w-12 sm:h-6 md:w-14 md:h-7 lg:w-10 lg:h-5 xl:w-16 xl:h-8 2xl:w-20 2xl:h-10 flex-shrink-0">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={lineData2} margin={{ top: 3, right: 1, left: 1, bottom: 3 }}>
-                      <Line type="monotone" dataKey="value" stroke="#eab308" strokeWidth={1.5} dot={false} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
+                <span className="text-[9px] sm:text-[10px] text-muted-foreground mt-1.5">
+                  Currently open positions
+                </span>
               </div>
             </CardContent>
           </Card>
 
           {/* Highlight 4: Talent Score / Response */}
           <Card className="rounded-2xl border border-border bg-card shadow-sm hover:shadow-md transition-shadow">
-            <CardContent className="p-2 sm:p-3 md:p-3.5 lg:p-2.5 xl:p-4 2xl:p-5 flex flex-col justify-between">
-              {/* Row 1: Icon + Label + Badge */}
+            <CardContent className="p-3 sm:p-4 md:p-5 flex flex-col justify-between h-full">
               <div className="flex items-center gap-1.5 min-w-0">
-                <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-4.5 md:w-4.5 lg:h-3.5 lg:w-3.5 xl:h-4.5 xl:w-4.5 2xl:h-5 2xl:w-5 text-slate-500/80 flex-shrink-0" />
-                <span className="text-[9px] sm:text-[10px] md:text-[11px] lg:text-[10px] xl:text-xs 2xl:text-sm font-semibold text-slate-600 dark:text-slate-300 truncate leading-tight">Recruitment Score</span>
-                <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-none text-[8px] sm:text-[9px] md:text-[10px] lg:text-[8px] xl:text-[10px] 2xl:text-xs px-1 sm:px-1.5 py-0.5 rounded font-semibold shadow-none flex-shrink-0 ml-auto">+6%</Badge>
+                <Zap className="h-4 w-4 md:h-5 md:w-5 text-slate-500/80 flex-shrink-0" />
+                <span className="text-[10px] sm:text-[11px] md:text-xs font-semibold text-slate-600 dark:text-slate-300 truncate leading-tight">
+                  Recruitment Score
+                </span>
               </div>
-
-              {/* Row 2: Value + Streak Indicators */}
-              <div className="flex items-end justify-between mt-2 sm:mt-2.5 md:mt-3 lg:mt-2.5 xl:mt-4 2xl:mt-5">
-                <span className="text-lg sm:text-xl md:text-2xl lg:text-lg xl:text-2xl 2xl:text-3xl font-bold tracking-tight text-slate-900 dark:text-white leading-none">92%</span>
-                {/* Streak circles representation */}
-                <div className="flex gap-0.5 sm:gap-1 mb-0.5 flex-shrink-0">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-2.5 w-2.5 sm:h-3 sm:w-3 md:h-3.5 md:w-3.5 lg:h-2.5 lg:w-2.5 xl:h-3.5 xl:w-3.5 2xl:h-4 2xl:w-4 rounded-full bg-sky-500 flex items-center justify-center shadow-sm">
-                      <Zap className="h-1.5 w-1.5 sm:h-2 sm:w-2 md:h-2.5 md:w-2.5 lg:h-1.5 lg:w-1.5 xl:h-2 xl:w-2 2xl:h-2.5 2xl:w-2.5 text-white fill-white" />
-                    </div>
-                  ))}
-                  <div className="h-2.5 w-2.5 sm:h-3 sm:w-3 md:h-3.5 md:w-3.5 lg:h-2.5 lg:w-2.5 xl:h-3.5 xl:w-3.5 2xl:h-4 2xl:w-4 rounded-full bg-muted flex items-center justify-center border border-border" />
-                </div>
+              <div className="flex flex-col mt-3 sm:mt-4">
+                <span className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-slate-900 dark:text-white leading-none">
+                  92%
+                </span>
+                <span className="text-[9px] sm:text-[10px] text-muted-foreground mt-1.5">
+                  Average response rate
+                </span>
               </div>
             </CardContent>
           </Card>
@@ -528,7 +501,7 @@ export default function CompanyDashboard() {
           </div>
 
           {/* Table content matching exact layout and styles */}
-          <div className="overflow-x-auto rounded-lg border border-border">
+          <div className="w-full rounded-lg border border-border overflow-visible">
             <Table>
               <TableHeader className="bg-muted/30">
                 <TableRow className="border-b border-border hover:bg-transparent">
