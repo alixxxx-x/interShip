@@ -98,10 +98,19 @@ export default function CompaniesDetails() {
   const hoverBg = dk ? "rgba(255,255,255,0.03)" : "#f9fafb";
   const accentColor = "#2563eb"; // Premium slate blue
   
-  // Calculate mockup values
-  const mockRating = (4.5 + (parseInt(id || "1") % 6) * 0.1).toFixed(1);
-  const mockReviewsCount = 30 + (parseInt(id || "1") * 17) % 150;
+  // Real backend values
+  const companyRating = company?.company_rating ?? 0.0;
+  const reviewCount = company?.review_count ?? 0;
   const companyAge = company?.founded_year ? (new Date().getFullYear() - company.founded_year) : 5 + (parseInt(id || "1") % 10);
+  const avatarColors = ["#2563eb", "#8b5cf6", "#10b981", "#ca8a04", "#ec4899"];
+  const getInitials = (name) => {
+    if (!name) return "?";
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.trim().slice(0, 2).toUpperCase();
+  };
 
   const getCompanyCover = (field, idVal) => {
     const f = (field || "").toLowerCase();
@@ -449,7 +458,7 @@ export default function CompaniesDetails() {
               <div>
                 <p style={{ fontSize: 11, fontWeight: 700, color: txt2, textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 2px" }}>Rating</p>
                 <p style={{ fontSize: 15, fontWeight: 800, color: txt, margin: 0 }}>
-                  {mockRating} <span style={{ fontSize: 12, fontWeight: 500, color: txt2 }}>/ 5.0</span>
+                  {companyRating} <span style={{ fontSize: 12, fontWeight: 500, color: txt2 }}>/ 5.0</span>
                 </p>
               </div>
             </div>
@@ -473,7 +482,7 @@ export default function CompaniesDetails() {
               <div>
                 <p style={{ fontSize: 11, fontWeight: 700, color: txt2, textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 2px" }}>Reviews</p>
                 <p style={{ fontSize: 15, fontWeight: 800, color: txt, margin: 0 }}>
-                  {mockReviewsCount} <span style={{ fontSize: 12, fontWeight: 500, color: txt2 }}>Feedback</span>
+                  {reviewCount} <span style={{ fontSize: 12, fontWeight: 500, color: txt2 }}>Feedback</span>
                 </p>
               </div>
             </div>
@@ -622,47 +631,38 @@ export default function CompaniesDetails() {
                 </h2>
                 
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                  <div className="intern-feedback-row">
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <div style={{ width: 36, height: 36, borderRadius: "50%", background: accentColor, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700 }}>
-                          JB
+                  {company.reviews && company.reviews.length > 0 ? (
+                    company.reviews.map((rev, idx) => (
+                      <div key={rev.id || idx} className="intern-feedback-row">
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            {rev.avatar ? (
+                              <img src={rev.avatar} alt={rev.name} style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover" }} />
+                            ) : (
+                              <div style={{ width: 36, height: 36, borderRadius: "50%", background: avatarColors[idx % avatarColors.length], color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700 }}>
+                                {getInitials(rev.name)}
+                              </div>
+                            )}
+                            <div>
+                              <h4 style={{ fontSize: 13.5, fontWeight: 700, color: txt, margin: 0 }}>{rev.name}</h4>
+                              <p style={{ fontSize: 11, color: txt2, margin: 0 }}>{rev.internship_title || "Intern"} • {rev.internship_year || 2025}</p>
+                            </div>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 4, color: "#eab308", fontSize: 12, fontWeight: 700 }}>
+                            <Star size={13} style={{ fill: "#eab308" }} />
+                            {parseFloat(rev.rating).toFixed(1)}
+                          </div>
                         </div>
-                        <div>
-                          <h4 style={{ fontSize: 13.5, fontWeight: 700, color: txt, margin: 0 }}>Jack Brady</h4>
-                          <p style={{ fontSize: 11, color: txt2, margin: 0 }}>Software Engineering Intern • 2025</p>
-                        </div>
+                        <p style={{ fontSize: 13, color: txt2, lineHeight: 1.6, margin: 0 }}>
+                          "{rev.text}"
+                        </p>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 4, color: "#eab308", fontSize: 12, fontWeight: 700 }}>
-                        <Star size={13} style={{ fill: "#eab308" }} />
-                        5.0
-                      </div>
+                    ))
+                  ) : (
+                    <div style={{ textAlign: "center", padding: "24px 12px", color: txt2, fontSize: 13.5, border: `1px dashed ${bdr}`, borderRadius: 16 }}>
+                      No testimonials yet from past interns.
                     </div>
-                    <p style={{ fontSize: 13, color: txt2, lineHeight: 1.6, margin: 0 }}>
-                      "I got to collaborate on real-world projects and build modern React dashboards under great mentorship. The company's work environment is truly innovative and supportive."
-                    </p>
-                  </div>
-
-                  <div className="intern-feedback-row">
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#8b5cf6", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700 }}>
-                          SA
-                        </div>
-                        <div>
-                          <h4 style={{ fontSize: 13.5, fontWeight: 700, color: txt, margin: 0 }}>Samy Amir</h4>
-                          <p style={{ fontSize: 11, color: txt2, margin: 0 }}>AI Research Assistant • 2025</p>
-                        </div>
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 4, color: "#eab308", fontSize: 12, fontWeight: 700 }}>
-                        <Star size={13} style={{ fill: "#eab308" }} />
-                        4.8
-                      </div>
-                    </div>
-                    <p style={{ fontSize: 13, color: txt2, lineHeight: 1.6, margin: 0 }}>
-                      "An outstanding place to grow. I worked with the core data science team to optimize training models. Highly recommend this internship to anyone looking for deep technical exposure."
-                    </p>
-                  </div>
+                  )}
                 </div>
               </div>
 
@@ -680,7 +680,7 @@ export default function CompaniesDetails() {
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   {company.internships && company.internships.length > 0 ? (
-                    company.internships.map((internship) => (
+                    company.internships.slice(0, 3).map((internship) => (
                       <div
                         key={internship.id}
                         onClick={() => navigate(`/internships/${internship.id}`)}
@@ -912,7 +912,7 @@ export default function CompaniesDetails() {
                       </span>
                     </div>
                     <span style={{ fontSize: 18, fontWeight: 700, color: "#ffffff" }}>
-                      {mockReviewsCount * 2 + 3}
+                      {(company?.total_internships_count || 0) * 3 + 12}
                     </span>
                   </div>
                 </div>
