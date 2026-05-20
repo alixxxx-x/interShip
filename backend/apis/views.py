@@ -159,7 +159,7 @@ class UserAdminUpdateView(generics.RetrieveUpdateDestroyAPIView):
     ordering_fields = ['id', 'username']
 
 class CompanyListView(generics.ListAPIView):
-    queryset = Company.objects.filter(role=User.Role.COMPANY)
+    queryset = Company.objects.filter(role=User.Role.COMPANY, is_active=True)
     serializer_class = CompanySerializer
     permission_classes = [AllowAny] # Allow all users to see companies
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
@@ -1149,7 +1149,7 @@ class GenerateInternshipCertificateView(generics.GenericAPIView):
                 'start_date': application.internship.offer_start_date,
                 'end_date': application.internship.offer_end_date,
                 'university_name': application.student.department.university.name,
-                'certificate_date': datetime.now().date(),
+                'certificate_date': timezone.now().date(),
             }
         )
 
