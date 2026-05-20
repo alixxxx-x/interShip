@@ -1931,6 +1931,34 @@ class ReviewListCreateView(generics.ListCreateAPIView):
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
+class UniversityPublicListView(generics.ListAPIView):
+    serializer_class = UniversitySerializer
+    permission_classes = [AllowAny]
+    pagination_class = None
+    queryset = University.objects.all().order_by('name') if hasattr(University, 'objects') else []
+
+    def get_queryset(self):
+        qs = University.objects.all().order_by('name')
+        print(f"--- [DIAGNOSTIC] Universities requested. Count in DB: {qs.count()} ---")
+        for u in qs:
+            print(f"  - Univ ID: {u.id}, Name: {u.name}, Domain: {u.email_domain}")
+        return qs
+
+class DepartmentPublicListView(generics.ListAPIView):
+    serializer_class = DepartmentSerializer
+    permission_classes = [AllowAny]
+    pagination_class = None
+
+    def get_queryset(self):
+        university_id = self.request.query_params.get('university_id')
+        if university_id:
+            qs = Department.objects.filter(university_id=university_id).order_by('name')
+            print(f"--- [DIAGNOSTIC] Departments requested for Univ ID {university_id}. Count: {qs.count()} ---")
+            return qs
+        qs = Department.objects.all().order_by('name')
+        print(f"--- [DIAGNOSTIC] All Departments requested. Count: {qs.count()} ---")
+        return qs
+
 class AdminUnivDepartmentListView(generics.ListCreateAPIView):
     serializer_class = DepartmentSerializer
     permission_classes = [IsAuthenticated]

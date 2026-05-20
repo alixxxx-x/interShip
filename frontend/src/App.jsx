@@ -58,7 +58,11 @@ function ScrollToTop() {
   const { pathname } = useLocation();
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    try {
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    } catch {
+      window.scrollTo(0, 0);
+    }
   }, [pathname]);
 
   return null;
@@ -104,10 +108,8 @@ function App() {
           </Route>
 
           {/* Auth Pages (No Navbar/Footer) */}
-          <Route element={<Login />}>
-            <Route path="/login" element={null} />
-            <Route path="/register" element={null} />
-          </Route>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Login />} />
 
           {/* Auth & Standalone Pages */}
           <Route
