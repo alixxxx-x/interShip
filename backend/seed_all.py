@@ -7,27 +7,88 @@ from datetime import date, timedelta
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
-from apis.models import User, Student, Company, Administrator, InternshipOffer, Application, DigitalCV, Notification, Message
+from apis.models import User, Student, Company, AdminDept, AdminUniv, University, Department, InternshipOffer, Application, DigitalCV, Notification, Message
 
 def seed_database():
     print("Starting full database seeding...")
 
-    # 1. Create Admin
+    # 1. Create Admin Univ + Universities + Departments
+    universities_data = [
+        {
+            "email": "admin@mehry.univ.dz",
+            "name": "Université Abdelhamid Mehri - Constantine 2",
+            "email_domain": "@univ-constantine2.dz",
+            "departments": ["Informatique (NTIC)", "Mathématiques", "Économie"]
+        },
+        {
+            "email": "admin@mentouri.univ.dz",
+            "name": "Université des Frères Mentouri - Constantine 1",
+            "email_domain": "@univ-constantine1.dz",
+            "departments": ["Sciences de la Nature et de la Vie", "Droit", "Lettres et Langues"]
+        }
+    ]
+
+    universities = []
+    for u_data in universities_data:
+        admin_univ = AdminUniv.objects.filter(email=u_data["email"]).first()
+        if not admin_univ:
+            admin_univ = AdminUniv.objects.create_user(
+                email=u_data["email"],
+                username=u_data["email"].split("@")[0],
+                password='admin123',
+                role=User.Role.ADMIN_UNIV
+            )
+            print(f"Admin Univ created: {u_data['email']}")
+
+        university, created = University.objects.get_or_create(
+            name=u_data["name"],
+            defaults={
+                "email_domain": u_data["email_domain"],
+                "admin": admin_univ
+            }
+        )
+        if not created:
+            if not university.admin_id:
+                university.admin = admin_univ
+            if u_data.get("email_domain"):
+                university.email_domain = u_data["email_domain"]
+            university.save()
+
+        for dept_name in u_data["departments"]:
+            Department.objects.get_or_create(
+                university=university,
+                name=dept_name
+            )
+
+        universities.append(university)
+
+    # 2. Create Admin Dept
     admin_email = 'admin@stag.io'
+    primary_dept = Department.objects.filter(university=universities[0]).first() if universities else Department.objects.first()
+    if not primary_dept:
+        fallback_univ = University.objects.create(
+            name="Unknown University",
+            email_domain="@univ.dz"
+        )
+        primary_dept = Department.objects.create(
+            university=fallback_univ,
+            name="Unknown Department"
+        )
+
     if not User.objects.filter(email=admin_email).exists():
-        admin = Administrator.objects.create_superuser(
+        admin = AdminDept.objects.create_superuser(
             email=admin_email,
             username='admin',
             password='admin123',
-            role=User.Role.ADMIN,
-            department='Information Technology'
+            role=User.Role.ADMIN_DEPT,
+            department=primary_dept
         )
-        print(f"Admin created: {admin_email}")
+        print(f"Admin Dept created: {admin_email}")
     else:
         admin = User.objects.get(email=admin_email)
-        print(f"Admin already exists: {admin_email}")
+        print(f" Admin already exists: {admin_email}")
 
-    # 2. Create Companies
+    # 3. Create Companies
     companies_data = [
         {"name": "Sonatrach", "field": "Energy & Oil", "location": "Algiers", "email": "sonatrach@gmail.com"},
         {"name": "Djezzy", "field": "Telecommunications", "location": "Algiers", "email": "djezzy@gmail.com"},
@@ -55,17 +116,31 @@ def seed_database():
         else:
             companies.append(Company.objects.get(email=c_data['email']))
 
-    # 3. Create Students
+    # 4. Create & Update Students
+    department_choices = list(Department.objects.select_related('university'))
+    if not department_choices:
+        fallback_univ = University.objects.create(
+            name="Unknown University",
+            email_domain="@univ.dz"
+        )
+        fallback_dept = Department.objects.create(
+            university=fallback_univ,
+            name="Unknown Department"
+        )
+        department_choices = [fallback_dept]
+
     students_data = [
-        {"first": "Ahmed", "last": "Ziri", "email": "ahmed.ziri@univ.dz", "major": "Computer Science", "wilaya": "Algiers"},
-        {"first": "Samy", "last": "Amir", "email": "samy.amir@univ.dz", "major": "Artificial Intelligence", "wilaya": "Oran"},
-        {"first": "Lina", "last": "Kaced", "email": "lina.kaced@univ.dz", "major": "Software Engineering", "wilaya": "Bejaia"},
-        {"first": "Meriem", "last": "Belaid", "email": "meriem.belaid@univ.dz", "major": "Data Science", "wilaya": "Tizi Ouzou"},
-        {"first": "Omar", "last": "Fekir", "email": "omar.fekir@univ.dz", "major": "Cyber Security", "wilaya": "Constantine"},
+        {"first": "Ahmed", "last": "Ziri", "email": "ahmed.ziri@univ.dz", "wilaya": "Algiers"},
+        {"first": "Samy", "last": "Amir", "email": "samy.amir@univ.dz", "wilaya": "Oran"},
+        {"first": "Lina", "last": "Kaced", "email": "lina.kaced@univ.dz", "wilaya": "Bejaia"},
+        {"first": "Meriem", "last": "Belaid", "email": "meriem.belaid@univ.dz", "wilaya": "Tizi Ouzou"},
+        {"first": "Omar", "last": "Fekir", "email": "omar.fekir@univ.dz", "wilaya": "Constantine"},
     ]
 
     students = []
-    for s_data in students_data:
+    for i, s_data in enumerate(students_data):
+        dept = department_choices[i % len(department_choices)]
+        univ_name = dept.university.name
         if not User.objects.filter(email=s_data['email']).exists():
             student = Student.objects.create_user(
                 email=s_data['email'],
@@ -74,7 +149,7 @@ def seed_database():
                 role=User.Role.STUDENT,
                 first_name=s_data['first'],
                 last_name=s_data['last'],
-                major=s_data['major'],
+                department=dept,
                 wilaya=s_data['wilaya'],
                 university_id=f"2024{random.randint(1000, 9999)}",
                 phone=f"0{random.randint(5, 7)}{random.randint(10000000, 99999999)}"
@@ -87,37 +162,85 @@ def seed_database():
                 last_name=s_data['last'],
                 email=s_data['email'],
                 phone=student.phone,
-                profile_summary=f"Enthusiastic {s_data['major']} student looking for an internship opportunity.",
+                profile_summary=f"Enthusiastic {dept.name} student looking for an internship opportunity.",
                 skills="Python, React, Django, SQL",
                 experience="Academic projects at University.",
-                education=f"Bachelor in {s_data['major']}",
+                education=f"Bachelor in {dept.name} at {univ_name}",
                 wilaya=s_data['wilaya'],
                 university_id=student.university_id
             )
             
             students.append(student)
-            print(f"Student created: {s_data['first']} {s_data['last']}")
+
+            print(f"Student created: {s_data['first']} {s_data['last']} ({univ_name} - {dept.name})")
         else:
-            students.append(Student.objects.get(email=s_data['email']))
+            student = Student.objects.get(email=s_data['email'])
+            # Update university and department
+            student.department = dept
+            student.save()
+            
+            # Update or create digital CV
+            cv, created = DigitalCV.objects.get_or_create(
+                student=student,
+                defaults={
+                    "first_name": student.first_name or "",
+                    "last_name": student.last_name or "",
+                    "email": student.email,
+                    "phone": student.phone or "",
+                    "profile_summary": f"Enthusiastic {dept.name} student looking for an internship opportunity.",
+                    "skills": "Python, React, Django, SQL",
+                    "experience": "Academic projects at University.",
+                    "education": f"Bachelor in {dept.name} at {univ_name}",
+                    "wilaya": student.wilaya or "",
+                    "university_id": student.university_id or ""
+                }
+            )
+            if not created:
+                cv.education = f"Bachelor in {dept.name} at {univ_name}"
+                cv.save()
+                
+            students.append(student)
+            print(f"ℹ️ Student updated: {student.first_name} {student.last_name} ({univ_name} - {dept.name})")
+
+    # Update ANY other existing students in the database that are not in the predefined list
+    all_db_students = Student.objects.exclude(email__in=[s['email'] for s in students_data])
+    for i, student in enumerate(all_db_students):
+        dept = department_choices[(len(students_data) + i) % len(department_choices)]
+        univ_name = dept.university.name
+        student.department = dept
+        student.save()
+        
+        cv, created = DigitalCV.objects.get_or_create(
+            student=student,
+            defaults={
+                "first_name": student.first_name or "",
+                "last_name": student.last_name or "",
+                "email": student.email,
+                "phone": student.phone or "",
+                "profile_summary": f"Enthusiastic {dept.name} student looking for an internship opportunity.",
+                "skills": "Python, React, Django, SQL",
+                "experience": "Academic projects at University.",
+                "education": f"Bachelor in {dept.name} at {univ_name}",
+                "wilaya": student.wilaya or "",
+                "university_id": student.university_id or ""
+            }
+        )
+        if not created:
+            cv.education = f"Bachelor in {dept.name} at {univ_name}"
+            cv.save()
+        print(f"🔄 Existing DB Student updated: {student.first_name} {student.last_name} ({univ_name} - {dept.name})")
 
     # 4. Create Internship Offers
-    titles_skills = {
-        "Web Developer Intern": ["React", "JavaScript", "HTML", "CSS", "Git"],
-        "AI Research Intern": ["Python", "PyTorch", "TensorFlow", "Data Science"],
-        "Network Security Assistant": ["Linux", "Cyber Security", "Networking", "Git"],
-        "Data Analyst Intern": ["Python", "SQL", "Excel", "Data Science", "Tableau"],
-        "Mobile App Developer": ["React Native", "JavaScript", "Mobile", "Git"],
-        "Cloud Engineering Intern": ["AWS", "Docker", "Kubernetes", "Linux"],
-        "UI/UX Design Intern": ["Figma", "UI/UX", "Design", "Research"],
-        "Embedded Systems Intern": ["C", "C++", "Embedded", "Linux"]
-    }
+    titles = [
+        "Web Developer Intern", "AI Research Intern", "Network Security Assistant", 
+        "Data Analyst Intern", "Mobile App Developer", "Cloud Engineering Intern",
+        "UI/UX Design Intern", "Embedded Systems Intern"
+    ]
     
     internships = []
-    import json
     for company in companies:
         for i in range(2):
-            title = random.choice(list(titles_skills.keys()))
-            skills_list = titles_skills[title]
+            title = random.choice(titles)
             internship = InternshipOffer.objects.create(
                 title=f"{title} at {company.name}",
                 description=f"Join {company.name} as a {title}. You will work on real-world projects and gain valuable experience in the {company.company_field} industry.",
@@ -131,7 +254,6 @@ def seed_database():
                 number_of_places=random.randint(2, 5),
                 internship_duration=timedelta(days=random.randint(30, 120)),
                 internship_salary=random.randint(5000, 20000),
-                internship_skills=json.dumps(skills_list),
                 wilaya=company.location
             )
             internships.append(internship)
@@ -177,7 +299,7 @@ def seed_database():
             content="Hello Ahmed! Sure, please check the description or visit our website for more info."
         )
 
-    print("\nDatabase seeding completed successfully!")
+    print("\n Database seeding completed successfully!")
 
 if __name__ == "__main__":
     seed_database()

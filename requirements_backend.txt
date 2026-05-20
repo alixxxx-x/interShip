@@ -1,5 +1,6 @@
 asgiref
 Django
+daphne
 djangorestframework
 djangorestframework_simplejwt
 PyJWT
@@ -10,3 +11,4 @@ psycopg2-binary
 pytz
 python-dotenv
 Pillow
+weasyprint

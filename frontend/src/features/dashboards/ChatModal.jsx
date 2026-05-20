@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -80,8 +80,8 @@ export default function ChatModal({ open, onOpenChange, recipientId, recipientNa
             {messages.map((msg) => {
               const isMe = msg.sender !== recipientId;
               return (
-                <div 
-                  key={msg.id} 
+                <div
+                  key={msg.id}
                   className={cn(
                     "flex flex-col max-w-[80%] gap-1",
                     isMe ? "ml-auto items-end" : "mr-auto items-start"
@@ -89,8 +89,8 @@ export default function ChatModal({ open, onOpenChange, recipientId, recipientNa
                 >
                   <div className={cn(
                     "px-3 py-2 rounded-2xl text-sm shadow-sm",
-                    isMe 
-                      ? "bg-primary text-primary-foreground rounded-tr-none" 
+                    isMe
+                      ? "bg-primary text-primary-foreground rounded-tr-none"
                       : "bg-muted rounded-tl-none"
                   )}>
                     {msg.content}
@@ -105,8 +105,8 @@ export default function ChatModal({ open, onOpenChange, recipientId, recipientNa
         </div>
 
         <form onSubmit={handleSendMessage} className="p-4 border-t flex gap-2 bg-muted/20">
-          <Input 
-            placeholder="Type your message..." 
+          <Input
+            placeholder="Type your message..."
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             className="bg-background border-none shadow-none focus-visible:ring-1"

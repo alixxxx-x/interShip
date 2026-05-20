@@ -25,7 +25,13 @@ export default function AllApplications() {
         const response = await api.get('/applications/');
         const applications = response.data.results || response.data;
 
-        const grouped = applications.reduce((acc, app) => {
+        const filteredApplications = applications.filter(app => {
+          const status = String(app.status || "").trim().toUpperCase();
+          // Filter out validated and completed to put them in the tracking tab
+          return status !== "VALIDATED" && status !== "COMPLETE" && status !== "CANCELLED" && app.is_validated_by_admin === false;
+        });
+
+        const grouped = filteredApplications.reduce((acc, app) => {
           const { offer } = app;
           if (!acc[offer]) {
             acc[offer] = [];
@@ -59,20 +65,31 @@ export default function AllApplications() {
     }
   };
 
-  const getStatusBadge = (status) => {
+  const getStatusBadge = (application) => {
+    const status = application.status;
     const variants = {
       "PENDING": "purple",
-      "ACCEPTED": "success",
-      "REJECTED": "destructive"
+      "ACCEPTED": "info",
+      "VALIDATED": "success",
+      "COMPLETE": "success",
+      "REJECTED": "destructive",
+      "CANCELLED": "destructive"
     };
     return variants[status] || "outline";
   };
 
-  const getStatusLabel = (status) => {
+  const getStatusLabel = (application) => {
+    const status = application.status;
+    const isAdminRejected = status === "REJECTED" && !!application.admin_rejection_date;
+    if (isAdminRejected) return "Rejected by Admin";
+
     const labels = {
-      "PENDING": "In progress",
+      "PENDING": "Pending",
       "ACCEPTED": "Accepted",
-      "REJECTED": "Rejected"
+      "VALIDATED": "Validated",
+      "COMPLETE": "Completed",
+      "REJECTED": "Rejected",
+      "CANCELLED": "Cancelled"
     };
     return labels[status] || status;
   };
@@ -109,8 +126,8 @@ export default function AllApplications() {
                     <TableRow key={application.id}>
                       <TableCell>{application.candidate}</TableCell>
                       <TableCell>
-                        <Badge variant={getStatusBadge(application.status)}>
-                          {getStatusLabel(application.status)}
+                        <Badge variant={getStatusBadge(application)}>
+                          {getStatusLabel(application)}
                         </Badge>
                       </TableCell>
                       <TableCell>{application.application_date}</TableCell>
@@ -121,8 +138,8 @@ export default function AllApplications() {
                           size="sm"
                           onClick={async () => {
                             try {
-                              const res = await api.get(`/cv/generate/${application.student}/`, { 
-                                responseType: 'blob' 
+                              const res = await api.get(`/cv/generate/${application.student}/`, {
+                                responseType: 'blob'
                               });
                               const blob = new Blob([res.data], { type: 'application/pdf' });
                               const url = window.URL.createObjectURL(blob);
@@ -155,10 +172,22 @@ export default function AllApplications() {
                               <X className="h-4 w-4" />
                             </Button>
                           </div>
+                        ) : application.status === "ACCEPTED" ? (
+                          <span
+                            className={application.is_validated_by_admin ? "cursor-not-allowed inline-block" : ""}
+                            title={application.is_validated_by_admin ? "Cannot edit after admin validation" : "Edit status"}
+                          >
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              disabled={application.is_validated_by_admin}
+                              onClick={() => handleStatusChange(offer, application.id, 'PENDING')}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          </span>
                         ) : (
-                          <Button variant="ghost" size="icon" onClick={() => handleStatusChange(offer, application.id, 'PENDING')}>
-                            <Pencil className="h-4 w-4" />
-                          </Button>
+                          <span className="text-muted-foreground text-xs">—</span>
                         )}
                       </TableCell>
                     </TableRow>

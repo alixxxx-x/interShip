@@ -96,9 +96,12 @@ export default function CompanyDashboard() {
 
   const getStatusBadge = (status) => {
     const variants = {
-      "In progress": "purple",
+      "Pending": "purple",
       "Accepted": "success",
-      "Rejected": "destructive"
+      "Validated": "info",
+      "Completed": "success",
+      "Rejected": "destructive",
+      "Cancelled": "destructive"
     };
     return variants[status] || "outline";
   };
@@ -234,4 +237,4 @@ export default function CompanyDashboard() {
       </Card>
     </div>
   );
-}
+}

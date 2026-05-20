@@ -1,0 +1,165 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="fr">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <style type="text/css">
+        @page {
+            size: a4 landscape;
+            margin: 10mm;
+        }
+        body {
+            font-family: "Times New Roman", serif;
+            color: #1e293b;
+            margin: 0;
+            padding: 0;
+            background-color: #fff;
+        }
+        .certificate-container {
+            text-align: center;
+            padding: 0;
+        }
+        .header {
+            margin-top: 5px;
+            margin-bottom: 10px;
+        }
+        .university-title {
+            font-size: 13px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #475569;
+        }
+        .divider {
+            width: 100px;
+            border-top: 1px solid #cbd5e1;
+            margin: 8px auto;
+        }
+        .main-title {
+            font-size: 32px;
+            font-weight: bold;
+            color: #0f172a;
+            margin: 10px 0 5px 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .sub-title {
+            font-size: 15px;
+            font-style: italic;
+            color: #64748b;
+            margin-bottom: 15px;
+        }
+        .certify-text {
+            font-size: 15px;
+            line-height: 1.5;
+            margin: 10px auto;
+            max-width: 650px;
+            color: #334155;
+        }
+        .highlight {
+            font-size: 26px;
+            font-weight: bold;
+            color: #0f172a;
+            border-bottom: 1px solid #94a3b8;
+            padding-bottom: 1px;
+            margin: 5px 0 10px 0;
+            display: inline-block;
+        }
+        .details-section {
+            margin: 15px 0;
+        }
+        .details-table {
+            width: 50%;
+            margin: 0 auto;
+            border-collapse: collapse;
+        }
+        .details-table td {
+            padding: 4px;
+            font-size: 13px;
+        }
+        .details-table td.label {
+            font-weight: bold;
+            width: 45%;
+            text-align: right;
+            padding-right: 12px;
+            color: #475569;
+        }
+        .details-table td.value {
+            text-align: left;
+            color: #0f172a;
+        }
+        .signatures-section {
+            margin-top: 25px;
+        }
+
+        .signature-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: #1e293b;
+        }
+        .signature-company {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="certificate-container">
+        <div class="header">
+            <div class="university-title">{{ university_name }}</div>
+            <div class="divider"></div>
+        </div>
+
+        <div class="main-title">Certificate of Completion</div>
+        <div class="sub-title">Internship Program</div>
+
+        <div class="certify-text">
+            This is to certify that <br/>
+            <span class="highlight">{{ student_name }}</span> <br/>
+            has successfully completed their professional internship at <br/>
+            <strong>{{ company_name }}</strong> as an <strong>{{ internship_title }}</strong>.
+        </div>
+
+        <div class="details-section">
+            <table class="details-table">
+                <tr>
+                    <td class="label">Internship Period:</td>
+                    <td class="value">From {{ start_date }} to {{ end_date }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Date of Validation:</td>
+                    <td class="value">{{ validation_date }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="signatures-section">
+            <!-- Table for signature lines -->
+            <table style="width: 80%; margin: 0 auto; border-collapse: collapse;">
+                <tr>
+                    <td style="width: 15%; font-size: 1px; line-height: 1px;">&nbsp;</td>
+                    <td style="width: 20%; border-top: 1px solid #94a3b8; font-size: 1px; line-height: 1px;">&nbsp;</td>
+                    <td style="width: 30%; font-size: 1px; line-height: 1px;">&nbsp;</td>
+                    <td style="width: 20%; border-top: 1px solid #94a3b8; font-size: 1px; line-height: 1px;">&nbsp;</td>
+                    <td style="width: 15%; font-size: 1px; line-height: 1px;">&nbsp;</td>
+                </tr>
+            </table>
+            
+            <!-- Table for signature labels -->
+            <table style="width: 80%; margin: 8px auto 0 auto; border-collapse: collapse;">
+                <tr>
+                    <td style="width: 50%; text-align: center; vertical-align: top;">
+                        <div class="signature-title">For the Host Company</div>
+                        <div class="signature-company">{{ company_name }}</div>
+                    </td>
+                    <td style="width: 50%; text-align: center; vertical-align: top;">
+                        <div class="signature-title">For the University</div>
+                        <div class="signature-company">{{ university_name }}</div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,16 +1,15 @@
 import { useEffect, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Bell, BellOff, CheckCheck, User, Briefcase, Trash2 } from "lucide-react";
 import api from "@/api/api";
-import { useTheme } from "@/components/theme-provider";
 
-export default function Notifications({ isNavbarModal, isDarkNavbar }) {
+export default function Notifications() {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
-  const { theme } = useTheme();
-  const isDark = isNavbarModal ? isDarkNavbar : theme === "dark";
 
   const fetchNotifications = async () => {
     try {
@@ -73,13 +72,15 @@ export default function Notifications({ isNavbarModal, isDarkNavbar }) {
   const getIcon = (type) => {
     switch (type) {
       case "NEW_APPLICATION":
-        return <User className="h-5 w-5 text-blue-500" />;
+        return <User className="h-5 w-5 text-primary" />;
       case "APPLICATION_ACCEPTED":
-        return <CheckCheck className="h-5 w-5 text-emerald-500" />;
+        return <CheckCheck className="h-5 w-5 text-green-500" />;
+      case "APPLICATION_VALIDATED":
+        return <Briefcase className="h-5 w-5 text-blue-500" />;
       case "APPLICATION_REJECTED":
-        return <BellOff className="h-5 w-5 text-rose-500" />;
+        return <BellOff className="h-5 w-5 text-red-500" />;
       default:
-        return <Bell className="h-5 w-5 text-zinc-400" />;
+        return <Bell className="h-5 w-5 text-muted-foreground" />;
     }
   };
 
@@ -89,6 +90,8 @@ export default function Notifications({ isNavbarModal, isDarkNavbar }) {
         return "New Application";
       case "APPLICATION_ACCEPTED":
         return "Accepted";
+      case "APPLICATION_VALIDATED":
+        return "Validated";
       case "APPLICATION_REJECTED":
         return "Rejected";
       default:
@@ -96,72 +99,42 @@ export default function Notifications({ isNavbarModal, isDarkNavbar }) {
     }
   };
 
-  const badgeStyles = (type) => {
+  const getTypeBadge = (type) => {
     switch (type) {
       case "NEW_APPLICATION":
-        return {
-          background: isDark ? "rgba(147, 51, 234, 0.15)" : "rgba(147, 51, 234, 0.08)",
-          color: isDark ? "#c084fc" : "#7e22ce"
-        };
+        return "purple";
       case "APPLICATION_ACCEPTED":
-        return {
-          background: isDark ? "rgba(16, 185, 129, 0.15)" : "rgba(16, 185, 129, 0.08)",
-          color: isDark ? "#34d399" : "#047857"
-        };
+        return "success";
+      case "APPLICATION_VALIDATED":
+        return "info";
       case "APPLICATION_REJECTED":
-        return {
-          background: isDark ? "rgba(244, 63, 94, 0.15)" : "rgba(244, 63, 94, 0.08)",
-          color: isDark ? "#fb7185" : "#be123c"
-        };
+        return "destructive";
       default:
-        return {
-          background: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.04)",
-          color: isDark ? "#a1a1aa" : "#71717a"
-        };
+        return "outline";
     }
   };
 
   if (loading) {
     return (
-      <div 
-        className="p-8 space-y-4 h-full flex flex-col justify-start"
-        style={{
-          fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif',
-          background: isDark ? "#161618" : "#fff"
-        }}
-      >
-        <div className={`h-8 w-48 rounded animate-pulse ${isDark ? 'bg-zinc-800' : 'bg-zinc-100'}`} />
-        {[1, 2, 3].map((i) => (
-          <div key={i} className={`h-20 rounded-xl animate-pulse ${isDark ? 'bg-zinc-800/50' : 'bg-zinc-100/50'}`} />
+      <div className="p-6 space-y-4">
+        <div className="h-8 w-48 bg-muted animate-pulse rounded" />
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="h-20 bg-muted animate-pulse rounded-xl" />
         ))}
       </div>
     );
   }
 
-  const containerBg = isDark ? "#161618" : "#fff";
-  const textColor = isDark ? "#ffffff" : "#111111";
-  const descColor = isDark ? "#a1a1aa" : "#666666";
-  const borderCol = isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.08)";
-  const listBg = isDark ? "rgba(255, 255, 255, 0.02)" : "#ffffff";
-
   return (
-    <div 
-      className="flex flex-col flex-1 p-8 h-full overflow-y-auto"
-      style={{
-        fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif',
-        background: containerBg,
-        color: textColor,
-        transition: "all 0.3s ease"
-      }}
-    >
+    <div className="flex flex-col flex-1 space-y-6 p-8 h-full">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-[26px] font-bold tracking-tight flex items-center gap-3" style={{ color: textColor }}>
-            <Bell className={`h-7 w-7 ${isDark ? "text-blue-400" : "text-blue-600"}`} />
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+            <Bell className="h-7 w-7 text-primary" />
             Notifications
           </h1>
-          <p className="text-[14px] mt-1" style={{ color: descColor }}>
+          <p className="text-muted-foreground">
             {unreadCount > 0
               ? `You have ${unreadCount} unread notification${unreadCount > 1 ? "s" : ""}`
               : "You're all caught up!"}
@@ -170,182 +143,126 @@ export default function Notifications({ isNavbarModal, isDarkNavbar }) {
 
         <div className="flex flex-wrap items-center gap-2">
           {unreadCount > 0 && (
-            <button
+            <Button
+              variant="outline"
+              size="sm"
               onClick={markAllAsRead}
-              className="flex items-center gap-2 px-4 py-2 border rounded-full text-xs font-semibold cursor-pointer transition-all"
-              style={{
-                borderColor: isDark ? "rgba(59, 130, 246, 0.4)" : "rgba(59, 130, 246, 0.2)",
-                background: isDark ? "rgba(59, 130, 246, 0.1)" : "rgba(59, 130, 246, 0.04)",
-                color: isDark ? "#60a5fa" : "#2563eb",
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = isDark ? "rgba(59, 130, 246, 0.2)" : "rgba(59, 130, 246, 0.08)"}
-              onMouseLeave={e => e.currentTarget.style.background = isDark ? "rgba(59, 130, 246, 0.1)" : "rgba(59, 130, 246, 0.04)"}
+              className="flex items-center gap-2 h-9 text-primary hover:text-primary hover:bg-primary/5 border-primary/20"
             >
               <CheckCheck className="h-4 w-4" />
               Mark all as read
-            </button>
+            </Button>
           )}
           {notifications.length > 0 && (
-            <button
+            <Button
+              variant="outline"
+              size="sm"
               onClick={clearAllNotifications}
-              className="flex items-center gap-2 px-4 py-2 border rounded-full text-xs font-semibold cursor-pointer transition-all"
-              style={{
-                borderColor: isDark ? "rgba(239, 68, 68, 0.4)" : "rgba(239, 68, 68, 0.2)",
-                background: isDark ? "rgba(239, 68, 68, 0.1)" : "rgba(239, 68, 68, 0.04)",
-                color: isDark ? "#f87171" : "#dc2626",
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = isDark ? "rgba(239, 68, 68, 0.2)" : "rgba(239, 68, 68, 0.08)"}
-              onMouseLeave={e => e.currentTarget.style.background = isDark ? "rgba(239, 68, 68, 0.1)" : "rgba(239, 68, 68, 0.04)"}
+              className="flex items-center gap-2 h-9 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-100"
             >
               <Trash2 className="h-4 w-4" />
               Clear all
-            </button>
+            </Button>
           )}
         </div>
       </div>
 
-      {/* Notifications List Container */}
-      <div 
-        className="flex-1 flex flex-col rounded-2xl border overflow-hidden"
-        style={{
-          background: listBg,
-          borderColor: borderCol
-        }}
-      >
-        {/* All Notifications Title bar */}
-        <div 
-          className="px-6 py-4 border-b flex items-center justify-between"
-          style={{ borderColor: borderCol }}
-        >
-          <span className="text-[16px] font-bold" style={{ color: textColor }}>
+      {/* Notifications List */}
+      <Card className="flex-1 flex flex-col shadow-sm border-border/60">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">
             All Notifications
-          </span>
-          {unreadCount > 0 && (
-            <span 
-              className="px-2 py-0.5 rounded-full text-[11px] font-bold ml-2"
-              style={{
-                background: "rgba(147, 51, 234, 0.15)",
-                color: isDark ? "#c084fc" : "#7e22ce"
-              }}
-            >
-              {unreadCount} new
-            </span>
-          )}
-        </div>
-
-        {/* Content body */}
-        <div className="flex-1 flex flex-col">
+            {unreadCount > 0 && (
+              <Badge variant="purple" className="ml-2 text-xs">
+                {unreadCount} new
+              </Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0 flex-1 flex flex-col">
           {error ? (
-            <div className="p-8 text-center text-sm text-red-500">{error}</div>
+            <div className="p-6 text-center text-sm text-destructive">{error}</div>
           ) : notifications.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center p-12 text-center my-auto">
-              <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-5 ${isDark ? 'bg-zinc-800' : 'bg-zinc-100'}`}>
-                <Bell className="h-10 w-10" style={{ color: descColor }} />
+            <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
+              <div className="w-24 h-24 bg-muted/30 rounded-full flex items-center justify-center mb-6">
+                <Bell className="h-12 w-12 text-muted-foreground/40" />
               </div>
-              <p className="text-lg font-bold mb-1" style={{ color: textColor }}>
+              <p className="text-xl font-bold text-foreground mb-2">
                 No notifications yet
               </p>
-              <p className="text-sm max-w-sm mx-auto leading-relaxed" style={{ color: descColor }}>
+              <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
                 When students apply to your internships, you'll see all your notifications and updates right here.
               </p>
             </div>
           ) : (
-            <div className="divide-y" style={{ borderColor: borderCol }}>
-              {notifications.map((notification) => {
-                const bStyle = badgeStyles(notification.type);
-                const isUnread = !notification.isRead;
-                
-                return (
+            <div className="divide-y">
+              {notifications.map((notification) => (
+                <div
+                  key={notification.id}
+                  className={`flex items-start gap-4 p-4 sm:px-6 transition-colors cursor-pointer hover:bg-muted/50 ${
+                    !notification.isRead
+                      ? "bg-primary/[0.03] border-l-2 border-l-primary"
+                      : ""
+                  }`}
+                  onClick={() => {
+                    if (!notification.isRead) markAsRead(notification.id);
+                  }}
+                >
+                  {/* Icon */}
                   <div
-                    key={notification.id}
-                    className="flex items-start gap-4 p-4 sm:px-6 transition-all duration-150 cursor-pointer"
-                    style={{
-                      borderLeft: isUnread ? (isDark ? "3px solid #60a5fa" : "3px solid #2563eb") : "none",
-                      background: isUnread 
-                        ? (isDark ? "rgba(96, 165, 250, 0.04)" : "rgba(37, 99, 235, 0.02)")
-                        : "transparent",
-                      borderBottom: `1px solid ${borderCol}`
-                    }}
-                    onClick={() => {
-                      if (isUnread) markAsRead(notification.id);
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = isUnread 
-                      ? (isDark ? "rgba(96, 165, 250, 0.08)" : "rgba(37, 99, 235, 0.04)")
-                      : (isDark ? "rgba(255, 255, 255, 0.02)" : "rgba(0, 0, 0, 0.015)")}
-                    onMouseLeave={e => e.currentTarget.style.background = isUnread 
-                      ? (isDark ? "rgba(96, 165, 250, 0.04)" : "rgba(37, 99, 235, 0.02)")
-                      : "transparent"}
+                    className={`mt-0.5 shrink-0 h-10 w-10 rounded-full flex items-center justify-center ${
+                      !notification.isRead
+                        ? "bg-primary/10"
+                        : "bg-muted"
+                    }`}
                   >
-                    {/* Icon */}
-                    <div
-                      className="mt-0.5 shrink-0 h-10 w-10 rounded-full flex items-center justify-center"
-                      style={{
-                        background: isUnread 
-                          ? (isDark ? "rgba(96, 165, 250, 0.12)" : "rgba(37, 99, 235, 0.08)")
-                          : (isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.04)")
+                    {getIcon(notification.type)}
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge variant={getTypeBadge(notification.type)} className="text-[10px] px-2 py-0">
+                        {getTypeLabel(notification.type)}
+                      </Badge>
+                      {!notification.isRead && (
+                        <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                      )}
+                    </div>
+                    <p
+                      className={`text-sm leading-snug ${
+                        !notification.isRead
+                          ? "font-semibold text-foreground"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      {notification.message}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      {notification.createdAt}
+                    </p>
+                  </div>
+
+                  {/* Mark as read button */}
+                  {!notification.isRead && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="shrink-0 h-8 w-8 rounded-full hover:bg-primary/10 hover:text-primary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        markAsRead(notification.id);
                       }}
                     >
-                      {getIcon(notification.type)}
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span 
-                          className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                          style={bStyle}
-                        >
-                          {getTypeLabel(notification.type)}
-                        </span>
-                        {isUnread && (
-                          <span 
-                            className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" 
-                          />
-                        )}
-                      </div>
-                      <p
-                        className="text-sm leading-snug"
-                        style={{
-                          fontWeight: isUnread ? "600" : "400",
-                          color: isUnread ? textColor : descColor
-                        }}
-                      >
-                        {notification.message}
-                      </p>
-                      <p className="text-[11px] mt-1" style={{ color: descColor }}>
-                        {notification.createdAt}
-                      </p>
-                    </div>
-
-                    {/* Mark as read button */}
-                    {isUnread && (
-                      <button
-                        className="shrink-0 h-7 w-7 rounded-full flex items-center justify-center border-none cursor-pointer transition-all"
-                        style={{
-                          background: isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.04)",
-                          color: isDark ? "#60a5fa" : "#2563eb"
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          markAsRead(notification.id);
-                        }}
-                        onMouseEnter={e => {
-                          e.currentTarget.style.background = isDark ? "rgba(96, 165, 250, 0.2)" : "rgba(37, 99, 235, 0.1)";
-                        }}
-                        onMouseLeave={e => {
-                          e.currentTarget.style.background = isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.04)";
-                        }}
-                      >
-                        <CheckCheck className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
+                      <CheckCheck className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
             </div>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

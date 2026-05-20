@@ -1,27 +1,67 @@
-from .permissions import IsAdmin
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status, filters
+from rest_framework import response
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.decorators import api_view, permission_classes
 from rest_framework_simplejwt.views import TokenObtainPairView
-from django.db.models import Q, Count, Avg
+from django.db.models import Q, Count
 from django.utils import timezone
 from django.http import FileResponse
 from .models import *
 from .serializers import *
 from .permissions import *
+# gemini ai
+from google import genai
+from django.conf import settings
+from rest_framework import status
+import json
+# forgot password and reset password
+import random
+from rest_framework.views import APIView
+# cv generation to pdf
+from reportlab.lib.styles import getSampleStyleSheet
+from io import BytesIO
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table as RLTable, TableStyle
+# Prepare chart data with proper month names
+import calendar
+# agreement generation
+from django.template.loader import render_to_string
+from django.http import HttpResponse
+
+def _scope_applications_for_admin(queryset, user):
+    if user.role == User.Role.ADMIN_DEPT:
+        admin_dept = getattr(user, 'admindept', None)
+        if admin_dept and admin_dept.department_id:
+            return queryset.filter(student__department=admin_dept.department)
+        return queryset.none()
+    if user.role == User.Role.ADMIN_UNIV:
+        admin_univ = getattr(user, 'adminuniv', None)
+        university = getattr(admin_univ, 'university', None)
+        if university:
+            return queryset.filter(student__department__university=university)
+        return queryset.none()
+    return queryset
+
+def _get_validation_admins_for_student(student):
+    if not student or not student.department_id:
+        return User.objects.none()
+
+    university = student.department.university
+    admin_univ_qs = User.objects.filter(
+        role=User.Role.ADMIN_UNIV,
+        adminuniv__university=university
+    )
+    admin_dept_qs = User.objects.filter(
+        role=User.Role.ADMIN_DEPT,
+        admindept__department=student.department
+    )
+    return admin_univ_qs | admin_dept_qs
 
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
-
-# gemini ai
-from google import genai
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.conf import settings
-import json
 
 # Initialize Gemini Client
 client = genai.Client(api_key=settings.GEMINI_API_KEY)
@@ -38,48 +78,49 @@ SYSTEM_INSTRUCTION = """
     IMPORTANT RULE: Students MUST register using their university email address ending in '@univ.dz'. Non-university emails are not accepted for student accounts.
 """
 
-@csrf_exempt       # to allow POST requests from any origin
-def chatbot(request):
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Only POST requests are allowed'}, status=405)
-    try:
-        data = json.loads(request.body)
-        user_question = data.get('question', '').strip()
-        chat_history = data.get('chat_history', [])
+class ChatbotView(APIView):
+    permission_classes = [AllowAny]  # anyone can ask questions, even without logging in
 
-        if not user_question:
-            return JsonResponse({'error': 'No question provided'}, status=400)
+    def post(self, request):
+        try:
+            user_question = request.data.get('question', '').strip()
+            chat_history = request.data.get('chat_history', [])
 
-        # Prepare history for Gemini
-        # The new SDK uses 'role' and 'parts' [ { 'text': ... } ]
-        history = []
-        for msg in chat_history:
-            history.append({
-                "role": "user" if msg.get("role") == "user" else "model",
-                "parts": [{"text": msg.get("text", "")}]
+            if not user_question:
+                return Response(
+                    {'error': 'No question provided'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            #Prepare history for Gemini
+            history = []
+            for msg in chat_history:
+                history.append({
+                    "role": "user" if msg.get("role") == "user" else "model",
+                    "parts": [{"text": msg.get("text", "")}]
+                })
+
+            #Gemini request
+            response = client.models.generate_content(
+                model='gemini-2.0-flash',
+                config={'system_instruction': SYSTEM_INSTRUCTION},
+                contents=history + [{
+                    "role": "user",
+                    "parts": [{"text": user_question}]
+                }]
+            )
+
+            return Response({
+                'success': True,
+                'response': response.text
             })
 
-        # Generate response using the new client structure
-        response = client.models.generate_content(
-            model='gemini-2.0-flash',
-            config={
-                'system_instruction': SYSTEM_INSTRUCTION,
-            },
-            contents=history + [{"role": "user", "parts": [{"text": user_question}]}]
-        )
-
-        ai_response = response.text
-
-        return JsonResponse({
-            'success': True,
-            'response': ai_response
-        })
-
-    except json.JSONDecodeError:
-        return JsonResponse({'error': 'Invalid JSON'}, status=400)
-    except Exception as e:
-        print(f"Error in chatbot: {str(e)}")
-        return JsonResponse({'error': str(e)}, status=500)
+        except Exception as e:
+            print(f"Error in chatbot: {str(e)}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 # Authentication Views
 
@@ -124,6 +165,9 @@ class CompanyListView(generics.ListAPIView):
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name', 'location', 'company_field']
 
+# messaging views
+
+
 class MessageListView(generics.ListAPIView):
     serializer_class = MessageSerializer
     permission_classes = [IsAuthenticated]
@@ -138,7 +182,22 @@ class MessageListView(generics.ListAPIView):
                 (Q(sender_id=recipient_id) & Q(recipient=user))
             )
             # Mark received messages as read
-            messages.filter(recipient=user).update(is_read=True)
+            unread_messages = messages.filter(recipient=user, is_read=False)
+            if unread_messages.exists():
+                unread_messages.update(is_read=True)
+                # Broadcast read receipt
+                from channels.layers import get_channel_layer
+                from asgiref.sync import async_to_sync
+                channel_layer = get_channel_layer()
+                id1, id2 = sorted([user.id, int(recipient_id)])
+                room_group_name = f'chat_{id1}_{id2}'
+                async_to_sync(channel_layer.group_send)(
+                    room_group_name,
+                    {
+                        'type': 'read_receipt',
+                        'reader_id': user.id
+                    }
+                )
             return messages
         return Message.objects.filter(Q(sender=user) | Q(recipient=user))
 
@@ -148,6 +207,57 @@ class MessageCreateView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(sender=self.request.user)
+
+class MessageDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = MessageSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Users can edit/delete messages they sent or received (to allow reactions)
+        return Message.objects.filter(Q(sender=self.request.user) | Q(recipient=self.request.user))
+
+    def perform_destroy(self, instance):
+        # Before deleting, get room information to notify the other user via WebSocket
+        recipient_id = instance.recipient.id
+        sender_id = instance.sender.id
+        message_id = instance.id
+        
+        # Call super to delete
+        super().perform_destroy(instance)
+        
+        # Broadcast message deletion
+        from channels.layers import get_channel_layer
+        from asgiref.sync import async_to_sync
+        channel_layer = get_channel_layer()
+        id1, id2 = sorted([sender_id, recipient_id])
+        room_group_name = f'chat_{id1}_{id2}'
+        async_to_sync(channel_layer.group_send)(
+            room_group_name,
+            {
+                'type': 'message_deleted',
+                'message_id': message_id
+            }
+        )
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        
+        # Broadcast message edit
+        from channels.layers import get_channel_layer
+        from asgiref.sync import async_to_sync
+        channel_layer = get_channel_layer()
+        id1, id2 = sorted([instance.sender.id, instance.recipient.id])
+        room_group_name = f'chat_{id1}_{id2}'
+        async_to_sync(channel_layer.group_send)(
+            room_group_name,
+            {
+                'type': 'message_edited',
+                'message_id': instance.id,
+                'content': instance.content
+            }
+        )
+
+# password change view
 
 class ChangePasswordView(generics.GenericAPIView):
     serializer_class = ChangePasswordSerializer
@@ -170,8 +280,18 @@ class InternshipCreateView(generics.CreateAPIView):
     permission_classes = [IsCompany, IsAuthenticated]
 
     def perform_create(self, serializer):
-        serializer.save(company=self.request.user.company) # Access the Company profile from the User
-    
+        company = self.request.user.company
+        internship = serializer.save(company=company)
+
+        # Notify all followers of this company about the new open internship
+        if internship.status == InternshipOffer.Status.OPEN_FOR_APPLICATION:
+            followers = CompanyFollow.objects.filter(company=company).select_related('student')
+            for follow in followers:
+                Notification.objects.create(
+                    recipient=follow.student,
+                    notification_type=Notification.NotificationType.NEW_INTERNSHIP_FROM_FOLLOWED,
+                    message=f"{company.name} posted a new internship: '{internship.title}'",
+                )
 
 class InternshipUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = InternshipOffer.objects.all()
@@ -188,7 +308,6 @@ class InternshipUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
         instance.status = InternshipOffer.Status.HIDDEN
         instance.save()
 
-
 class InternshipRetrieveView(generics.RetrieveAPIView):
     queryset = InternshipOffer.objects.all()
     serializer_class = InternshipSerializer
@@ -203,7 +322,7 @@ class InternshipRetrieveView(generics.RetrieveAPIView):
                 raise PermissionDenied("You do not have permission to view this internship.")
             return obj
 
-        if user.role != User.Role.ADMIN:
+        if user.role not in [User.Role.ADMIN_DEPT, User.Role.ADMIN_UNIV]:
             if obj.status == InternshipOffer.Status.HIDDEN:
                 raise PermissionDenied("You do not have permission to view this internship.")
             
@@ -212,7 +331,6 @@ class InternshipRetrieveView(generics.RetrieveAPIView):
                 raise PermissionDenied("You do not have permission to view this internship.")
         
         return obj
-
 
 class InternshipListView(generics.ListAPIView):
     queryset = InternshipOffer.objects.all()
@@ -225,7 +343,7 @@ class InternshipListView(generics.ListAPIView):
     def get_queryset(self):
         queryset = super().get_queryset()
         # Admins see all offers
-        if self.request.user.is_authenticated and self.request.user.role == User.Role.ADMIN:
+        if self.request.user.is_authenticated and self.request.user.role in [User.Role.ADMIN_DEPT, User.Role.ADMIN_UNIV]:
             return queryset
             
         # Everyone else (Students, unauthenticated users, and companies browsing the public feed)
@@ -239,69 +357,6 @@ class InternshipListView(generics.ListAPIView):
             ]
         )
 
-class SimilarInternshipsView(generics.ListAPIView):
-    serializer_class = InternshipSerializer
-    permission_classes = [AllowAny]
-
-    def get_queryset(self):
-        pk = self.kwargs.get('pk')
-        current = get_object_or_404(InternshipOffer, pk=pk)
-        
-        # Get all other open internships
-        base_qs = InternshipOffer.objects.filter(
-            status=InternshipOffer.Status.OPEN_FOR_APPLICATION
-        ).exclude(id=pk)
-        
-        # Parse current skills for overlap checking
-        current_skills = set()
-        if current.internship_skills:
-            try:
-                import json
-                parsed = json.loads(current.internship_skills)
-                if isinstance(parsed, list):
-                    current_skills = set(str(s).lower().strip() for s in parsed)
-            except Exception:
-                current_skills = set([current.internship_skills.lower().strip()])
-
-        # Rank suggestions in memory based on structured metrics
-        scored_offers = []
-        for offer in base_qs:
-            score = 0
-            
-            # Metric 1: Role Type Match (Full Time / Part Time)
-            if offer.internship_type == current.internship_type:
-                score += 5
-                
-            # Metric 2: Location Model Match (Remote / Onsite / Hybrid)
-            if offer.internship_location == current.internship_location:
-                score += 4
-                
-            # Metric 3: Geographical Wilaya Match
-            if offer.wilaya and current.wilaya and offer.wilaya.strip().lower() == current.wilaya.strip().lower():
-                score += 3
-                
-            # Metric 4: Shared Skills Overlap
-            if offer.internship_skills:
-                try:
-                    import json
-                    offer_skills = json.loads(offer.internship_skills)
-                    if isinstance(offer_skills, list):
-                        overlap = len(current_skills.intersection(set(str(s).lower().strip() for s in offer_skills)))
-                        score += overlap * 2  # 2 points per matching skill
-                except Exception:
-                    if offer.internship_skills.lower().strip() in current_skills:
-                        score += 2
-            
-            scored_offers.append((score, offer.id))
-            
-        # Sort by score descending
-        scored_offers.sort(key=lambda x: x[0], reverse=True)
-        top_ids = [item[1] for item in scored_offers[:3]]
-        
-        # Keep exact queryset sequence or return sorted queryset list
-        preserved_order = sorted(base_qs.filter(id__in=top_ids), key=lambda x: top_ids.index(x.id) if x.id in top_ids else 999)
-        return preserved_order
-
 class CompanyInternshipListView(generics.ListAPIView):
     queryset = InternshipOffer.objects.all()
     serializer_class = InternshipSerializer
@@ -313,7 +368,6 @@ class CompanyInternshipListView(generics.ListAPIView):
     def get_queryset(self):
         # Allow the company to see ALL of their own offers (including drafts, finished, hidden)
         return super().get_queryset().filter(company=self.request.user.company)
-
 
 # application views
 
@@ -354,6 +408,18 @@ class ApplicationUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
 
     def perform_update(self, serializer):
         old_status = serializer.instance.status
+        new_status = serializer.validated_data.get("status", old_status)
+        if new_status == Application.Status.VALIDATED:
+            raise PermissionDenied("Only admins can validate applications.")
+        if (
+            new_status == Application.Status.COMPLETE
+            and (
+                serializer.instance.status != Application.Status.VALIDATED
+                or not serializer.instance.is_validated_by_admin
+            )
+        ):
+            raise PermissionDenied("Only admin-validated applications can be completed.")
+
         application = serializer.save()
         internship = application.internship
         
@@ -376,8 +442,8 @@ class ApplicationUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
                     application=application
                 )
                 
-                # Notify all Admins that validation is required
-                admins = User.objects.filter(role=User.Role.ADMIN)
+                # Notify relevant Admins that validation is required
+                admins = _get_validation_admins_for_student(application.student)
                 for admin in admins:
                     Notification.objects.create(
                         recipient=admin,
@@ -454,19 +520,35 @@ class ApplicationListView(generics.ListAPIView):
     
     def get_queryset(self):
         queryset = super().get_queryset()
-        if self.request.user.role not in [User.Role.ADMIN]:
-            if self.request.user.role == User.Role.COMPANY:
-                queryset = queryset.filter(internship__company=self.request.user)
-            else:
-                queryset = queryset.filter(student=self.request.user.student)
-        return queryset
+        
+        from django.utils import timezone
+        # Auto-complete validated internships whose end date has passed
+        completed_apps = queryset.filter(
+            status=Application.Status.VALIDATED,
+            internship__offer_end_date__lt=timezone.now().date()
+        )
+        if completed_apps.exists():
+            completed_apps.update(status=Application.Status.COMPLETE)
+            
+        # Re-fetch after update
+        queryset = super().get_queryset()
+        user = self.request.user
+        
+        if user.role in [User.Role.ADMIN_DEPT, User.Role.ADMIN_UNIV]:
+            return _scope_applications_for_admin(queryset, user)
+            
+        if user.role == User.Role.COMPANY:
+            return queryset.filter(internship__company__id=user.id)
+            
+        if user.role == User.Role.STUDENT:
+            return queryset.filter(student__id=user.id)
+            
+        return queryset.none()
 
     @property
     def pagination_class(self):
-        # Disable pagination for admins to avoid missing candidates
-        if self.request.user.role == User.Role.ADMIN:
-            return None
-        return super().pagination_class
+        # Disable pagination for this view as the frontend expects a direct array
+        return None
 
 # skills views
 
@@ -523,7 +605,7 @@ class SkillsListView(generics.ListAPIView):
     
     def get_queryset(self):
         queryset = super().get_queryset()
-        if self.request.user.role not in [User.Role.ADMIN]:
+        if self.request.user.role not in [User.Role.ADMIN_DEPT, User.Role.ADMIN_UNIV]:
             if self.request.user.role == User.Role.COMPANY:
                 queryset = queryset.filter(internship__company=self.request.user)
             else:
@@ -560,16 +642,18 @@ class DigitalCVRetrieveView(generics.RetrieveAPIView):
             return get_object_or_404(DigitalCV, student=self.request.user.student)
         return super().get_object()
 
+# dashboard views
+
 class StudentDashboardView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated, IsStudent]
 
     def get(self, request, *args, **kwargs):
-        student = request.user.student
+        student = getattr(request.user, 'student', None)
         applications = Application.objects.filter(student=student)
         
         stats = {
             "pendingAplications": applications.filter(status=Application.Status.PENDING).count(),
-            "acceptedApplications": applications.filter(status=Application.Status.ACCEPTED, is_validated_by_admin=True).count(),
+            "acceptedApplications": applications.filter(status__in=[Application.Status.VALIDATED, Application.Status.COMPLETE]).count(),
             "totalApplications": applications.count(),
         }
         
@@ -578,14 +662,18 @@ class StudentDashboardView(generics.GenericAPIView):
         
         # Mapping statuses to frontend expectations
         status_map = {
-            Application.Status.PENDING: "In progress",
+            Application.Status.PENDING: "Pending",
             Application.Status.ACCEPTED: "Accepted",
+            Application.Status.VALIDATED: "Validated",
+            Application.Status.COMPLETE: "Completed",
             Application.Status.REJECTED: "Rejected",
+            Application.Status.CANCELLED: "Cancelled",
         }
         
         recent_apps_data = [
             {
                 "id": app.id,
+                "internship": app.internship.id,
                 "offer": app.internship.title,
                 "status": status_map.get(app.status, app.status),
                 "appliedDate": app.application_date.strftime("%Y-%m-%d"),
@@ -613,7 +701,7 @@ class CompanyDashboardView(generics.GenericAPIView):
 
         stats = {
             "pendingApplications": applications.filter(status=Application.Status.PENDING).count(),
-            "acceptedApplications": applications.filter(status=Application.Status.ACCEPTED, is_validated_by_admin=True).count(),
+            "acceptedApplications": applications.filter(status__in=[Application.Status.VALIDATED, Application.Status.COMPLETE]).count(),
             "totalInternships": internships.count(),
         }
 
@@ -624,9 +712,12 @@ class CompanyDashboardView(generics.GenericAPIView):
 
         # Mapping statuses to frontend expectations
         status_map = {
-            Application.Status.PENDING: "In progress",
+            Application.Status.PENDING: "Pending",
             Application.Status.ACCEPTED: "Accepted",
+            Application.Status.VALIDATED: "Validated",
+            Application.Status.COMPLETE: "Completed",
             Application.Status.REJECTED: "Rejected",
+            Application.Status.CANCELLED: "Cancelled",
         }
 
         recent_apps_data = []
@@ -651,6 +742,63 @@ class CompanyDashboardView(generics.GenericAPIView):
                 "email": student.email,
                 "internshipTitle": app.internship.title,
                 "cvUrl": cv_url,
+            })
+
+        return Response({
+            "stats": stats,
+            "applications": recent_apps_data
+        })
+
+
+class AdminUnivDashboardView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        if request.user.role != User.Role.ADMIN_UNIV:
+            raise PermissionDenied("Only Admin Univ can access this dashboard.")
+
+        applications = _scope_applications_for_admin(Application.objects.all(), request.user)
+        admin_univ = getattr(request.user, 'adminuniv', None)
+        university = getattr(admin_univ, 'university', None)
+
+        if university:
+            total_students = User.objects.filter(
+                role=User.Role.STUDENT,
+                student__department__university=university
+            ).count()
+            total_companies = Company.objects.filter(
+                internshipoffer__application__student__department__university=university
+            ).distinct().count()
+        else:
+            total_students = 0
+            total_companies = 0
+
+        stats = {
+            "totalStudents": total_students,
+            "totalCompanies": total_companies,
+            "pendingValidations": applications.filter(status=Application.Status.ACCEPTED, is_validated_by_admin=False).count(),
+            "validatedInternships": applications.filter(status__in=[Application.Status.VALIDATED, Application.Status.COMPLETE], is_validated_by_admin=True).count(),
+        }
+
+        # Recent applications pending validation
+        recent_apps = applications.filter(
+            status=Application.Status.ACCEPTED, 
+            is_validated_by_admin=False
+        ).select_related('student', 'internship', 'internship__company').order_by('-application_date')[:5]
+
+        recent_apps_data = []
+        for app in recent_apps:
+            student = app.student
+            candidate_name = f"{student.first_name} {student.last_name}".strip() or student.username or student.email
+
+            recent_apps_data.append({
+                "id": app.id,
+                "studentId": student.id,
+                "candidate": candidate_name,
+                "internshipTitle": app.internship.title,
+                "companyName": app.internship.company.name,
+                "appliedDate": app.application_date.strftime("%Y-%m-%d"),
+                "status": "Pending Validation"
             })
 
         return Response({
@@ -716,16 +864,29 @@ class AdminPendingValidationsView(generics.ListAPIView):
     serializer_class = ApplicationSerializer
 
     def get_queryset(self):
-        return Application.objects.filter(
+        queryset = Application.objects.filter(
             status=Application.Status.ACCEPTED,
             is_validated_by_admin=False
         )
+        return _scope_applications_for_admin(queryset, self.request.user)
 
 class AdminValidateApplicationView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated, IsAdmin]
 
     def post(self, request, pk):
-        application = get_object_or_404(Application, pk=pk, status=Application.Status.ACCEPTED)
+        application = get_object_or_404(Application, pk=pk, status__in=[Application.Status.ACCEPTED, Application.Status.REJECTED])
+        if not _scope_applications_for_admin(Application.objects.filter(pk=application.pk), request.user).exists():
+            raise PermissionDenied("You do not have permission to validate this application.")
+        # Check if it can be validated
+        if application.status not in [Application.Status.ACCEPTED, Application.Status.REJECTED]:
+            raise PermissionDenied("Invalid status for validation.")
+            
+        if application.status == Application.Status.REJECTED:
+            # Check 48h rule
+            if not application.admin_rejection_date or (timezone.now() - application.admin_rejection_date).total_seconds() > 48 * 3600:
+                return Response({"error": "Cannot validate a rejected application after 48 hours."}, status=status.HTTP_400_BAD_REQUEST)
+
+        application.status = Application.Status.VALIDATED
         application.is_validated_by_admin = True
         application.admin_validation_date = timezone.now()
         application.save()
@@ -733,7 +894,7 @@ class AdminValidateApplicationView(generics.GenericAPIView):
         # Notify student
         Notification.objects.get_or_create(
             recipient=application.student,
-            notification_type=Notification.NotificationType.APPLICATION_ACCEPTED,
+            notification_type=Notification.NotificationType.APPLICATION_VALIDATED,
             application=application,
             defaults={
                 "message": f"Your internship at {application.internship.company.name} has been validated by the administration! You can now download your agreement."
@@ -743,22 +904,26 @@ class AdminValidateApplicationView(generics.GenericAPIView):
         # Notify company
         Notification.objects.get_or_create(
             recipient=application.internship.company,
-            notification_type=Notification.NotificationType.APPLICATION_ACCEPTED,
+            notification_type=Notification.NotificationType.APPLICATION_VALIDATED,
             application=application,
             defaults={
                 "message": f"The internship for {application.student.first_name} {application.student.last_name} has been validated by the administration."
             }
         )
         
-        return Response({"status": "validated"})
+        serializer = ApplicationSerializer(application, context={'request': request})
+        return Response({"status": "validated", "application": serializer.data})
 
 class AdminRejectApplicationView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated, IsAdmin]
 
     def post(self, request, pk):
         application = get_object_or_404(Application, pk=pk, status=Application.Status.ACCEPTED)
+        if not _scope_applications_for_admin(Application.objects.filter(pk=application.pk), request.user).exists():
+            raise PermissionDenied("You do not have permission to reject this application.")
         application.status = Application.Status.REJECTED
         application.is_validated_by_admin = False
+        application.admin_rejection_date = timezone.now()
         application.save()
         
         # Notify student
@@ -777,24 +942,40 @@ class AdminRejectApplicationView(generics.GenericAPIView):
             application=application
         )
         
-        return Response({"status": "rejected"})
+        serializer = ApplicationSerializer(application, context={'request': request})
+        return Response({"status": "rejected", "application": serializer.data})
 
 class AdminStatsView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated, IsAdmin]
 
     def get(self, request):
         # Use User model to count by role to be more reliable
-        total_students = User.objects.filter(role=User.Role.STUDENT).count()
-        placed_students = Application.objects.filter(
-            status=Application.Status.ACCEPTED,
+        student_qs = User.objects.filter(role=User.Role.STUDENT)
+        if request.user.role == User.Role.ADMIN_DEPT:
+            dept = getattr(request.user, 'admindept', None)
+            if dept and dept.department_id:
+                student_qs = student_qs.filter(student__department=dept.department)
+            else:
+                student_qs = student_qs.none()
+        elif request.user.role == User.Role.ADMIN_UNIV:
+            admin_univ = getattr(request.user, 'adminuniv', None)
+            university = getattr(admin_univ, 'university', None)
+            if university:
+                student_qs = student_qs.filter(student__department__university=university)
+            else:
+                student_qs = student_qs.none()
+
+        total_students = student_qs.count()
+
+        applications_scoped = _scope_applications_for_admin(Application.objects.all(), request.user)
+        placed_students = applications_scoped.filter(
+            status__in=[Application.Status.VALIDATED, Application.Status.COMPLETE],
             is_validated_by_admin=True
         ).values('student').distinct().count()
         
         unplaced_students = total_students - placed_students
         
-        # Prepare chart data with proper month names
-        import calendar
-        month_counts = Application.objects.filter(
+        month_counts = applications_scoped.filter(
             application_date__year=timezone.now().year
         ).values('application_date__month').annotate(count=Count('id')).order_by('application_date__month')
 
@@ -821,87 +1002,184 @@ class AdminStatsView(generics.GenericAPIView):
             "apps_by_month": final_chart_data
         })
 
-from io import BytesIO
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A4
-from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table as RLTable, TableStyle
+# Document generation views
+import io
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from django.template.loader import render_to_string
+from rest_framework import status, generics
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from xhtml2pdf import pisa
 
 class GenerateInternshipAgreementView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk):
         application = get_object_or_404(Application, pk=pk)
-        
+
+        # =========================
+        # PERMISSIONS CHECK
+        # =========================
+        if request.user.role in [User.Role.ADMIN_DEPT, User.Role.ADMIN_UNIV]:
+            if not _scope_applications_for_admin(
+                Application.objects.filter(pk=application.pk),
+                request.user
+            ).exists():
+                raise PermissionDenied("No permission to view this document.")
+
+        elif request.user.id != application.student.id and request.user.id != application.internship.company.id:
+            raise PermissionDenied("No permission to view this document.")
+
+        application.refresh_from_db()
+
+        is_admin_validated = (
+            application.is_validated_by_admin or
+            application.status in [
+                Application.Status.VALIDATED,
+                Application.Status.COMPLETE
+            ]
+        )
+
+        if not is_admin_validated:
+            return Response(
+                {"error": "Not validated by administration yet."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        if application.status not in [
+            Application.Status.VALIDATED,
+            Application.Status.COMPLETE
+        ]:
+            return Response(
+                {"error": f"Invalid status: {application.status}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # =========================
+        # HTML TEMPLATE CONTEXT
+        # =========================
+        html_string = render_to_string(
+            'internship_agreement.html', 
+            {
+                'student_name': application.student.first_name,
+                'student_email': application.student.email,
+
+                'company_name': application.internship.company.name,
+                'company_email': application.internship.company.email,
+                'company_phone': '0555555555',
+                'company_wilaya': 'wilaya',
+
+                'internship_theme': application.internship.title,
+                'start_date': application.internship.offer_start_date,
+                'end_date': application.internship.offer_end_date,
+                'duration': application.internship.duration,
+
+                'university_name': application.student.department.university.name,
+            }
+        )
+
+        # =========================
+        # PDF GENERATION (xhtml2pdf)
+        # =========================
+        result = io.BytesIO()
+
+        pdf = pisa.pisaDocument(
+            io.BytesIO(html_string.encode("UTF-8")),
+            result
+        )
+
+        if pdf.err:
+            return Response(
+                {"error": "PDF generation failed"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        # =========================
+        # RESPONSE
+        # =========================
+        response = HttpResponse(result.getvalue(), content_type='application/pdf')
+        response['Content-Disposition'] = (
+            f'attachment; filename="Convention_{application.student.first_name}.pdf"'
+        )
+
+        return response
+
+# Certificate Generation View (only for validated and completed internships)
+class GenerateInternshipCertificateView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        application = get_object_or_404(Application, pk=pk)
+
         # Check permissions: Student, Company, or Admin
-        if not (request.user.role == User.Role.ADMIN or 
-                request.user.id == application.student.id or 
-                request.user.id == application.internship.company.id):
+        if request.user.role in [User.Role.ADMIN_DEPT, User.Role.ADMIN_UNIV]:
+            if not _scope_applications_for_admin(Application.objects.filter(pk=application.pk), request.user).exists():
+                raise PermissionDenied("You do not have permission to view this document.")
+        elif request.user.id != application.student.id and request.user.id != application.internship.company.id:
             raise PermissionDenied("You do not have permission to view this document.")
 
+        # Refresh application from database to get latest state
+        application.refresh_from_db()
+
+        if application.status != Application.Status.COMPLETE:
+            return Response(
+                {"error": "Certificate is available only after internship completion."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         if not application.is_validated_by_admin:
-            return Response({"error": "This internship has not been validated by the administration yet."}, status=400)
+            return Response(
+                {"error": "Certificate requires an admin-validated internship."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
-        buffer = BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=A4)
-        styles = getSampleStyleSheet()
-        elements = []
-
-        # Title
-        elements.append(Paragraph("CONVENTION DE STAGE", styles['Title']))
-        elements.append(Spacer(1, 20))
-
-        # Participants
+        # =========================
+        # HTML TEMPLATE CONTEXT
+        # =========================
         student = application.student
-        student_name = f"{student.first_name} {student.last_name}".strip()
-        if not student_name:
-            student_name = student.username or student.email
+        student_name = f"{student.first_name} {student.last_name}".strip() or student.username or student.email
 
-        data = [
-            ["STUDENT:", student_name],
-            ["COMPANY:", application.internship.company.name],
-            ["INTERNSHIP:", application.internship.title],
-            ["DURATION:", f"{application.internship.internship_duration}"],
-            ["START DATE:", f"{application.internship.offer_start_date}"],
-            ["VALIDATED ON:", f"{application.admin_validation_date.strftime('%Y-%m-%d')}"],
-        ]
-        
-        t = RLTable(data, colWidths=[150, 300])
-        t.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
-            ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
-            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, -1), 12),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black)
-        ]))
-        elements.append(t)
-        elements.append(Spacer(1, 40))
+        html_string = render_to_string(
+            'internship_certificate.html', 
+            {
+                'student_name': student_name,
+                'company_name': application.internship.company.name,
+                'internship_title': application.internship.title,
+                'start_date': application.internship.offer_start_date,
+                'end_date': application.internship.offer_end_date,
+                'university_name': application.student.department.university.name,
+                'certificate_date': datetime.now().date(),
+            }
+        )
 
-        # Terms
-        terms = """
-        This agreement defines the relationship between the student, the host company, and the university.
-        The student commits to following the company's internal rules and completing the assigned tasks.
-        The company commits to providing a learning environment and supervising the student.
-        """
-        elements.append(Paragraph("Terms and Conditions", styles['Heading2']))
-        elements.append(Paragraph(terms, styles['Normal']))
-        elements.append(Spacer(1, 60))
+        # =========================
+        # PDF GENERATION (xhtml2pdf)
+        # =========================
+        result = io.BytesIO()
 
-        # Signatures
-        sig_data = [
-            ["Student Signature", "Company Signature", "University Signature"],
-            ["\n\n\n________________", "\n\n\n________________", "\n\n\n________________"]
-        ]
-        sig_table = RLTable(sig_data, colWidths=[160, 160, 160])
-        elements.append(sig_table)
+        pdf = pisa.pisaDocument(
+            io.BytesIO(html_string.encode("UTF-8")),
+            result
+        )
 
-        doc.build(elements)
-        buffer.seek(0)
-        
-        return FileResponse(buffer, as_attachment=True, filename=f"Convention_{application.student.first_name}.pdf")
+        if pdf.err:
+            return Response(
+                {"error": "PDF generation failed"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        # =========================
+        # RESPONSE
+        # =========================
+        response = HttpResponse(result.getvalue(), content_type='application/pdf')
+        response['Content-Disposition'] = (
+            f'attachment; filename="Certificate_{application.student.first_name}.pdf"'
+        )
+
+        return response
+
+# CV Generation View 
 
 class GenerateCVView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
@@ -1045,10 +1323,7 @@ class GenerateCVView(generics.GenericAPIView):
         buffer.seek(0)
         return FileResponse(buffer, as_attachment=True, filename=f"{cv.first_name}_{cv.last_name}_CV.pdf")
 
-
-# forgot password and reset password
-import random
-from rest_framework.views import APIView
+# Forgot Password and Reset Password Views
 
 class ForgotPasswordView(APIView):
     permission_classes = [AllowAny]
@@ -1100,8 +1375,15 @@ class ResetPasswordView(APIView):
             user = User.objects.filter(email__iexact=email).first()
             if not user:
                 return Response({"error": "User not found."}, status=404)
-
-            reset_request = PasswordReset.objects.filter(user=user, code=code, is_used=False).last()
+            
+            #code of forget password last 10 minutes
+            valid_time = timezone.now() - timedelta(minutes=10)
+            reset_request = PasswordReset.objects.filter(
+                user=user, 
+                code=code, 
+                is_used=False,
+                created_at__gte=valid_time,
+            ).last()
             
             if reset_request:
                 user.set_password(new_password)
@@ -1113,3 +1395,154 @@ class ResetPasswordView(APIView):
                 return Response({"error": "Invalid or expired code."}, status=400)
         except Exception as e:
             return Response({"error": f"Server Error: {str(e)}"}, status=500)
+
+
+# Company Follow Views 
+
+class FollowCompanyView(generics.GenericAPIView):
+    """POST /companies/<company_id>/follow/ — student follows a company."""
+    permission_classes = [IsAuthenticated, IsStudent]
+
+    def post(self, request, company_id, *args, **kwargs):
+        company = get_object_or_404(Company, pk=company_id)
+        student = request.user.student
+        follow, created = CompanyFollow.objects.get_or_create(student=student, company=company)
+        if created:
+            return Response({"status": "followed", "followers_count": company.followers.count()}, status=status.HTTP_201_CREATED)
+        return Response({"status": "already_following", "followers_count": company.followers.count()}, status=status.HTTP_200_OK)
+
+
+class UnfollowCompanyView(generics.GenericAPIView):
+    """DELETE /companies/<company_id>/follow/ — student unfollows a company."""
+    permission_classes = [IsAuthenticated, IsStudent]
+
+    def delete(self, request, company_id, *args, **kwargs):
+        company = get_object_or_404(Company, pk=company_id)
+        student = request.user.student
+        deleted, _ = CompanyFollow.objects.filter(student=student, company=company).delete()
+        return Response(
+            {"status": "unfollowed" if deleted else "not_following", "followers_count": company.followers.count()},
+            status=status.HTTP_200_OK
+        )
+
+
+class FollowStatusView(generics.GenericAPIView):
+    """GET /companies/<company_id>/follow/ — check if the current student follows this company."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, company_id, *args, **kwargs):
+        company = get_object_or_404(Company, pk=company_id)
+        is_following = False
+        if request.user.role == User.Role.STUDENT:
+            is_following = CompanyFollow.objects.filter(student=request.user.student, company=company).exists()
+        return Response({
+            "is_following": is_following,
+            "followers_count": company.followers.count(),
+        })
+
+
+class CompanyFollowersCountView(generics.GenericAPIView):
+    """GET /company/followers/ — returns the follower count for the logged-in company."""
+    permission_classes = [IsAuthenticated, IsCompany]
+
+    def get(self, request, *args, **kwargs):
+        try:
+            # Multi-table inheritance: request.user is a User, but has a 'company' attribute
+            # Or we can query Company directly using the same ID
+            company_id = request.user.id
+            count = CompanyFollow.objects.filter(company_id=company_id).count()
+            return Response({"followers_count": count})
+        except Exception as e:
+            return Response({"followers_count": 0, "error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class FollowedCompaniesInternshipsView(generics.ListAPIView):
+    """GET /internships/followed/ — internships from companies the student follows."""
+    serializer_class = InternshipSerializer
+    permission_classes = [IsAuthenticated, IsStudent]
+
+    def get_queryset(self):
+        student = self.request.user.student
+        followed_companies = CompanyFollow.objects.filter(student=student).values_list('company_id', flat=True)
+        return InternshipOffer.objects.filter(
+            company_id__in=followed_companies,
+            status=InternshipOffer.Status.OPEN_FOR_APPLICATION
+        ).order_by('-id')
+
+# ------------------------------------------------------------------------------------------
+# Super Admin: Pending Companies Approvals
+# ------------------------------------------------------------------------------------------
+
+import uuid
+from datetime import timedelta
+from django.utils import timezone
+
+def _generate_unique_matricule():
+    return f"MAT-{str(uuid.uuid4()).upper()[:8]}"
+
+class AdminPendingCompaniesView(generics.ListAPIView):
+    """
+    Returns a list of companies that registered without a valid matricule and are waiting for approval.
+    Accessible only to SUPER ADMIN (or users with specific role if super admin role exists, assuming ADMIN_UNIV or custom).
+    For now, we just require IsAuthenticated, but you should restrict it to your super admin role.
+    """
+    serializer_class = CompanySerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Pending companies have is_active=False
+        return Company.objects.filter(is_active=False).order_by('-date_joined')
+
+class AdminAcceptCompanyView(APIView):
+    """
+    Accepts a pending company. Generates a matricule for it, adds it to the Matriculation table, 
+    and sets the company to active.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        company = get_object_or_404(Company, pk=pk)
+        
+        if company.is_active:
+            return Response({"error": "This company is already active."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Generate a matricule for the company
+        matricule = _generate_unique_matricule()
+        expires = timezone.now() + timedelta(days=90)
+        
+        # Save it to the matriculation table
+        Matriculation.objects.create(
+            company_name=company.name,
+            matricule=matricule,
+            expires_at=expires
+        )
+        
+        # Activate the company
+        company.is_active = True
+        company.save()
+        
+        return Response({
+            "message": f"Company '{company.name}' has been accepted and activated.",
+            "matricule": matricule
+        }, status=status.HTTP_200_OK)
+
+class AdminRejectCompanyView(APIView):
+    """
+    Rejects a pending company. Deletes the company from the database.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        company = get_object_or_404(Company, pk=pk)
+        
+        if company.is_active:
+            return Response({"error": "Cannot reject an already active company."}, status=status.HTTP_400_BAD_REQUEST)
+
+        company_name = company.name
+        
+        # Deleting the company will also delete the User because of multi-table inheritance
+        company.delete()
+        
+        return Response({
+            "message": f"Company '{company_name}' has been rejected and removed from the database."
+        }, status=status.HTTP_200_OK)

@@ -119,9 +119,12 @@ export default function StudentDashboard() {
 
   const getStatusBadge = (status) => {
     const variants = {
-      "In progress": "purple",
+      "Pending": "purple",
       "Accepted": "success",
-      "Rejected": "destructive"
+      "Validated": "info",
+      "Completed": "success",
+      "Rejected": "destructive",
+      "Cancelled": "destructive"
     };
     return variants[status] || "outline";
   };
@@ -214,7 +217,19 @@ export default function StudentDashboard() {
               <TableBody>
                 {applications.map((application) => (
                   <TableRow key={application.id}>
-                    <TableCell className="font-medium">{application.offer}</TableCell>
+                    <TableCell className="font-medium">
+                      {application.internship ? (
+                        <Button
+                          variant="link"
+                          className="p-0 h-auto"
+                          onClick={() => navigate(`/internships/${application.internship}`)}
+                        >
+                          {application.offer}
+                        </Button>
+                      ) : (
+                        application.offer
+                      )}
+                    </TableCell>
 
                     <TableCell>
                       <Badge variant={getStatusBadge(application.status)}>

@@ -3,8 +3,9 @@ from rest_framework_simplejwt.views import (TokenObtainPairView, TokenRefreshVie
 from .views import *
 
 urlpatterns = [
+
     #chat gemini
-    path('chat/', chatbot, name='chatbot'),
+    path('chat/', ChatbotView.as_view(), name='chatbot'),
 
     # Authentication
     path('auth/register/', RegisterView.as_view(), name='register'),
@@ -15,16 +16,19 @@ urlpatterns = [
     path('users/', UserListView.as_view(), name='user-list'),
     path('users/<int:pk>/', UserAdminUpdateView.as_view(), name='user-admin-update'),
     path('companies/', CompanyListView.as_view(), name='company-list'),
+    path('companies/<int:company_id>/follow/', FollowStatusView.as_view(), name='follow-status'),
+    path('companies/<int:company_id>/follow/toggle/', FollowCompanyView.as_view(), name='follow-company'),
+    path('companies/<int:company_id>/unfollow/', UnfollowCompanyView.as_view(), name='unfollow-company'),
 
     # Internships
     path('internships/create/', InternshipCreateView.as_view(), name='create'),
     path('internships/', InternshipListView.as_view(), name='internship-list'),
+    path('internships/followed/', FollowedCompaniesInternshipsView.as_view(), name='followed-internships'),
     path('internships/company/', CompanyInternshipListView.as_view(), name='company-internship-list'),
+
     path('internships/<int:pk>/', InternshipRetrieveView.as_view(), name='internship-retrieve'),
-    path('internships/<int:pk>/similar/', SimilarInternshipsView.as_view(), name='internship-similar'),
     path('internships/<int:pk>/update/', InternshipUpdateDestroyView.as_view(), name='internship-update'),
     path('internships/<int:pk>/delete/', InternshipUpdateDestroyView.as_view(), name='internship-delete'),
-
 
     # Applications
     path('applications/apply/<int:pk>/', ApplicationCreateView.as_view(), name='apply'),
@@ -46,6 +50,8 @@ urlpatterns = [
     path('cv/generate/<int:student_id>/', GenerateCVView.as_view(), name='generate-cv'),
     path('student/dashboard/', StudentDashboardView.as_view(), name='student-dashboard'),
     path('company/dashboard/', CompanyDashboardView.as_view(), name='company-dashboard'),
+    path('admin-univ/dashboard/', AdminUnivDashboardView.as_view(), name='admin-univ-dashboard'),
+    path('company/followers/', CompanyFollowersCountView.as_view(), name='company-followers-count'),
 
     # Notifications
     path('notifications/', NotificationListView.as_view(), name='notification-list'),
@@ -59,14 +65,18 @@ urlpatterns = [
     path('admin/applications/<int:pk>/validate/', AdminValidateApplicationView.as_view(), name='admin-validate-application'),
     path('admin/applications/<int:pk>/reject/', AdminRejectApplicationView.as_view(), name='admin-reject-application'),
     path('admin/applications/<int:pk>/agreement/', GenerateInternshipAgreementView.as_view(), name='admin-generate-agreement'),
+    path('admin/applications/<int:pk>/certificate/', GenerateInternshipCertificateView.as_view(), name='admin-generate-certificate'),
+    path('admin/companies/pending/', AdminPendingCompaniesView.as_view(), name='admin-pending-companies'),
+    path('admin/companies/<int:pk>/accept/', AdminAcceptCompanyView.as_view(), name='admin-accept-company'),
+    path('admin/companies/<int:pk>/reject/', AdminRejectCompanyView.as_view(), name='admin-reject-company'),
 
     # Messaging
     path('messages/', MessageListView.as_view(), name='message-list'),
     path('messages/send/', MessageCreateView.as_view(), name='message-send'),
+    path('messages/<int:pk>/', MessageDetailView.as_view(), name='message-detail'),
 
     # Password Reset
     path('auth/forgot-password/', ForgotPasswordView.as_view(), name='forgot_password'),
     path('auth/verify-reset-code/', VerifyResetCodeView.as_view(), name='verify_reset_code'),
     path('auth/reset-password/', ResetPasswordView.as_view(), name='reset_password'),
 ]
-   

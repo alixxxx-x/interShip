@@ -14,11 +14,32 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         return token
 
     def validate(self, attrs):
-        # We allow both 'username' and 'email' in the request, mapping to the model's identifier
+        from django.db.models import Q
+        from rest_framework_simplejwt.exceptions import AuthenticationFailed
+        
+        # We allow both 'username' and 'email' in the request
+        username_or_email = attrs.get("username") or attrs.get("email")
+        
+        # Check if user exists but is inactive (pending admin approval)
+        if username_or_email:
+            user = User.objects.filter(Q(username=username_or_email) | Q(email=username_or_email)).first()
+            if user and not user.is_active:
+                if user.role == User.Role.COMPANY:
+                    raise AuthenticationFailed(
+                        "Your company registration is pending .",
+                        code="user_inactive"
+                    )
+                else:
+                    raise AuthenticationFailed(
+                        "Your account is currently inactive. Please contact support.",
+                        code="user_inactive"
+                    )
+
         username = attrs.get("username")
         if not username:
              # If frontend sends 'email', map it to 'username' for SimpleJWT's internal logic
              attrs["username"] = attrs.get("email")
+             
         return super().validate(attrs)
 
 class UserSerializer(serializers.ModelSerializer):
@@ -36,17 +57,45 @@ class UserSerializer(serializers.ModelSerializer):
     company_field = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
     founded_year = serializers.IntegerField(required=False, write_only=True, allow_null=True)
     department = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
-    major = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
-
+    department_id = serializers.IntegerField(required=False, write_only=True)
+    university_name = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
+    email_domain = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
+    departments = serializers.JSONField(required=False, write_only=True, allow_null=True)
+    matricule = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
+    
     class Meta:
         model = User
         fields = [
             'id', 'username', 'email', 'role', 'profile_picture', 'password',
-            'first_name', 'last_name', 'is_active', 'university_id', 'wilaya', 'phone', 'major',
-            'name', 'logo', 'description', 'location', 'website', 'company_field', 'founded_year', 'department'
+            'first_name', 'last_name', 'is_active', 'university_id', 'wilaya', 'phone',
+            'name', 'logo', 'description', 'location', 'website', 'company_field', 'founded_year', 'department',
+            'department_id', 'university_name', 'email_domain', 'departments', 'matricule'
         ]
         read_only_fields = ['id']
-    # hdi hiya t3 email  
+    def _normalize_domain(self, domain):
+        if not domain:
+            return None
+        domain = domain.strip().lower()
+        if not domain.startswith('@'):
+            domain = f"@{domain}"
+        return domain
+
+    def _resolve_department(self, department_id, department_name, university_name, existing_university=None):
+        if department_id:
+            return Department.objects.filter(id=department_id).first()
+        if department_name and university_name:
+            return Department.objects.filter(
+                name=department_name,
+                university__name=university_name
+            ).first()
+        if department_name and existing_university:
+            return Department.objects.filter(
+                name=department_name,
+                university=existing_university
+            ).first()
+        return None
+
+    # hdi hiya t3 email
     def validate(self, attrs):
         # For updates, use instance values if not provided in attrs
         if self.instance:
@@ -57,79 +106,253 @@ class UserSerializer(serializers.ModelSerializer):
             email = attrs.get('email', '')
 
         if role == User.Role.STUDENT:
-            if not email.endswith('@univ.dz'):
+            department_id = attrs.get('department_id')
+            department_name = attrs.get('department')
+            university_name = attrs.get('university_name')
+            existing_department = None
+            existing_university = None
+            if self.instance and hasattr(self.instance, 'student'):
+                existing_department = self.instance.student.department
+                if existing_department:
+                    existing_university = existing_department.university
+
+            department = self._resolve_department(
+                department_id,
+                department_name,
+                university_name,
+                existing_university=existing_university
+            ) or existing_department
+
+            if not department:
                 raise serializers.ValidationError({
-                    "email": "Students must use a university email address ending with @univ.dz"
+                    "department": "Department is required and must match a university"
                 })
+
+            email_domain = self._normalize_domain(department.university.email_domain)
+            if email_domain and not email.lower().endswith(email_domain):
+                raise serializers.ValidationError({
+                    "email": f"Students must use a university email address ending with {email_domain}"
+                })
+            attrs['_resolved_department'] = department
+
+        if role == User.Role.ADMIN_DEPT:
+            department_id = attrs.get('department_id')
+            department_name = attrs.get('department')
+            university_name = attrs.get('university_name')
+            existing_department = None
+            existing_university = None
+            if self.instance and hasattr(self.instance, 'admindept'):
+                existing_department = self.instance.admindept.department
+                if existing_department:
+                    existing_university = existing_department.university
+
+            department = self._resolve_department(
+                department_id,
+                department_name,
+                university_name,
+                existing_university=existing_university
+            ) or existing_department
+
+            if not department:
+                raise serializers.ValidationError({
+                    "department": "Department is required and must match a university"
+                })
+            attrs['_resolved_department'] = department
+
+        if role == User.Role.ADMIN_UNIV and not self.instance:
+            university_name = attrs.get('university_name')
+            email_domain = attrs.get('email_domain')
+            if not university_name:
+                raise serializers.ValidationError({
+                    "university_name": "University name is required"
+                })
+            if not email_domain:
+                raise serializers.ValidationError({
+                    "email_domain": "University email domain is required"
+                })
+
+        if role == User.Role.COMPANY and not self.instance:
+            company_name = attrs.get('name')
+            matricule_input = attrs.get('matricule') 
+            
+            if not company_name:
+                raise serializers.ValidationError({
+                    "name": "Company name is required for registration"
+                })
+                
+            matriculation = None
+            
+            # Check if it is already registered in the Company table
+            if Company.objects.filter(name__iexact=company_name).exists():
+                raise serializers.ValidationError({
+                    "name": f"The company '{company_name}' is already registered."
+                })
+                
+            # If they provide a matricule, validate it
+            if matricule_input:
+                matriculation = Matriculation.objects.filter(
+                    company_name__iexact=company_name
+                ).first()
+                
+                if not matriculation:
+                    raise serializers.ValidationError({
+                        "matricule": f"The company '{company_name}' is not found in the authorized matriculation list."
+                    })
+                    
+                if matriculation.matricule != matricule_input:
+                    raise serializers.ValidationError({
+                        "matricule": "Invalid Registration Number (Matricule) for this company."
+                    })
+                
+                attrs['_is_pending_company'] = False
+            else:
+                # If they DON'T provide a matricule
+                matriculation = Matriculation.objects.filter(
+                    company_name__iexact=company_name
+                ).first()
+                
+                if matriculation:
+                    raise serializers.ValidationError({
+                        "matricule": f"The company '{company_name}' is in the authorized list. You must provide the Registration Number."
+                    })
+                
+                # It's not in the list, so they are requesting to be added
+                attrs['_is_pending_company'] = True
+                    
+            if matriculation:
+                attrs['_resolved_matriculation'] = matriculation
+
         return attrs
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        
-        # Add role-specific profile fields to the output
-        profile_map = {
-            User.Role.STUDENT: ('student', ['university_id', 'wilaya', 'phone', 'major']),
-            User.Role.COMPANY: ('company', ['name', 'logo', 'description', 'location', 'website', 'company_field', 'founded_year']),
-            User.Role.ADMIN: ('administrator', ['department']),
-        }
-        
-        config = profile_map.get(instance.role)
-        if config:
-            related_name, fields = config
-            profile = getattr(instance, related_name, None)
-            if profile:
-                for field in fields:
-                    val = getattr(profile, field, None)
-                    
-                    # Safely handle ImageField/FileField serialization
-                    from django.db.models.fields.files import FieldFile
-                    if isinstance(val, FieldFile):
-                        if val:
-                            request = self.context.get('request')
-                            url = val.url
-                            if request:
-                                data[field] = request.build_absolute_uri(url)
-                            else:
-                                data[field] = url
-                        else:
-                            data[field] = None
-                    else:
-                        data[field] = val
-                    
-                # Add has_cv check for students
-                if instance.role == User.Role.STUDENT:
-                    # Multi-table inheritance: instance is a User, but getattr(instance, 'student') returns the Student profile
-                    student = getattr(instance, 'student', None)
-                    if student and hasattr(student, 'digital_cv'):
-                        data['has_cv'] = True
-                        data['bio'] = student.digital_cv.profile_summary
-                    else:
-                        data['has_cv'] = False
-                        data['bio'] = None
-                    
+
+        if instance.role == User.Role.STUDENT:
+            student = getattr(instance, 'student', None)
+            if student:
+                data['university_id'] = student.university_id
+                data['wilaya'] = student.wilaya
+                data['phone'] = student.phone
+                data['department_id'] = student.department_id
+                data['department'] = student.department.name if student.department_id else None
+                data['university_name'] = student.department.university.name if student.department_id else None
+                data['email_domain'] = student.department.university.email_domain if student.department_id else None
+
+                if hasattr(student, 'digital_cv'):
+                    data['has_cv'] = True
+                    data['bio'] = student.digital_cv.profile_summary
+                else:
+                    data['has_cv'] = False
+                    data['bio'] = None
+
+        elif instance.role == User.Role.COMPANY:
+            company = getattr(instance, 'company', None)
+            if company:
+                data['name'] = company.name
+                data['logo'] = company.logo.url if company.logo else None
+                data['description'] = company.description
+                data['location'] = company.location
+                data['website'] = company.website
+                data['company_field'] = company.company_field
+                data['founded_year'] = company.founded_year
+
+        elif instance.role == User.Role.ADMIN_DEPT:
+            admin = getattr(instance, 'admindept', None)
+            if admin:
+                data['department_id'] = admin.department_id
+                data['department'] = admin.department.name if admin.department_id else None
+                data['university_name'] = admin.department.university.name if admin.department_id else None
+
+        elif instance.role == User.Role.ADMIN_UNIV:
+            admin = getattr(instance, 'adminuniv', None)
+            if admin and hasattr(admin, 'university') and admin.university:
+                data['university_name'] = admin.university.name
+                data['email_domain'] = admin.university.email_domain
+                data['departments'] = list(admin.university.departments.values_list('name', flat=True))
+
         return data
 
     def create(self, validated_data):
         role = validated_data.pop('role', User.Role.STUDENT)
         password = validated_data.pop('password')
+
+        department_name = validated_data.pop('department', None)
+        department_id = validated_data.pop('department_id', None)
+        university_name = validated_data.pop('university_name', None)
+        email_domain = validated_data.pop('email_domain', None)
+        departments = validated_data.pop('departments', None)
+
+        resolved_department = validated_data.pop('_resolved_department', None)
+        resolved_matriculation = validated_data.pop('_resolved_matriculation', None)
+        is_pending_company = validated_data.pop('_is_pending_company', False)
         
+        # Pop matricule so it doesn't get passed to create_user
+        validated_data.pop('matricule', None)
+
         # Use provided username if available, otherwise fallback to email
         username = validated_data.pop('username', None) or validated_data.get('email')
-        
+
         # Create user instance using the correct model
         models_map = {
             User.Role.STUDENT: Student,
             User.Role.COMPANY: Company,
-            User.Role.ADMIN: Administrator,
+            User.Role.ADMIN_DEPT: AdminDept,
+            User.Role.ADMIN_UNIV: AdminUniv,
         }
-        
+
         model_class = models_map.get(role, User)
+
+        if role in [User.Role.STUDENT, User.Role.ADMIN_DEPT]:
+            department = resolved_department or self._resolve_department(
+                department_id,
+                department_name,
+                university_name
+            )
+            if not department:
+                raise serializers.ValidationError({
+                    "department": "Department is required and must match a university"
+                })
+            validated_data['department'] = department
+
+        # If it's a pending company, set is_active=False
+        is_active = False if is_pending_company else True
+
         user = model_class.objects.create_user(
             username=username,
             password=password,
             role=role,
+            is_active=is_active,
             **validated_data
         )
+
+        if role == User.Role.ADMIN_UNIV:
+            normalized_domain = self._normalize_domain(email_domain)
+            university, created = University.objects.get_or_create(
+                name=university_name,
+                defaults={
+                    'email_domain': normalized_domain or '@univ.dz',
+                    'admin': user
+                }
+            )
+
+            if not created:
+                if university.admin_id and university.admin_id != user.id:
+                    raise serializers.ValidationError({
+                        "university_name": "This university already has an admin"
+                    })
+                university.admin = user
+                if normalized_domain:
+                    university.email_domain = normalized_domain
+                university.save()
+
+            if departments and isinstance(departments, list):
+                for dept_name in departments:
+                    if dept_name:
+                        Department.objects.get_or_create(
+                            university=university,
+                            name=dept_name
+                        )
+
         return user
 
     def update(self, instance, validated_data):
@@ -157,8 +380,16 @@ class UserSerializer(serializers.ModelSerializer):
                 student.wilaya = validated_data.get('wilaya')
             if 'phone' in validated_data:
                 student.phone = validated_data.get('phone')
-            if 'major' in validated_data:
-                student.major = validated_data.get('major')
+            department = validated_data.pop('_resolved_department', None)
+            if not department:
+                department = self._resolve_department(
+                    validated_data.pop('department_id', None),
+                    validated_data.pop('department', None),
+                    validated_data.pop('university_name', None),
+                    existing_university=student.department.university if student.department_id else None
+                )
+            if department:
+                student.department = department
             student.save()
             
         elif instance.role == User.Role.COMPANY and hasattr(instance, 'company'):
@@ -179,11 +410,48 @@ class UserSerializer(serializers.ModelSerializer):
                 company.founded_year = validated_data.get('founded_year')
             company.save()
             
-        elif instance.role == User.Role.ADMIN and hasattr(instance, 'administrator'):
-            admin = instance.administrator
-            if 'department' in validated_data:
-                admin.department = validated_data.get('department')
+        elif instance.role == User.Role.ADMIN_DEPT and hasattr(instance, 'admindept'):
+            admin = instance.admindept
+            department = validated_data.pop('_resolved_department', None)
+            if not department:
+                department = self._resolve_department(
+                    validated_data.pop('department_id', None),
+                    validated_data.pop('department', None),
+                    validated_data.pop('university_name', None),
+                    existing_university=admin.department.university if admin.department_id else None
+                )
+            if department:
+                admin.department = department
             admin.save()
+            
+        elif instance.role == User.Role.ADMIN_UNIV and hasattr(instance, 'adminuniv'):
+            admin = instance.adminuniv
+            university_name = validated_data.pop('university_name', None)
+            email_domain = validated_data.pop('email_domain', None)
+            departments = validated_data.pop('departments', None)
+
+            university = getattr(admin, 'university', None)
+            if university_name:
+                if not university:
+                    university = University.objects.create(
+                        name=university_name,
+                        email_domain=self._normalize_domain(email_domain) or '@univ.dz',
+                        admin=admin
+                    )
+                else:
+                    university.name = university_name
+            if email_domain and university:
+                university.email_domain = self._normalize_domain(email_domain)
+            if university:
+                university.save()
+
+            if university and departments and isinstance(departments, list):
+                for dept_name in departments:
+                    if dept_name:
+                        Department.objects.get_or_create(
+                            university=university,
+                            name=dept_name
+                        )
 
         return instance
 
@@ -283,7 +551,10 @@ class InternshipSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'internship_duration', 'company']
 
     def get_accepted_count(self, obj):
-        return obj.application_set.filter(status='ACCEPTED', is_validated_by_admin=True).count()
+        return obj.application_set.filter(
+            status__in=[Application.Status.VALIDATED, Application.Status.COMPLETE],
+            is_validated_by_admin=True
+        ).count()
 
     def create(self, validated_data):
         # Map frontend fields to backend fields
@@ -346,12 +617,12 @@ class ApplicationSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'student', 'internship', 'status', 'application_date', 
             'candidate', 'offer', 'company_name', 'email', 'cv', 
-            'is_validated_by_admin', 'admin_validation_date'
+            'is_validated_by_admin', 'admin_validation_date', 'admin_rejection_date'
         ]
         read_only_fields = [
             'id', 'student', 'internship', 'application_date', 
             'candidate', 'offer', 'company_name', 'email', 'cv',
-            'is_validated_by_admin', 'admin_validation_date'
+            'is_validated_by_admin', 'admin_validation_date', 'admin_rejection_date'
         ]
 
     def get_candidate(self, obj):
@@ -392,16 +663,38 @@ class ApplicationSerializer(serializers.ModelSerializer):
             # 2. Check if already applied
             if Application.objects.filter(student=student, internship=internship).exists():
                 raise serializers.ValidationError("You have already applied for this internship")
+
+            # 2.1 Block overlapping internship dates: student cannot apply if new internship start date
+            # falls within or conflicts with an existing active internship period.
+            # Active = not REJECTED/CANCELLED and internship not FINISHED
+            conflicting_apps = Application.objects.filter(
+                student=student
+            ).exclude(
+                status__in=[Application.Status.REJECTED, Application.Status.CANCELLED]
+            ).filter(
+                internship__status__in=[
+                    InternshipOffer.Status.OPEN_FOR_APPLICATION,
+                    InternshipOffer.Status.CLOSED_FOR_APPLICATION,
+                    InternshipOffer.Status.ONGOING
+                ]
+            ).filter(
+                internship__offer_end_date__gte=internship.offer_start_date
+            )
+            
+            if conflicting_apps.exists():
+                raise serializers.ValidationError(
+                    "You already have an active internship application with overlapping dates. "
+                    "You can only apply to this internship after your current internship ends, or if your current application is rejected/cancelled."
+                )
             
             # 3. Check if internship is open
-            from .models import InternshipOffer
             if internship.status != InternshipOffer.Status.OPEN_FOR_APPLICATION:
                 raise serializers.ValidationError("This internship is no longer accepting applications.")
             
             # 4. Check if full (Only count those validated by ADMIN)
             accepted_apps = Application.objects.filter(
                 internship=internship,
-                status='ACCEPTED',
+                status__in=[Application.Status.VALIDATED, Application.Status.COMPLETE],
                 is_validated_by_admin=True
             ).count()
             
@@ -445,7 +738,6 @@ class SkillsSerializer(serializers.ModelSerializer):
 # digital cv serializers
 
 class DigitalCVSerializer(serializers.ModelSerializer):
-    image = serializers.ImageField(required=False)
     pdfFile = serializers.FileField(source='cv_file', required=False)
     github_link = serializers.URLField(source='github', required=False, allow_blank=True, allow_null=True)
     phone_number = serializers.CharField(source='phone', required=False, allow_blank=True)
@@ -456,11 +748,9 @@ class DigitalCVSerializer(serializers.ModelSerializer):
     class Meta:
         model = DigitalCV
         fields = [
-            'id', 'student', 'first_name', 'last_name', 'image', 'phone_number',
+            'id', 'student', 'first_name', 'last_name', 'phone_number',
             'email', 'linkedin', 'github_link', 'portfolio_link', 'education', 'skills', 
-            'any_experience', 'profile_summary', 'address', 'languages',
-            'wilaya', 'university_id', 'date_of_birth', 
-            'nationality', 'pdfFile'
+            'any_experience', 'profile_summary', 'address', 'languages', 'pdfFile'
         ]
         read_only_fields = ['id', 'student']
 
@@ -479,22 +769,6 @@ class DigitalCVSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         self._strip_non_model_fields(validated_data)
         instance = super().create(validated_data)
-        
-        # Sync fields back to student profile
-        update_fields = []
-        student = instance.student
-        
-        if 'wilaya' in validated_data:
-            student.wilaya = validated_data['wilaya']
-            update_fields.append('wilaya')
-            
-        if 'university_id' in validated_data:
-            student.university_id = validated_data['university_id']
-            update_fields.append('university_id')
-            
-        if update_fields:
-            student.save(update_fields=update_fields)
-            
         return instance
 
     def update(self, instance, validated_data):
@@ -502,20 +776,4 @@ class DigitalCVSerializer(serializers.ModelSerializer):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
-        
-        # Sync fields back to student profile
-        update_fields = []
-        student = instance.student
-        
-        if 'wilaya' in validated_data:
-            student.wilaya = validated_data['wilaya']
-            update_fields.append('wilaya')
-            
-        if 'university_id' in validated_data:
-            student.university_id = validated_data['university_id']
-            update_fields.append('university_id')
-            
-        if update_fields:
-            student.save(update_fields=update_fields)
-            
         return instance
