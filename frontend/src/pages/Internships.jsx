@@ -660,11 +660,34 @@ export default function Internships() {
                         <div style={{ width: "100%", aspectRatio: "1/1", borderRadius: 16, overflow: "hidden", background: "hsl(var(--muted))", position: "relative", marginBottom: 12 }}>
                           {n.banner_image ? <img src={n.banner_image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                            : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.15 }}><Briefcase size={48} /></div>}
-                          {n.status === "OPEN_FOR_APPLICATION" && (
-                            <div style={{ position: "absolute", top: 12, left: 12, background: spotsLeft > 0 ? accent : "#7f8c8d", color: "#fff", fontSize: 10, fontWeight: 700, padding: "4px 10px", borderRadius: 20 }}>
-                              {spotsLeft > 0 ? "Open" : "Full"}
-                            </div>
-                          )}
+                          {(() => {
+                            if (n.status === "OPEN_FOR_APPLICATION") {
+                              return (
+                                <div style={{ position: "absolute", top: 12, left: 12, background: spotsLeft > 0 ? accent : "#7f8c8d", color: "#fff", fontSize: 10, fontWeight: 700, padding: "4px 10px", borderRadius: 20 }}>
+                                  {spotsLeft > 0 ? "Open" : "Full"}
+                                </div>
+                              );
+                            } else if (n.status === "CLOSED_FOR_APPLICATION") {
+                              return (
+                                <div style={{ position: "absolute", top: 12, left: 12, background: "#6b7280", color: "#fff", fontSize: 10, fontWeight: 700, padding: "4px 10px", borderRadius: 20 }}>
+                                  Closed
+                                </div>
+                              );
+                            } else if (n.status === "ONGOING") {
+                              return (
+                                <div style={{ position: "absolute", top: 12, left: 12, background: "#f59e0b", color: "#fff", fontSize: 10, fontWeight: 700, padding: "4px 10px", borderRadius: 20 }}>
+                                  Ongoing
+                                </div>
+                              );
+                            } else if (n.status === "FINISHED") {
+                              return (
+                                <div style={{ position: "absolute", top: 12, left: 12, background: "#ef4444", color: "#fff", fontSize: 10, fontWeight: 700, padding: "4px 10px", borderRadius: 20 }}>
+                                  Finished
+                                </div>
+                              );
+                            }
+                            return null;
+                          })()}
                           <button onClick={e => { e.stopPropagation(); setLiked(p => { const n2 = new Set(p); n2.has(n.id)?n2.delete(n.id):n2.add(n.id); return n2; }); }}
                             style={{ position: "absolute", top: 12, right: 12, width: 30, height: 30, borderRadius: "50%", background: "rgba(255,255,255,0.9)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                             <Heart size={14} style={{ color: liked.has(n.id)?"#e53e3e":"#666", fill: liked.has(n.id)?"#e53e3e":"none" }} />
