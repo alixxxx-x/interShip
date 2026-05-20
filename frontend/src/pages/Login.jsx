@@ -12,34 +12,13 @@ import { useTheme } from "@/components/theme-provider";
 
 const font = "'Inter', -apple-system, BlinkMacSystemFont, sans-serif";
 
-const universities = [
-    "USTHB (Houari Boumediene University of Science and Technology)",
-    "ESI Algiers (National Higher School of Computer Science)",
-    "University of Algiers 1 (Benyoucef Benkhedda)",
-    "University of Science and Technology of Oran (USTO)",
-    "University of Constantine 1 (Mentouri)",
-    "University of Bejaia (Abderrahmane Mira)",
-    "University of Tizi Ouzou (Mouloud Mammeri)",
-    "University of Boumerdes (M'hamed Bougara)"
-];
-
-const departments = [
-    "Computer Science",
-    "Artificial Intelligence",
-    "Software Engineering",
-    "Data Science",
-    "Cyber Security",
-    "Information Technology",
-    "Computer Systems & Networks"
-];
-
 
 function Login() {
     const { t } = useLanguage();
     const toast = useToast();
     const { theme, setTheme } = useTheme();
     const isDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
-    
+
     // Auth mode detection
     const location = useLocation();
     const isRegister = location.pathname === "/register";
@@ -50,13 +29,34 @@ function Login() {
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
     const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
-    
+
     // Registration-specific fields
     const [username, setUsername] = useState("");
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
-    const [university, setUniversity] = useState("");
-    const [major, setMajor] = useState("");
+    const [university, setUniversity] = useState(""); // This will hold the university ID
+    const [major, setMajor] = useState(""); // This will hold the department name
+
+    const [universitiesList, setUniversitiesList] = useState([]);
+    const [departmentsList, setDepartmentsList] = useState([]);
+
+    useEffect(() => {
+        if (isRegister) {
+            api.get("/universities/")
+                .then(res => setUniversitiesList(res.data))
+                .catch(err => console.error("Failed to fetch universities:", err));
+        }
+    }, [isRegister]);
+
+    useEffect(() => {
+        if (university) {
+            api.get(`/departments/?university_id=${university}`)
+                .then(res => setDepartmentsList(res.data))
+                .catch(err => console.error("Failed to fetch departments:", err));
+        } else {
+            setDepartmentsList([]);
+        }
+    }, [university]);
     const [registrationNumber, setRegistrationNumber] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -73,7 +73,7 @@ function Login() {
         setMajor("");
         setRegistrationNumber("");
     }, [isRegister]);
-    
+
     const memoizedThreads = useMemo(() => (
         <Threads
             color={isDark ? [0.4, 0.6, 0.9] : [0.06, 0.27, 0.54]}
@@ -141,7 +141,7 @@ function Login() {
                 password,
                 role,
                 ...(role === "STUDENT"
-                    ? { first_name: firstName, last_name: lastName, university_id: university, major }
+                    ? { first_name: firstName, last_name: lastName, department_id: major }
                     : { username, name: username, matricule: registrationNumber })
             };
             await api.post("/auth/register/", payload);
@@ -155,7 +155,7 @@ function Login() {
                     newErrors[key] = Array.isArray(backendErrors[key]) ? backendErrors[key][0] : backendErrors[key];
                 }
                 setErrors(newErrors);
-                
+
                 // Show a toast message for the validation errors
                 if (newErrors.matricule) {
                     toast.error(newErrors.matricule);
@@ -186,8 +186,8 @@ function Login() {
     const themeBg = isDark ? "#09090b" : "#ffffff";
     const themeCardBg = isDark ? "#121214" : "#ffffff";
     const themeCardBorder = isDark ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid rgba(0,0,0,0.04)";
-    const themeCardShadow = isDark 
-        ? "0 8px 32px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.3)" 
+    const themeCardShadow = isDark
+        ? "0 8px 32px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.3)"
         : "0 8px 32px rgba(0,0,0,0.03), 0 1px 2px rgba(0,0,0,0.01)";
 
     const themeTextColor = isDark ? "#ffffff" : "#1c1c1e";
@@ -306,16 +306,16 @@ function Login() {
                     cursor: "pointer",
                     boxShadow: isDark ? "0 2px 8px rgba(0, 0, 0, 0.15)" : "0 2px 8px rgba(0, 0, 0, 0.04)",
                 }}
-                onMouseEnter={e => {
-                    e.currentTarget.style.opacity = 1;
-                    e.currentTarget.style.background = isDark ? "#1c1c1e" : "#ffffff";
-                    e.currentTarget.style.boxShadow = isDark ? "0 4px 12px rgba(0, 0, 0, 0.3)" : "0 4px 12px rgba(0, 0, 0, 0.08)";
-                }}
-                onMouseLeave={e => {
-                    e.currentTarget.style.opacity = 0.65;
-                    e.currentTarget.style.background = isDark ? "rgba(28, 28, 30, 0.75)" : "rgba(255, 255, 255, 0.75)";
-                    e.currentTarget.style.boxShadow = isDark ? "0 2px 8px rgba(0, 0, 0, 0.15)" : "0 2px 8px rgba(0, 0, 0, 0.04)";
-                }}
+                    onMouseEnter={e => {
+                        e.currentTarget.style.opacity = 1;
+                        e.currentTarget.style.background = isDark ? "#1c1c1e" : "#ffffff";
+                        e.currentTarget.style.boxShadow = isDark ? "0 4px 12px rgba(0, 0, 0, 0.3)" : "0 4px 12px rgba(0, 0, 0, 0.08)";
+                    }}
+                    onMouseLeave={e => {
+                        e.currentTarget.style.opacity = 0.65;
+                        e.currentTarget.style.background = isDark ? "rgba(28, 28, 30, 0.75)" : "rgba(255, 255, 255, 0.75)";
+                        e.currentTarget.style.boxShadow = isDark ? "0 2px 8px rgba(0, 0, 0, 0.15)" : "0 2px 8px rgba(0, 0, 0, 0.04)";
+                    }}
                 >
                     <ArrowLeft size={13} strokeWidth={2.5} />
                 </Link>
@@ -328,8 +328,8 @@ function Login() {
                     padding: "40px 0 32px",
                     boxSizing: "border-box",
                 }}>
-                    <div style={{ 
-                        width: "100%", 
+                    <div style={{
+                        width: "100%",
                         maxWidth: 275,
                         display: "flex",
                         flexDirection: "column",
@@ -400,7 +400,7 @@ function Login() {
 
                         {/* Forms Container */}
                         <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column" }}>
-                            
+
                             {/* ──── LOGIN FORM VIEW ──── */}
                             <div style={{
                                 width: "100%",
@@ -537,8 +537,8 @@ function Login() {
                                                 color: "#ffffff",
                                                 border: isDark ? "1px solid #1c202b" : "1px solid #0d1015",
                                                 borderRadius: 6,
-                                                boxShadow: isDark 
-                                                    ? "inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 2px 5px rgba(0, 0, 0, 0.3)" 
+                                                boxShadow: isDark
+                                                    ? "inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 2px 5px rgba(0, 0, 0, 0.3)"
                                                     : "inset 0 1px 1px rgba(255, 255, 255, 0.15), 0 2px 5px rgba(0, 0, 0, 0.08)",
                                                 fontSize: 11.5, fontWeight: 500, cursor: loading ? "not-allowed" : "pointer",
                                                 fontFamily: font, letterSpacing: "0.2px",
@@ -566,68 +566,68 @@ function Login() {
                                         </button>
                                     </form>
 
-                                     {/* OR Divider */}
-                                     <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "12px 0" }}>
-                                         <div style={{ flex: 1, height: 1, background: themeDividerLine }} />
-                                         <span style={{ fontSize: 9.5, color: themeDividerText, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.5px" }}>OR</span>
-                                         <div style={{ flex: 1, height: 1, background: themeDividerLine }} />
-                                     </div>
+                                    {/* OR Divider */}
+                                    <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "12px 0" }}>
+                                        <div style={{ flex: 1, height: 1, background: themeDividerLine }} />
+                                        <span style={{ fontSize: 9.5, color: themeDividerText, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.5px" }}>OR</span>
+                                        <div style={{ flex: 1, height: 1, background: themeDividerLine }} />
+                                    </div>
 
-                                     {/* Social Buttons */}
-                                     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                                         {[
-                                             {
-                                                 icon: (
-                                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: 8 }}>
-                                                         <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                                                         <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                                                         <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05" />
-                                                         <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335" />
-                                                     </svg>
-                                                 ),
-                                                 label: "Continue with Google"
-                                             },
-                                             {
-                                                 icon: (
-                                                     <svg width="14" height="14" viewBox="0 0 24 24" fill={isDark ? "#ffffff" : "#1c1c1e"} style={{ marginRight: 8 }}>
-                                                         <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.161 22 16.418 22 12c0-5.523-4.477-10-10-10z" />
-                                                     </svg>
-                                                 ),
-                                                 label: "Continue with GitHub"
-                                             }
-                                         ].map((s, i) => (
-                                             <button key={i} type="button"
-                                                 style={{
-                                                     width: "100%", height: 32,
-                                                     border: themeSocialBtnBorder, borderRadius: 6,
-                                                     background: themeSocialBtnBg,
-                                                     display: "flex", alignItems: "center", justifyContent: "center",
-                                                     fontSize: 11.5, fontWeight: 500, color: themeTextColor,
-                                                     cursor: "pointer", fontFamily: font,
-                                                     transition: "border-color 0.15s, background-color 0.15s",
-                                                 }}
-                                                 onMouseEnter={e => { e.currentTarget.style.borderColor = themeSocialBtnHoverBorder; e.currentTarget.style.backgroundColor = themeSocialBtnHoverBg }}
-                                                 onMouseLeave={e => { e.currentTarget.style.borderColor = themeSocialBtnBorder; e.currentTarget.style.backgroundColor = themeSocialBtnBg }}
-                                             >
-                                                 {s.icon}
-                                                 {s.label}
-                                             </button>
-                                         ))}
-                                     </div>
-                                 </div>
+                                    {/* Social Buttons */}
+                                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                        {[
+                                            {
+                                                icon: (
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: 8 }}>
+                                                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                                                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                                                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05" />
+                                                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335" />
+                                                    </svg>
+                                                ),
+                                                label: "Continue with Google"
+                                            },
+                                            {
+                                                icon: (
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill={isDark ? "#ffffff" : "#1c1c1e"} style={{ marginRight: 8 }}>
+                                                        <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.161 22 16.418 22 12c0-5.523-4.477-10-10-10z" />
+                                                    </svg>
+                                                ),
+                                                label: "Continue with GitHub"
+                                            }
+                                        ].map((s, i) => (
+                                            <button key={i} type="button"
+                                                style={{
+                                                    width: "100%", height: 32,
+                                                    border: themeSocialBtnBorder, borderRadius: 6,
+                                                    background: themeSocialBtnBg,
+                                                    display: "flex", alignItems: "center", justifyContent: "center",
+                                                    fontSize: 11.5, fontWeight: 500, color: themeTextColor,
+                                                    cursor: "pointer", fontFamily: font,
+                                                    transition: "border-color 0.15s, background-color 0.15s",
+                                                }}
+                                                onMouseEnter={e => { e.currentTarget.style.borderColor = themeSocialBtnHoverBorder; e.currentTarget.style.backgroundColor = themeSocialBtnHoverBg }}
+                                                onMouseLeave={e => { e.currentTarget.style.borderColor = themeSocialBtnBorder; e.currentTarget.style.backgroundColor = themeSocialBtnBg }}
+                                            >
+                                                {s.icon}
+                                                {s.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
 
-                                 {/* Bottom link */}
-                                 <div style={{ textAlign: "center", marginTop: 20 }}>
-                                     <p style={{ fontSize: 10.5, color: themeSubtextColor, fontFamily: font, margin: 0, fontWeight: 400 }}>
-                                         {t("noAccount") === "Don't have an account?" || t("noAccount") === "Vous n'avez pas de compte ?" ? "Don't have an account yet?" : t("noAccount")}{" "}
-                                         <Link to="/register" style={{
-                                             color: themeBottomLinkColor, fontWeight: 600,
-                                             textDecoration: "underline", textUnderlineOffset: 3,
-                                         }}>
-                                             {t("signUp") === "Sign up" || t("signUp") === "S'inscrire" ? "Sign up" : t("signUp")}
-                                         </Link>
-                                     </p>
-                                 </div>
+                                {/* Bottom link */}
+                                <div style={{ textAlign: "center", marginTop: 20 }}>
+                                    <p style={{ fontSize: 10.5, color: themeSubtextColor, fontFamily: font, margin: 0, fontWeight: 400 }}>
+                                        {t("noAccount") === "Don't have an account?" || t("noAccount") === "Vous n'avez pas de compte ?" ? "Don't have an account yet?" : t("noAccount")}{" "}
+                                        <Link to="/register" style={{
+                                            color: themeBottomLinkColor, fontWeight: 600,
+                                            textDecoration: "underline", textUnderlineOffset: 3,
+                                        }}>
+                                            {t("signUp") === "Sign up" || t("signUp") === "S'inscrire" ? "Sign up" : t("signUp")}
+                                        </Link>
+                                    </p>
+                                </div>
                             </div>
 
                             {/* ──── REGISTER FORM VIEW ──── */}
@@ -763,7 +763,7 @@ function Login() {
                                                     }}>University</label>
                                                     <select
                                                         value={university}
-                                                        onChange={(e) => { setUniversity(e.target.value); setErrors(p => ({ ...p, university: null })) }}
+                                                        onChange={(e) => { setUniversity(e.target.value); setMajor(""); setErrors(p => ({ ...p, university: null })) }}
                                                         style={{
                                                             width: "100%",
                                                             height: 32,
@@ -785,8 +785,8 @@ function Login() {
                                                         }}
                                                     >
                                                         <option value="" disabled style={{ color: "#8e8e93", background: themeCardBg }}>Select your university</option>
-                                                        {universities.map((u) => (
-                                                            <option key={u} value={u} style={{ color: themeTextColor, background: themeCardBg }}>{u}</option>
+                                                        {universitiesList.map((u) => (
+                                                            <option key={u.id} value={u.id} style={{ color: themeTextColor, background: themeCardBg }}>{u.name}</option>
                                                         ))}
                                                     </select>
                                                     {errors.university && <p style={{ fontSize: 9.5, color: "#ff3b30", marginTop: 2 }}>{errors.university}</p>}
@@ -822,8 +822,8 @@ function Login() {
                                                         }}
                                                     >
                                                         <option value="" disabled style={{ color: "#8e8e93", background: themeCardBg }}>Select your department</option>
-                                                        {departments.map((d) => (
-                                                            <option key={d} value={d} style={{ color: themeTextColor, background: themeCardBg }}>{d}</option>
+                                                        {departmentsList.map((d) => (
+                                                            <option key={d.id} value={d.id} style={{ color: themeTextColor, background: themeCardBg }}>{d.name}</option>
                                                         ))}
                                                     </select>
                                                     {errors.major && <p style={{ fontSize: 9.5, color: "#ff3b30", marginTop: 2 }}>{errors.major}</p>}
@@ -1007,8 +1007,8 @@ function Login() {
                                                 color: "#ffffff",
                                                 border: isDark ? "1px solid #1c202b" : "1px solid #0d1015",
                                                 borderRadius: 6,
-                                                boxShadow: isDark 
-                                                    ? "inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 2px 5px rgba(0, 0, 0, 0.3)" 
+                                                boxShadow: isDark
+                                                    ? "inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 2px 5px rgba(0, 0, 0, 0.3)"
                                                     : "inset 0 1px 1px rgba(255, 255, 255, 0.15), 0 2px 5px rgba(0, 0, 0, 0.08)",
                                                 fontSize: 11.5, fontWeight: 500, cursor: loading ? "not-allowed" : "pointer",
                                                 fontFamily: font, letterSpacing: "0.2px",
@@ -1075,7 +1075,7 @@ function Login() {
                         borderRadius: 16, padding: "12px 16px 12px",
                         border: "1px solid rgba(255, 255, 255, 0.15)",
                         boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.2)",
-                            }}>
+                    }}>
                         <p style={{
                             fontSize: 12, color: "#ffffff", lineHeight: 1.35,
                             fontWeight: 400, margin: "0 0 12px 0", fontFamily: font, letterSpacing: "-0.1px",

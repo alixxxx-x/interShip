@@ -994,6 +994,11 @@ class ReviewSerializer(serializers.ModelSerializer):
         except Exception:
             return "recently"
 
+class UniversitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = University
+        fields = ['id', 'name', 'email_domain']
+
 class DepartmentSerializer(serializers.ModelSerializer):
     university_name = serializers.CharField(source='university.name', read_only=True)
     student_count = serializers.SerializerMethodField(read_only=True)
