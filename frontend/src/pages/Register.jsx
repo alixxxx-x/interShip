@@ -1,5 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import api from "@/api/api";
+import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 import { ChevronLeft, Loader2, Eye, EyeOff, ArrowLeft, ArrowRight } from "lucide-react";
 import Threads from "@/components/ui/Threads";
@@ -18,6 +19,7 @@ function Register() {
     const [confirmPassword, setConfirmPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [matricule, setMatricule] = useState("");
     const [role, setRole] = useState("STUDENT");
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
@@ -32,6 +34,64 @@ function Register() {
         />
     ), []);
 
+    const [universities, setUniversities] = useState([]);
+    const [selectedUniv, setSelectedUniv] = useState("");
+    const [departments, setDepartments] = useState([]);
+    const [selectedDept, setSelectedDept] = useState("");
+    const [selectedUnivDomain, setSelectedUnivDomain] = useState("");
+
+    const normalizeDomain = (domain) => {
+        if (!domain) return "";
+        const cleaned = domain.trim().toLowerCase();
+        return cleaned.startsWith("@") ? cleaned : `@${cleaned}`;
+    };
+
+    useEffect(() => {
+        const fallbackUniversities = [
+            {
+                id: 6,
+                university_name: "Université Abdelhamid Mehri - Constantine 2",
+                departments: ["Informatique (NTIC)", "Mathématiques", "Économie"]
+            },
+            {
+                id: 7,
+                university_name: "Université des Frères Mentouri - Constantine 1",
+                departments: ["Sciences de la Nature et de la Vie", "Droit", "Lettres et Langues"]
+            }
+        ];
+
+        const fetchUniversities = async () => {
+            try {
+                const url = `${import.meta.env.VITE_API_URL}users/?role=ADMIN_UNIV`.replace(/([^:]\/)\/+/g, "$1");
+                const res = await axios.get(url);
+                const data = res.data.results || res.data;
+                const univList = data.filter(u => u.university_name);
+                if (univList && univList.length > 0) {
+                    setUniversities(univList);
+                } else {
+                    setUniversities(fallbackUniversities);
+                }
+            } catch (error) {
+                console.error("Failed to fetch universities, using database fallback:", error);
+                setUniversities(fallbackUniversities);
+            }
+        };
+        fetchUniversities();
+    }, []);
+
+    const handleUnivChange = (univName) => {
+        setSelectedUniv(univName);
+        setErrors(prev => ({ ...prev, university: null }));
+        const univ = universities.find(u => u.university_name === univName);
+        if (univ && univ.departments) {
+            setDepartments(univ.departments);
+        } else {
+            setDepartments([]);
+        }
+        setSelectedUnivDomain(normalizeDomain(univ?.email_domain || ""));
+        setSelectedDept("");
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -39,13 +99,18 @@ function Register() {
         if (role === "STUDENT") {
             if (!firstName.trim()) EmptyErrors.firstName = "First name is required";
             if (!lastName.trim()) EmptyErrors.lastName = "Last name is required";
+            if (!selectedUniv) EmptyErrors.university = "University is required";
+            if (!selectedDept) EmptyErrors.department = "Department is required";
         } else {
             if (!username.trim()) EmptyErrors.username = "Username is required";
         }
         if (!email.trim()) {
             EmptyErrors.email = "Email is required";
-        } else if (role === "STUDENT" && !email.toLowerCase().endsWith("@univ.dz")) {
-            EmptyErrors.email = "Student email must end with @univ.dz";
+        } else if (role === "STUDENT") {
+            const requiredDomain = selectedUnivDomain || "@univ.dz";
+            if (!email.toLowerCase().endsWith(requiredDomain)) {
+                EmptyErrors.email = `Student email must end with ${requiredDomain}`;
+            }
         }
         if (!password) EmptyErrors.password = "Password is required";
         if (!confirmPassword) {
@@ -67,8 +132,13 @@ function Register() {
                 password,
                 role,
                 ...(role === "STUDENT"
-                    ? { first_name: firstName, last_name: lastName }
-                    : { username, name: username })
+                    ? { 
+                        first_name: firstName, 
+                        last_name: lastName,
+                        university_name: selectedUniv,
+                        department: selectedDept
+                      }
+                    : { username, name: username, matricule })
             };
             await api.post("/auth/register/", payload);
             navigate("/login");
@@ -182,7 +252,22 @@ function Register() {
                                             className="w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans"
                                         />
                                     </div>
-                                    {errors.username && <p className="text-[10px] text-red-500 ml-1">{errors.username}</p>}
+                                    
+                                    {role === "COMPANY" && (
+                                        <div className="space-y-1">
+                                            <label className="text-[11px] font-semibold text-black ml-1">Registration Number (Optional)</label>
+                                            <div className="relative">
+                                                <input
+                                                    type="text"
+                                                    placeholder="MAT-XXXXXXXX"
+                                                    value={matricule}
+                                                    onChange={(e) => { setMatricule(e.target.value); setErrors(prev => ({ ...prev, matricule: null })) }}
+                                                    className="w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans"
+                                                />
+                                            </div>
+                                            {errors.matricule && <p className="text-[10px] text-red-500 ml-1">{errors.matricule}</p>}
+                                        </div>
+                                    )}
                                 </div>
                             )}
 

@@ -13,6 +13,9 @@ import {
   AlertCircle,
   CheckCircle,
   MessageSquare,
+  GraduationCap,
+  Building2,
+  ShieldAlert,
 } from "lucide-react"
 
 import { NavMain } from "@/components/layout/nav-main"
@@ -98,6 +101,7 @@ export function AppSidebar({ ...props }) {
   const { t } = useLanguage()
   const [userInfo, setUserInfo] = React.useState(null)
   const [unreadCount, setUnreadCount] = React.useState(0)
+  const [hasUnreadMessages, setHasUnreadMessages] = React.useState(false)
   const [searchQuery, setSearchQuery] = React.useState("")
   const [noticeMessage, setNoticeMessage] = React.useState(null)
   const navigate = useNavigate()
@@ -118,6 +122,18 @@ export function AppSidebar({ ...props }) {
           } catch (err) {
             console.error("Failed to fetch notifications count:", err)
           }
+
+          // Fetch unread messages
+          try {
+            const msgsRes = await api.get("/messages/")
+            const messagesList = msgsRes.data.results || msgsRes.data
+            const hasUnread = messagesList.some(
+              msg => msg.recipient === res.data.id && !msg.is_read
+            )
+            setHasUnreadMessages(hasUnread)
+          } catch (err) {
+            console.error("Failed to fetch unread messages status:", err)
+          }
         }
       } catch (error) {
         console.error("Failed to fetch profile:", error)
@@ -135,6 +151,17 @@ export function AppSidebar({ ...props }) {
     }
     window.addEventListener('notificationsUpdated', handleUpdate)
     return () => window.removeEventListener('notificationsUpdated', handleUpdate)
+  }, [])
+
+  // Listen for real-time message updates
+  React.useEffect(() => {
+    const handleMessagesUpdate = (event) => {
+      if (event.detail && typeof event.detail.hasUnread === 'boolean') {
+        setHasUnreadMessages(event.detail.hasUnread)
+      }
+    }
+    window.addEventListener('messagesUpdated', handleMessagesUpdate)
+    return () => window.removeEventListener('messagesUpdated', handleMessagesUpdate)
   }, [])
 
   const handleLogout = () => {
@@ -174,10 +201,17 @@ export function AppSidebar({ ...props }) {
           isActive: location.pathname.startsWith("/studentdashboard/MyApplications"),
         },
         {
+          title: "Track Internships",
+          url: "/studentdashboard/TrackInternships",
+          icon: CheckCircle,
+          isActive: location.pathname.startsWith("/studentdashboard/TrackInternships"),
+        },
+        {
           title: t("sidebarMessages"),
           url: "/studentdashboard/messages",
           icon: MessageSquare,
           isActive: location.pathname.startsWith("/studentdashboard/messages"),
+          badge: hasUnreadMessages,
         },
         {
         title: t("sidebarPlatform"),
@@ -195,54 +229,112 @@ export function AppSidebar({ ...props }) {
         ],
       },
       ]
-    } else if (userInfo?.role === "ADMIN") {
-        baseItems = [
-          {
-            title: t("sidebarDashboard"),
-            url: "/admindashboard",
-            icon: LayoutDashboard,
-            isActive: location.pathname === "/admindashboard",
-            items: [
-              {
-                title: t("sidebarOverview"),
-                url: "/admindashboard",
-              },
-              {
-                title: t("sidebarAnalytics"),
-                url: "/admindashboard/analytics",
-              },
-            ],
-          },
-          {
-            title: t("sidebarUserManagement"),
-            url: "/admindashboard/users",
-            icon: Users,
-            isActive: location.pathname.startsWith("/admindashboard/users"),
-          },
-          {
-            title: t("sidebarCompanies"),
-            url: "/admindashboard/companies",
-            icon: SquareTerminal,
-            isActive: location.pathname.startsWith("/admindashboard/companies"),
-          },
-          {
-            title: t("sidebarValidations"),
-            url: "/admindashboard/validations",
-            icon: CheckCircle,
-            isActive: location.pathname.startsWith("/admindashboard/validations"),
-          },
-          {
-            title: t("sidebarMessages"),
-            url: "/admindashboard/messages",
-            icon: MessageSquare,
-            isActive: location.pathname.startsWith("/admindashboard/messages"),
-          },
-          {
-            title: t("sidebarSettings"),
-            url: "/settings",
-            icon: Settings2,
-          },
-        ]
+    } else if (userInfo?.role === "ADMIN_DEPT" || userInfo?.role === "ADMIN_UNIV" || userInfo?.role === "ADMIN") {
+        let adminPath = "/admindashboard";
+        if (userInfo.role === "ADMIN_UNIV") adminPath = "/adminunivdashboard";
+        else if (userInfo.role === "ADMIN") adminPath = "/superadmindashboard";
+        
+        if (userInfo.role === "ADMIN") {
+          baseItems = [
+            {
+              title: t("sidebarDashboard"),
+              url: "/superadmindashboard",
+              icon: LayoutDashboard,
+              isActive: location.pathname === "/superadmindashboard" || location.pathname === "/superadmindashboard/analytics",
+              items: [
+                {
+                  title: t("sidebarOverview"),
+                  url: "/superadmindashboard",
+                },
+                {
+                  title: t("sidebarAnalytics"),
+                  url: "/superadmindashboard/analytics",
+                },
+              ],
+            },
+            {
+              title: "Universities",
+              url: "/superadmindashboard/universities",
+              icon: GraduationCap,
+              isActive: location.pathname.startsWith("/superadmindashboard/universities"),
+            },
+            {
+              title: "Pending Companies",
+              url: "/superadmindashboard/companies",
+              icon: ShieldAlert,
+              isActive: location.pathname.startsWith("/superadmindashboard/companies"),
+            },
+            {
+              title: t("sidebarUserManagement"),
+              url: "/superadmindashboard/users",
+              icon: Users,
+              isActive: location.pathname.startsWith("/superadmindashboard/users"),
+              items: [
+                {
+                  title: "Student",
+                  url: "/superadmindashboard/users?role=STUDENT",
+                },
+                {
+                  title: "Company",
+                  url: "/superadmindashboard/users?role=COMPANY",
+                },
+                {
+                  title: "University",
+                  url: "/superadmindashboard/users?role=ADMIN_UNIV",
+                },
+              ],
+            },
+          ];
+        } else {
+          baseItems = [
+            {
+              title: t("sidebarDashboard"),
+              url: adminPath,
+              icon: LayoutDashboard,
+              isActive: location.pathname === adminPath,
+              items: [
+                {
+                  title: t("sidebarOverview"),
+                  url: adminPath,
+                },
+                {
+                  title: t("sidebarAnalytics"),
+                  url: `${adminPath}/analytics`,
+                },
+              ],
+            },
+            {
+              title: t("sidebarUserManagement"),
+              url: `${adminPath}/users`,
+              icon: Users,
+              isActive: location.pathname.startsWith(`${adminPath}/users`),
+            },
+            {
+              title: t("sidebarCompanies"),
+              url: `${adminPath}/companies`,
+              icon: SquareTerminal,
+              isActive: location.pathname.startsWith(`${adminPath}/companies`),
+            },
+            {
+              title: t("sidebarValidations"),
+              url: `${adminPath}/validations`,
+              icon: CheckCircle,
+              isActive: location.pathname.startsWith(`${adminPath}/validations`),
+            },
+            {
+              title: t("sidebarMessages"),
+              url: `${adminPath}/messages`,
+              icon: MessageSquare,
+              isActive: location.pathname.startsWith(`${adminPath}/messages`),
+              badge: hasUnreadMessages,
+            },
+            {
+              title: t("sidebarSettings"),
+              url: "/settings",
+              icon: Settings2,
+            },
+          ]
+        }
     } else {
       baseItems = [
         {
@@ -271,9 +363,15 @@ export function AppSidebar({ ...props }) {
           icon: Users,
         },
         {
+          title: "Track Internships",
+          url: "/companydashboard/TrackInternships",
+          icon: CheckCircle,
+        },
+        {
           title: t("sidebarMessages"),
           url: "/companydashboard/messages",
           icon: MessageSquare,
+          badge: hasUnreadMessages,
         },
         {
           title: t("sidebarPlatform"),

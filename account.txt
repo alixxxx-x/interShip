@@ -37,10 +37,10 @@ companies :
   password : [google]
 
 
-student :
+student :       
   email:[ahmed.ziri@univ.dz]
   password:[password123]
-
+      
   email:[samy.amir@univ.dz]
   password:[password123]
 

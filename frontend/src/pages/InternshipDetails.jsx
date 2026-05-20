@@ -7,7 +7,6 @@ import {
   Calendar,
   Users,
   Clock,
-  GraduationCap,
   ChevronLeft,
   ChevronDown,
   Share2,
@@ -16,12 +15,8 @@ import {
   AlertCircle,
   ArrowRight,
   Star,
-  ShieldCheck,
   Send,
-  Headphones,
-  MessageSquare,
   Sparkles,
-  FileText,
   BookOpen
 } from 'lucide-react';
 import api from '@/api/api';
@@ -332,6 +327,7 @@ export default function InternshipDetails() {
       toast.error("Failed to cancel.");
     } finally {
       setIsApplying(false);
+      setIsCancelDialogOpen(false);
     }
   };
 
@@ -530,7 +526,6 @@ export default function InternshipDetails() {
               {/* ACTION ROWS */}
               <div style={{ borderTop: `1px solid ${bdr}`, paddingTop: 24, marginTop: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-
                   {/* Quantity pill (Capacity indicator) */}
                   <div style={{ display: "flex", alignItems: "center", gap: 12, border: `1.5px solid ${bdr}`, borderRadius: 24, padding: "8px 16px", background: dk ? "rgba(255,255,255,0.03)" : "#f8f9fa", fontFamily: F, fontSize: 13, color: txt, fontWeight: 600 }}>
                     <Users size={14} style={{ color: accent }} />
