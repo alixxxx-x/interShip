@@ -14,6 +14,8 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-change-this-in-production'
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
+OCR_PROVIDER = os.getenv('OCR_PROVIDER', 'gemini').lower()
 
 ALLOWED_HOSTS = []
 

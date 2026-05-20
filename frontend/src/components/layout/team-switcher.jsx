@@ -16,11 +16,11 @@ export function TeamSwitcher({
       <SidebarMenuItem>
         <div className="flex items-center gap-3 px-2 py-2">
           {logoSrc && (
-            <div className="flex aspect-square size-10 items-center justify-center rounded-lg overflow-hidden flex-shrink-0">
+            <div className="flex h-8 w-auto items-center justify-center rounded-lg overflow-hidden flex-shrink-0">
               <img
                 src={logoSrc}
                 alt={name}
-                className="size-full object-cover"
+                className="h-full w-auto object-contain"
               />
             </div>
           )}
