@@ -142,7 +142,7 @@ function Login() {
                 role,
                 ...(role === "STUDENT"
                     ? { first_name: firstName, last_name: lastName, university_id: university, major }
-                    : { username, name: username })
+                    : { username, name: username, matricule: registrationNumber })
             };
             await api.post("/auth/register/", payload);
             toast.success("Account created successfully! You can now log in.");
@@ -155,6 +155,16 @@ function Login() {
                     newErrors[key] = Array.isArray(backendErrors[key]) ? backendErrors[key][0] : backendErrors[key];
                 }
                 setErrors(newErrors);
+                
+                // Show a toast message for the validation errors
+                if (newErrors.matricule) {
+                    toast.error(newErrors.matricule);
+                } else {
+                    const firstErrorKey = Object.keys(newErrors)[0];
+                    if (firstErrorKey) {
+                        toast.error(newErrors[firstErrorKey]);
+                    }
+                }
             } else {
                 toast.error("Registration failed. Please check your connection and try again.");
             }
@@ -851,15 +861,19 @@ function Login() {
                                                     <input
                                                         type="text"
                                                         value={registrationNumber}
-                                                        onChange={(e) => setRegistrationNumber(e.target.value)}
+                                                        onChange={(e) => {
+                                                            setRegistrationNumber(e.target.value);
+                                                            setErrors(prev => ({ ...prev, matricule: null }));
+                                                        }}
                                                         placeholder="MAT-XXXXXXXXX"
                                                         style={{
                                                             width: "100%", height: 32, padding: "0 10px",
-                                                            borderRadius: 6, border: themeInputBorder,
+                                                            borderRadius: 6, border: errors.matricule ? "1px solid #ff3b30" : themeInputBorder,
                                                             background: themeInputBg, fontSize: 11, color: themeTextColor,
                                                             outline: "none", fontFamily: font, boxSizing: "border-box",
                                                         }}
                                                     />
+                                                    {errors.matricule && <p style={{ fontSize: 9.5, color: "#ff3b30", marginTop: 2 }}>{errors.matricule}</p>}
                                                 </div>
                                             </>
                                         )}

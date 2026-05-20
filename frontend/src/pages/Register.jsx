@@ -150,6 +150,16 @@ function Register() {
                     newErrors[key] = Array.isArray(backendErrors[key]) ? backendErrors[key][0] : backendErrors[key];
                 }
                 setErrors(newErrors);
+
+                // Show a toast message for the validation errors
+                if (newErrors.matricule) {
+                    toast.error(newErrors.matricule);
+                } else {
+                    const firstErrorKey = Object.keys(newErrors)[0];
+                    if (firstErrorKey) {
+                        toast.error(newErrors[firstErrorKey]);
+                    }
+                }
             } else {
                 toast.error("Registration failed. Please check your connection and try again.");
             }
