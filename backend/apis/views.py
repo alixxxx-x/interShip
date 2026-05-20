@@ -1339,124 +1339,121 @@ class GenerateCVView(generics.GenericAPIView):
         except Exception:
             return Response({"error": "This student has not created a digital CV yet."}, status=404)
 
+        from io import BytesIO
+        from django.http import FileResponse
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+        from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY, TA_LEFT, TA_RIGHT
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table as RLTable, TableStyle
+        from reportlab.lib import colors
+        import json
+
         buffer = BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
-        from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-        from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
         
         styles = getSampleStyleSheet()
         
         name_style = ParagraphStyle(
             'NameStyle', 
             parent=styles['Normal'], 
-            fontName='Helvetica-Bold', 
+            fontName='Times-Bold', 
             fontSize=16, 
             alignment=TA_CENTER, 
-            spaceAfter=5
+            spaceAfter=5,
+            textColor=colors.black
         )
+        
         contact_style = ParagraphStyle(
             'ContactStyle', 
             parent=styles['Normal'], 
-            fontName='Helvetica', 
+            fontName='Times-Roman', 
             fontSize=10, 
             alignment=TA_CENTER, 
-            spaceAfter=2
+            spaceAfter=2,
+            textColor=colors.black
         )
+        
         body_style = ParagraphStyle(
             'BodyStyle',
             parent=styles['Normal'],
-            fontName='Helvetica',
+            fontName='Times-Roman',
             fontSize=10,
             leading=14,
             alignment=TA_JUSTIFY,
-            spaceAfter=10
+            spaceAfter=10,
+            textColor=colors.black
+        )
+        
+        bullet_style = ParagraphStyle(
+            'BulletStyle',
+            parent=body_style,
+            leftIndent=15,
+            firstLineIndent=0,
+            spaceBefore=0,
+            spaceAfter=2
         )
         
         elements = []
 
         # Header - Name
-        elements.append(Paragraph(f"{cv.first_name} {cv.last_name}".upper(), name_style))
+        elements.append(Paragraph(f"{cv.first_name} {cv.last_name}", name_style))
         
-        # Contact Info Styles
-        contact_style_left = ParagraphStyle('ContactLeft', parent=styles['Normal'], fontName='Helvetica', fontSize=9, alignment=0) # TA_LEFT
-        contact_style_right = ParagraphStyle('ContactRight', parent=styles['Normal'], fontName='Helvetica', fontSize=9, alignment=2) # TA_RIGHT
-
-        # Contact Info Table Data
-        left_data = []
-        if cv.email: left_data.append(f"<b>Email:</b> {cv.email}")
-        if cv.phone: left_data.append(f"<b>Phone:</b> {cv.phone}")
-        
-        right_data = []
+        # Contact Info
+        contact_parts_1 = []
+        if cv.email: contact_parts_1.append(cv.email)
+        if cv.phone: contact_parts_1.append(cv.phone)
         loc = cv.address or cv.wilaya
-        if loc: right_data.append(f"<b>Location:</b> {loc}")
-        uid = cv.university_id or student.university_id
-        if uid: right_data.append(f"<b>Student ID:</b> {uid}")
-
-        # Construct table rows
-        table_rows = []
-        for i in range(max(len(left_data), len(right_data))):
-            l = left_data[i] if i < len(left_data) else ""
-            r = right_data[i] if i < len(right_data) else ""
-            table_rows.append([Paragraph(l, contact_style_left), Paragraph(r, contact_style_right)])
-
-        if table_rows:
-            t = RLTable(table_rows, colWidths=['50%', '50%'])
-            t.setStyle(TableStyle([
-                ('VALIGN', (0,0), (-1,-1), 'TOP'),
-                ('LEFTPADDING', (0,0), (-1,-1), 0),
-                ('RIGHTPADDING', (0,0), (-1,-1), 0),
-                ('BOTTOMPADDING', (0,0), (-1,-1), 2),
-            ]))
-            elements.append(t)
+        if loc: contact_parts_1.append(loc)
+        
+        if contact_parts_1:
+            elements.append(Paragraph(" &nbsp;&nbsp;&nbsp;&nbsp; ".join(contact_parts_1), contact_style))
+            
+        contact_parts_2 = []
+        if cv.linkedin: contact_parts_2.append(cv.linkedin)
+        if cv.github: contact_parts_2.append(cv.github)
+        if cv.portfolio_link: contact_parts_2.append(cv.portfolio_link)
+        
+        if contact_parts_2:
+            elements.append(Paragraph(" &nbsp;&nbsp;&nbsp;&nbsp; ".join(contact_parts_2), contact_style))
             
         elements.append(Spacer(1, 15))
 
         def add_section(title, content):
             if not content: return
             
-            # Section Header with line below
-            t = RLTable([[title.upper()]], colWidths=['100%'])
+            # Section Header with black line below
+            t = RLTable([[title]], colWidths=['100%'])
             t.setStyle(TableStyle([
-                ('FONTNAME', (0,0), (-1,-1), 'Helvetica-Bold'),
+                ('FONTNAME', (0,0), (-1,-1), 'Times-Bold'),
                 ('FONTSIZE', (0,0), (-1,-1), 11),
-                ('TEXTCOLOR', (0,0), (-1,-1), colors.HexColor("#4c1d95")), # Purple-900
+                ('TEXTCOLOR', (0,0), (-1,-1), colors.black),
                 ('ALIGN', (0,0), (-1,-1), 'LEFT'),
                 ('BOTTOMPADDING', (0,0), (-1,-1), 3),
-                ('TOPPADDING', (0,0), (-1,-1), 12),
-                ('LINEBELOW', (0,0), (-1,-1), 1.5, colors.HexColor("#7c3aed")), # Purple-600
+                ('TOPPADDING', (0,0), (-1,-1), 8),
+                ('LINEBELOW', (0,0), (-1,-1), 1, colors.black),
             ]))
             elements.append(t)
             elements.append(Spacer(1, 8))
             
             # Content
-            import json
             try:
                 parsed = json.loads(content)
                 if isinstance(parsed, list):
                     # For list-like content, use bullet points
                     for item in parsed:
                         if item.strip():
-                            elements.append(Paragraph(f"• {item.strip()}", body_style))
+                            elements.append(Paragraph(f"• {item.strip()}", bullet_style))
                     return
             except Exception:
                 pass
                 
             elements.append(Paragraph(content.replace('\n', '<br/>'), body_style))
 
-        add_section("Summary", cv.profile_summary)
-        add_section("Education", cv.education)
-        add_section("Professional Experience", cv.experience)
-        add_section("Skills", cv.skills)
-        add_section("Languages", cv.languages)
-
-        # Move links to the bottom in a nice "Links & Portfolio" section
-        links_content = []
-        if cv.linkedin: links_content.append(f"<b>LinkedIn:</b> {cv.linkedin}")
-        if cv.github: links_content.append(f"<b>GitHub:</b> {cv.github}")
-        if cv.portfolio_link: links_content.append(f"<b>Portfolio:</b> {cv.portfolio_link}")
-        
-        if links_content:
-            add_section("Links & Portfolio", "<br/>".join(links_content))
+        add_section("SUMMARY", cv.profile_summary)
+        add_section("EDUCATION", cv.education)
+        add_section("PROFESSIONAL EXPERIENCE", cv.experience)
+        add_section("SKILLS", cv.skills)
+        add_section("LANGUAGES", cv.languages)
 
         doc.build(elements)
         buffer.seek(0)
