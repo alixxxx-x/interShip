@@ -5,6 +5,7 @@ import {
   BarChart, Bar, Cell
 } from "recharts";
 import api from "@/api/api";
+import LoadingScreen from "@/components/ui/LoadingScreen";
 
 export default function AdminAnalytics() {
   const [data, setData] = useState(null);
@@ -24,7 +25,13 @@ export default function AdminAnalytics() {
     fetchAnalytics();
   }, []);
 
-  if (loading) return <div className="p-6 text-center">Gathering intelligence...</div>;
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] w-full">
+        <LoadingScreen fullScreen={false} />
+      </div>
+    );
+  }
 
   const chartData = [
     { name: "Placed", value: data.placed_students },

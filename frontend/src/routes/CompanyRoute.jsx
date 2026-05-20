@@ -2,6 +2,7 @@ import { Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import api from "@/api/api";
 import ProtectedRoute from "@/routes/ProtectedRoute";
+import LoadingScreen from "@/components/ui/LoadingScreen";
 
 function CompanyRoute({ children }) {
     const [isCompany, setIsCompany] = useState(null);
@@ -21,11 +22,7 @@ function CompanyRoute({ children }) {
     }, []);
 
     if (isCompany === null) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-        );
+        return <LoadingScreen text="Loading corporate workspace..." />;
     }
 
     if (isCompany === true) {

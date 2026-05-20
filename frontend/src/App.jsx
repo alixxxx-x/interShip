@@ -25,6 +25,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import CompanyDashboard from "@/features/dashboards/CompanyDashboard";
 import CompanyAnalytics from "@/features/dashboards/CompanyAnalytics";
 import CompanyListings from "@/features/dashboards/CompanyListings";
+import CreateOfferPage from "@/features/dashboards/CreateOfferPage";
 import AllApplications from "@/features/dashboards/AllApplications";
 import StudentDashboard from "@/features/dashboards/StudentDashboard";
 import MyApplications from "@/features/dashboards/MyApplications";
@@ -48,6 +49,7 @@ import Settings from "@/pages/Settings";
 
 import CompanyMessages from "@/features/dashboards/CompanyMessages";
 import StudentMessages from "@/features/dashboards/StudentMessages";
+import FloatingChatbot from "@/components/FloatingChatbot";
 
 import { LanguageProvider } from "@/components/language-provider";
 import { ToastProvider } from "@/components/ui/custom-toast";
@@ -175,6 +177,7 @@ function App() {
           <Route element={<CompanyRoute><DashboardLayout /></CompanyRoute>}>
             <Route path="/companydashboard" element={<CompanyDashboard />} />
             <Route path="/companydashboard/analytics" element={<CompanyAnalytics />} />
+            <Route path="/companydashboard/new-offer" element={<CreateOfferPage />} />
             <Route path="/companydashboard/listings" element={<CompanyListings />} />
             <Route path="/companydashboard/applications" element={<AllApplications />} />
             <Route path="/companydashboard/TrackInternships" element={<CompanyTrackInternships />} />
@@ -192,6 +195,7 @@ function App() {
             <Route path="/studentdashboard/notifications" element={<Notifications />} />
           </Route>
         </Routes>
+        <FloatingChatbot />
       </TooltipProvider>
       </ToastProvider>
       </LanguageProvider>

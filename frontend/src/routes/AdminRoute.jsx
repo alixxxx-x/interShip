@@ -2,6 +2,7 @@ import { Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import api from "@/api/api";
 import ProtectedRoute from "@/routes/ProtectedRoute";
+import LoadingScreen from "@/components/ui/LoadingScreen";
 
 function AdminRoute({ children }) {
     const [isAdmin, setIsAdmin] = useState(null);
@@ -17,12 +18,11 @@ function AdminRoute({ children }) {
             })
             .catch(() => {
                 setIsAdmin(false);
-            }
-            );
+            });
     }, []);
 
     if (isAdmin === null) {
-        return <div>checking...</div>
+        return <LoadingScreen text="Loading administrative workspace..." />;
     }
 
     if (isAdmin === true) {
