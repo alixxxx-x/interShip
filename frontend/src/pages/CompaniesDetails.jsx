@@ -52,6 +52,15 @@ export default function CompaniesDetails() {
     }
   });
 
+  const [isLiked, setIsLiked] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`liked_company_${id}`);
+      return saved === "true";
+    } catch {
+      return false;
+    }
+  });
+
   useEffect(() => {
     const fetchCompanyDetails = async () => {
       try {
@@ -88,6 +97,18 @@ export default function CompaniesDetails() {
     });
   };
 
+  const toggleLike = () => {
+    setIsLiked(p => {
+      const next = !p;
+      try {
+        localStorage.setItem(`liked_company_${id}`, String(next));
+      } catch (e) {
+        console.error(e);
+      }
+      return next;
+    });
+  };
+
   // Premium Typography & Theme Constants
   const F = "'Inter', -apple-system, BlinkMacSystemFont, sans-serif";
   const cardBg = dk ? "#121214" : "#ffffff";
@@ -97,7 +118,7 @@ export default function CompaniesDetails() {
   const pillBg = dk ? "rgba(255,255,255,0.04)" : "#f3f4f6";
   const hoverBg = dk ? "rgba(255,255,255,0.03)" : "#f9fafb";
   const accentColor = "#2563eb"; // Premium slate blue
-  
+
   // Calculate mockup values
   const mockRating = (4.5 + (parseInt(id || "1") % 6) * 0.1).toFixed(1);
   const mockReviewsCount = 30 + (parseInt(id || "1") * 17) % 150;
@@ -327,7 +348,7 @@ export default function CompaniesDetails() {
 
       <div style={{ minHeight: "100vh", background: "transparent", color: txt, fontFamily: F, paddingBottom: 80, paddingTop: 20 }}>
         <div style={{ maxWidth: 1140, margin: "0 auto", padding: "0 24px" }}>
-          
+
           {/* Breadcrumb Back Navigation */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
             <button
@@ -341,10 +362,10 @@ export default function CompaniesDetails() {
 
             <div style={{ display: "flex", gap: 8 }}>
               <button
-                onClick={toggleFollow}
-                style={{ width: 36, height: 36, borderRadius: "50%", background: dk ? "rgba(255,255,255,0.04)" : "#fff", border: `1px solid ${bdr}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: isFollowing ? "#e53e3e" : txt2, transition: "all 0.2s" }}
+                onClick={toggleLike}
+                style={{ width: 36, height: 36, borderRadius: "50%", background: dk ? "rgba(255,255,255,0.04)" : "#fff", border: `1px solid ${bdr}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: isLiked ? "#e53e3e" : txt2, transition: "all 0.2s" }}
               >
-                <Heart size={16} style={{ fill: isFollowing ? "#e53e3e" : "none" }} />
+                <Heart size={16} style={{ fill: isLiked ? "#e53e3e" : "none" }} />
               </button>
               <button style={{ width: 36, height: 36, borderRadius: "50%", background: dk ? "rgba(255,255,255,0.04)" : "#fff", border: `1px solid ${bdr}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: txt2 }}>
                 <Share2 size={16} />
@@ -391,7 +412,7 @@ export default function CompaniesDetails() {
                     <MessageSquare size={16} />
                     Get in Touch
                   </button>
-                  
+
                   <a
                     href={company.website ? (company.website.startsWith('http') ? company.website : `https://${company.website}`) : "https://internia.com"}
                     target="_blank"
@@ -406,10 +427,10 @@ export default function CompaniesDetails() {
                     onClick={toggleFollow}
                     className="btn-premium-outline"
                     style={{
-                      background: isFollowing 
+                      background: isFollowing
                         ? (dk ? "rgba(16, 185, 129, 0.12)" : "#ecfdf5")
                         : (dk ? "rgba(37, 99, 235, 0.12)" : "#eff6ff"),
-                      color: isFollowing 
+                      color: isFollowing
                         ? (dk ? "#34d399" : "#047857")
                         : (dk ? "#60a5fa" : "#2563eb"),
                       borderColor: isFollowing
@@ -492,10 +513,10 @@ export default function CompaniesDetails() {
 
           {/* 3. TWO COLUMN GRID LAYOUT */}
           <div className="company-layout-grid">
-            
+
             {/* LEFT COLUMN - MAIN DETAILS */}
             <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
-              
+
               {/* Card A: About Company */}
               <div className="premium-card">
                 <h2 style={{ fontSize: 18, fontWeight: 800, margin: "0 0 16px", display: "flex", alignItems: "center", gap: 10, color: txt, letterSpacing: "-0.01em" }}>
@@ -520,7 +541,7 @@ export default function CompaniesDetails() {
                 <p style={{ fontSize: 13, color: txt2, margin: "0 0 24px" }}>
                   Deadline: <span style={{ fontWeight: 600, color: txt }}>Start: March 15, 2026 | End: May 30, 2026</span>
                 </p>
-                
+
                 <div style={{ position: "relative", marginBottom: 12 }}>
                   {/* Colorful Multi-segment Progress Bar */}
                   <div style={{ height: 8, width: "100%", borderRadius: 4, background: bdr, display: "flex", overflow: "hidden" }}>
@@ -530,7 +551,7 @@ export default function CompaniesDetails() {
                     <div style={{ width: "10%", background: bdr }} />
                   </div>
                 </div>
-                
+
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, fontSize: 12, fontWeight: 600, color: txt2 }}>
                   <span style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "#10b981" }} />Applications (Open)</span>
                   <span style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "#f59e0b" }} />Interviews (Active)</span>
@@ -544,7 +565,7 @@ export default function CompaniesDetails() {
                   <FileText size={20} style={{ color: txt2 }} />
                   Program Resources & Downloads
                 </h2>
-                
+
                 <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                   <div className="download-resource-card">
                     <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -619,7 +640,7 @@ export default function CompaniesDetails() {
                   <MessageSquare size={20} style={{ color: txt2 }} />
                   Testimonials from Past Interns
                 </h2>
-                
+
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                   <div className="intern-feedback-row">
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -747,14 +768,14 @@ export default function CompaniesDetails() {
 
             {/* RIGHT COLUMN - SIDEBAR */}
             <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
-              
+
               {/* Card 1: GPS Map & Location */}
               <div className="premium-card">
                 <h3 style={{ fontSize: 16, fontWeight: 800, color: txt, margin: "0 0 16px", display: "flex", alignItems: "center", gap: 8 }}>
                   <MapPin size={18} style={{ color: txt2 }} />
                   Company Location
                 </h3>
-                
+
                 {/* Embed GPS Google Map iframe */}
                 <div style={{ borderRadius: 14, overflow: "hidden", border: `1px solid ${bdr}`, marginBottom: 16, height: 200, background: dk ? "#18181b" : "#f4f4f5" }}>
                   <iframe
@@ -795,7 +816,7 @@ export default function CompaniesDetails() {
                 <h3 style={{ fontSize: 16, fontWeight: 800, color: txt, margin: "0 0 20px" }}>
                   {t("companySnapshot")}
                 </h3>
-                
+
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                   <SidebarItem icon={Calendar} label={t("founded")} value={company.founded_year?.toString() || t("notAvailable")} txt={txt} txt2={txt2} bdr={bdr} />
                   <SidebarItem icon={Briefcase} label={t("field")} value={company.company_field || t("notAvailable")} txt={txt} txt2={txt2} bdr={bdr} />
@@ -861,10 +882,10 @@ export default function CompaniesDetails() {
                   }} />
                   {(company.total_internships_count || 0) > 0 ? "ACTIVELY HIRING" : "NEXT CYCLE SOON"}
                 </div>
-                
+
                 <h3 style={{ fontSize: 17, fontWeight: 700, margin: "0 0 6px", position: "relative", zIndex: 2, letterSpacing: "-0.01em" }}>{t("weAreHiring")}</h3>
                 <p style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", margin: "0 0 20px", lineHeight: 1.4, position: "relative", zIndex: 2 }}>{t("joinOurTeam")}</p>
-                
+
                 {/* Side-by-Side Modern Metrics Panel */}
                 <div style={{
                   display: "flex",
@@ -911,7 +932,7 @@ export default function CompaniesDetails() {
                       </span>
                     </div>
                     <span style={{ fontSize: 18, fontWeight: 700, color: "#ffffff" }}>
-                      {mockReviewsCount * 2 + 3}
+                      {company.hired_interns_count || 0}
                     </span>
                   </div>
                 </div>

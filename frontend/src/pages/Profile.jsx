@@ -278,8 +278,12 @@ export default function Profile() {
                     <div className="section-header">About</div>
                     <div className="flex flex-col sm:flex-row items-center sm:items-start gap-8 mb-6">
                         <div className="w-24 h-24 rounded-full avatar-container flex items-center justify-center text-3xl overflow-hidden font-semibold relative flex-shrink-0 shadow-md">
-                            {profile.profile_picture ? (
-                                <img src={profile.profile_picture} alt={profile.username} className="w-full h-full object-cover" />
+                            {(profile.role === "COMPANY" ? (profile.logo || profile.profile_picture) : profile.profile_picture) ? (
+                                <img 
+                                    src={profile.role === "COMPANY" ? (profile.logo || profile.profile_picture) : profile.profile_picture} 
+                                    alt={profile.username} 
+                                    className="w-full h-full object-cover" 
+                                />
                             ) : (
                                 profile.username?.charAt(0).toUpperCase() || 'A'
                             )}
@@ -300,7 +304,7 @@ export default function Profile() {
                                 </span>
                             </div>
                             <div className="text-[13px] text-muted-locked font-medium">
-                                {profile.email === 'djezzy@gmail.com' ? '+213779531293' : (profile.phone || 'No phone number provided')}
+                                {profile.phone || (profile.email === 'djezzy@gmail.com' ? '+213779531293' : 'No phone number provided')}
                             </div>
                             <div className="text-[13px] text-brand-locked font-medium">
                                 {profile.email}
@@ -359,7 +363,7 @@ export default function Profile() {
                                 <div>
                                     <div className="grid-label">Phone Number</div>
                                     <div className="grid-value">
-                                        {profile.email === 'djezzy@gmail.com' ? '+213779531293' : (profile.phone || 'N/A')}
+                                        {profile.phone || (profile.email === 'djezzy@gmail.com' ? '+213779531293' : 'N/A')}
                                     </div>
                                 </div>
 
@@ -389,12 +393,16 @@ export default function Profile() {
                                     </div>
                                 </div>
                                 <div>
+                                    <div className="grid-label">Company Size</div>
+                                    <div className="grid-value">{profile.size || '10-50 Employees'}</div>
+                                </div>
+                                <div>
                                     <div className="grid-label">Status Required</div>
-                                    <div className="grid-value">Corporate Verification</div>
+                                    <div className="grid-value">{profile.status_required || 'Corporate Verification'}</div>
                                 </div>
                                 <div>
                                     <div className="grid-label">Message</div>
-                                    <div className="grid-value">Active partner organization</div>
+                                    <div className="grid-value">{profile.message || 'Active partner organization'}</div>
                                 </div>
                             </>
                         ) : (

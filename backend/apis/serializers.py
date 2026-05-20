@@ -62,6 +62,9 @@ class UserSerializer(serializers.ModelSerializer):
     email_domain = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
     departments = serializers.JSONField(required=False, write_only=True, allow_null=True)
     matricule = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
+    status_required = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
+    message = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
+    size = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
     
     class Meta:
         model = User
@@ -69,7 +72,8 @@ class UserSerializer(serializers.ModelSerializer):
             'id', 'username', 'email', 'role', 'profile_picture', 'password',
             'first_name', 'last_name', 'is_active', 'university_id', 'wilaya', 'phone',
             'name', 'logo', 'description', 'location', 'website', 'company_field', 'founded_year', 'department',
-            'department_id', 'university_name', 'email_domain', 'departments', 'matricule'
+            'department_id', 'university_name', 'email_domain', 'departments', 'matricule',
+            'status_required', 'message', 'size'
         ]
         read_only_fields = ['id']
     def _normalize_domain(self, domain):
@@ -226,6 +230,12 @@ class UserSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
+        request = self.context.get('request')
+
+        if instance.profile_picture:
+            pic_url = instance.profile_picture.url
+            if request:
+                data['profile_picture'] = request.build_absolute_uri(pic_url)
 
         if instance.role == User.Role.STUDENT:
             student = getattr(instance, 'student', None)
@@ -249,12 +259,22 @@ class UserSerializer(serializers.ModelSerializer):
             company = getattr(instance, 'company', None)
             if company:
                 data['name'] = company.name
-                data['logo'] = company.logo.url if company.logo else None
+                logo = company.logo.url if company.logo else None
+                if not logo and company.profile_picture:
+                    logo = company.profile_picture.url
+                if logo and request:
+                    data['logo'] = request.build_absolute_uri(logo)
+                else:
+                    data['logo'] = logo
                 data['description'] = company.description
                 data['location'] = company.location
                 data['website'] = company.website
                 data['company_field'] = company.company_field
                 data['founded_year'] = company.founded_year
+                data['phone'] = getattr(company, 'phone', None)
+                data['status_required'] = getattr(company, 'status_required', "Corporate Verification")
+                data['message'] = getattr(company, 'message', "Active partner organization")
+                data['size'] = getattr(company, 'size', "10-50 Employees")
 
         elif instance.role == User.Role.ADMIN_DEPT:
             admin = getattr(instance, 'admindept', None)
@@ -408,6 +428,14 @@ class UserSerializer(serializers.ModelSerializer):
                 company.company_field = validated_data.get('company_field')
             if 'founded_year' in validated_data:
                 company.founded_year = validated_data.get('founded_year')
+            if 'phone' in validated_data:
+                company.phone = validated_data.get('phone')
+            if 'status_required' in validated_data:
+                company.status_required = validated_data.get('status_required')
+            if 'message' in validated_data:
+                company.message = validated_data.get('message')
+            if 'size' in validated_data:
+                company.size = validated_data.get('size')
             company.save()
             
         elif instance.role == User.Role.ADMIN_DEPT and hasattr(instance, 'admindept'):
@@ -469,11 +497,17 @@ class CompanySerializer(serializers.ModelSerializer):
     logo = serializers.SerializerMethodField()
     open_positions_count = serializers.SerializerMethodField()
     total_internships_count = serializers.SerializerMethodField()
+    hired_interns_count = serializers.SerializerMethodField()
     internships = serializers.SerializerMethodField()
 
     class Meta:
         model = Company
-        fields = ['id', 'email', 'name', 'logo', 'description', 'location', 'website', 'company_field', 'founded_year', 'is_active', 'open_positions_count', 'total_internships_count', 'internships']
+        fields = [
+            'id', 'email', 'name', 'logo', 'description', 'location', 'website', 
+            'company_field', 'founded_year', 'is_active', 'open_positions_count', 
+            'total_internships_count', 'hired_interns_count', 'internships',
+            'phone', 'status_required', 'message', 'size'
+        ]
         read_only_fields = ['id']
 
     def get_logo(self, obj):
@@ -496,6 +530,13 @@ class CompanySerializer(serializers.ModelSerializer):
 
     def get_total_internships_count(self, obj):
         return InternshipOffer.objects.filter(company=obj).count()
+
+    def get_hired_interns_count(self, obj):
+        return Application.objects.filter(
+            internship__company=obj,
+            status__in=[Application.Status.VALIDATED, Application.Status.COMPLETE],
+            is_validated_by_admin=True
+        ).count()
 
     def get_internships(self, obj):
         offers = InternshipOffer.objects.filter(company=obj)

@@ -4,13 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { 
-  MoreVertical, 
-  Search, 
-  User, 
-  Mail, 
-  Shield, 
-  CheckCircle, 
+import {
+  MoreVertical,
+  Search,
+  User,
+  Mail,
+  Shield,
+  CheckCircle,
   AlertCircle,
   Archive,
   UserCheck,
@@ -23,10 +23,10 @@ import {
   UserCog
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
   DropdownMenuLabel
@@ -39,7 +39,7 @@ export default function AdminUsers() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  
+
   // Get search params for role filtering
   const [searchParams] = useSearchParams();
   const roleFilter = searchParams.get("role"); // STUDENT, COMPANY, ADMIN_UNIV
@@ -68,7 +68,7 @@ export default function AdminUsers() {
       const newStatus = !user.is_active;
       // Optimistic update
       setUsers(prev => prev.map(u => u.id === user.id ? { ...u, is_active: newStatus } : u));
-      
+
       await api.patch(`/users/${user.id}/`, { is_active: newStatus });
       toast.success(`${user.username || user.email}'s status updated successfully.`);
     } catch (error) {
@@ -91,13 +91,13 @@ export default function AdminUsers() {
     }
   };
 
-  const filteredUsers = users.filter(user => 
+  const filteredUsers = users.filter(user =>
     user.is_active &&
     ((user.username || "").toLowerCase().includes(search.toLowerCase()) ||
-     (user.email || "").toLowerCase().includes(search.toLowerCase()) ||
-     (user.first_name || "").toLowerCase().includes(search.toLowerCase()) ||
-     (user.last_name || "").toLowerCase().includes(search.toLowerCase()) ||
-     (user.university_name || "").toLowerCase().includes(search.toLowerCase()))
+      (user.email || "").toLowerCase().includes(search.toLowerCase()) ||
+      (user.first_name || "").toLowerCase().includes(search.toLowerCase()) ||
+      (user.last_name || "").toLowerCase().includes(search.toLowerCase()) ||
+      (user.university_name || "").toLowerCase().includes(search.toLowerCase()))
   );
 
   // Dynamic headers based on role filter
@@ -165,8 +165,8 @@ export default function AdminUsers() {
             </div>
             <div className="relative w-full sm:w-72">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/80" />
-              <Input 
-                placeholder="Search by name, email, university..." 
+              <Input
+                placeholder="Search by name, email, university..."
                 className="pl-9 bg-background/50 border border-border/80 focus:border-primary rounded-xl text-sm"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -200,14 +200,14 @@ export default function AdminUsers() {
                 ) : (
                   filteredUsers.map((user) => (
                     <TableRow key={user.id} className="hover:bg-muted/10 transition-colors group">
-                      
+
                       {/* Avatar & Username */}
                       <TableCell className="font-bold py-4">
                         <div className="flex items-center gap-3">
                           {user.profile_picture ? (
-                            <img 
-                              src={user.profile_picture} 
-                              alt={user.username || user.email} 
+                            <img
+                              src={user.profile_picture}
+                              alt={user.username || user.email}
                               className="w-10 h-10 rounded-full object-cover border border-border/80 shadow-sm"
                             />
                           ) : (
@@ -223,8 +223,8 @@ export default function AdminUsers() {
                           )}
                           <div className="flex flex-col gap-0.5">
                             <span className="text-sm text-foreground font-bold tracking-tight">
-                              {user.role === 'COMPANY' 
-                                ? (user.name || user.username) 
+                              {user.role === 'COMPANY'
+                                ? (user.name || user.username)
                                 : user.role === 'STUDENT' && (user.first_name || user.last_name)
                                   ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
                                   : user.username || user.email.split('@')[0]}
@@ -237,10 +237,10 @@ export default function AdminUsers() {
                       {/* Role Badge */}
                       <TableCell className="py-4">
                         <Badge variant="outline" className="capitalize px-2.5 py-0.5 rounded-lg font-bold border-indigo-200 text-indigo-600 bg-indigo-50 text-[10px]">
-                          {user.role === 'ADMIN_UNIV' 
-                            ? "University Admin" 
-                            : user.role === 'ADMIN_DEPT' 
-                              ? "Department Admin" 
+                          {user.role === 'ADMIN_UNIV'
+                            ? "University Admin"
+                            : user.role === 'ADMIN_DEPT'
+                              ? "Department Admin"
                               : user.role?.toLowerCase().replace('_', ' ')}
                         </Badge>
                       </TableCell>
@@ -268,7 +268,7 @@ export default function AdminUsers() {
                           <span className="flex items-center gap-1.5 text-foreground/80 font-semibold">
                             <Mail className="h-3.5 w-3.5 text-primary/70" /> {user.email}
                           </span>
-                          
+
                           {/* Optional University Name display */}
                           {user.university_name && (
                             <span className="flex items-center gap-1.5 text-[10px]">
@@ -290,7 +290,7 @@ export default function AdminUsers() {
                             <div className="px-2.5 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                               Account Security
                             </div>
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                               className="cursor-pointer gap-2.5 text-sm rounded-lg py-2 focus:bg-destructive/10 focus:text-destructive"
                               onClick={() => handleToggleStatus(user)}
                             >
@@ -306,10 +306,10 @@ export default function AdminUsers() {
                                 </>
                               )}
                             </DropdownMenuItem>
-                            
+
                             <DropdownMenuSeparator className="my-1.5 border-border/60" />
-                            
-                            <DropdownMenuItem 
+
+                            <DropdownMenuItem
                               className="cursor-pointer gap-2.5 text-sm rounded-lg py-2 text-red-600 focus:text-red-600 focus:bg-red-50"
                               onClick={() => handleDeleteUser(user)}
                             >

@@ -30,6 +30,10 @@ class Company(User):
     website = models.URLField(blank=True, null=True)
     company_field = models.CharField(max_length=255, blank=True, null=True)
     founded_year = models.IntegerField(blank=True, null=True)
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    status_required = models.CharField(max_length=255, blank=True, null=True, default="Corporate Verification")
+    message = models.CharField(max_length=255, blank=True, null=True, default="Active partner organization")
+    size = models.CharField(max_length=100, blank=True, null=True, default="10-50 Employees")
 
     class Meta:
         verbose_name_plural = "Companies"
