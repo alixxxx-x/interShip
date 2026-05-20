@@ -660,7 +660,7 @@ export default function Internships() {
                         <div key={n.id} onClick={() => navigate(`/internships/${n.id}`)} style={{ cursor: "pointer", transition: "transform 0.3s", borderRadius: 0 }}
                           onMouseEnter={e => e.currentTarget.style.transform = "translateY(-3px)"} onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}>
                           {/* Image */}
-                          <div style={{ width: "100%", aspectRatio: "1/1", borderRadius: 16, overflow: "hidden", background: dk ? "#222" : "#f3f0eb", position: "relative", marginBottom: 12 }}>
+                          <div style={{ width: "100%", aspectRatio: "1/1", borderRadius: 16, overflow: "hidden", background: dk ? "#222" : "#f1f5f9", position: "relative", marginBottom: 12 }}>
                             {n.banner_image ? <img src={n.banner_image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                               : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.15 }}><Briefcase size={48} /></div>}
                             {(() => {

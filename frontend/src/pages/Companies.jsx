@@ -45,7 +45,7 @@ export default function Companies() {
   const txt = dk ? "#ffffff" : "#1a1a1a";
   const txt2 = dk ? "#a1a1aa" : "#666666";
   const bdr = dk ? "rgba(255,255,255,0.08)" : "#e5e7eb";
-  const pillBg = dk ? "rgba(255,255,255,0.04)" : "#f3f0eb";
+  const pillBg = dk ? "rgba(255,255,255,0.04)" : "#f1f5f9";
   const hoverBg = dk ? "rgba(255,255,255,0.04)" : "#f9f9f9";
 
   useEffect(() => {
