@@ -17,6 +17,7 @@ from django.conf import settings
 from rest_framework import status
 import json
 # forgot password and reset password
+# forgot password and reset password
 import random
 from rest_framework.views import APIView
 # cv generation to pdf
@@ -147,10 +148,35 @@ class UserListView(generics.ListAPIView):
     ordering_fields = ['id', 'username']
 
     def get_queryset(self):
+        user = self.request.user
         queryset = User.objects.all()
+        
+        if user.role == User.Role.ADMIN_DEPT:
+            try:
+                admin_dept = AdminDept.objects.get(pk=user.pk)
+                student_ids = Student.objects.filter(department=admin_dept.department).values_list('id', flat=True)
+                queryset = User.objects.filter(id__in=student_ids)
+            except AdminDept.DoesNotExist:
+                queryset = User.objects.none()
+        elif user.role == User.Role.ADMIN_UNIV:
+            try:
+                university = University.objects.get(admin_id=user.pk)
+                student_ids = Student.objects.filter(department__university=university).values_list('id', flat=True)
+                dept_admin_ids = AdminDept.objects.filter(department__university=university).values_list('id', flat=True)
+                allowed_ids = list(student_ids) + list(dept_admin_ids)
+                queryset = User.objects.filter(id__in=allowed_ids)
+            except University.DoesNotExist:
+                queryset = User.objects.none()
+                
         role = self.request.query_params.get('role')
         if role:
             queryset = queryset.filter(role=role)
+
+        department_id = self.request.query_params.get('department')
+        if department_id:
+            student_ids = Student.objects.filter(department_id=department_id).values_list('id', flat=True)
+            queryset = queryset.filter(id__in=student_ids)
+
         return queryset
 
 class UserAdminUpdateView(generics.RetrieveUpdateDestroyAPIView):
@@ -315,6 +341,8 @@ class InternshipRetrieveView(generics.RetrieveAPIView):
     permission_classes = [AllowAny]
 
     def get_object(self): # hada y5li nas kaml ychoufou internship lakan machi draft wla archived 
+        from .services import update_finished_internships
+        update_finished_internships()
         obj = super().get_object()
         user = self.request.user
         
@@ -333,6 +361,28 @@ class InternshipRetrieveView(generics.RetrieveAPIView):
         
         return obj
 
+class InternshipSimilarView(generics.ListAPIView):
+    queryset = InternshipOffer.objects.all()
+    serializer_class = InternshipSerializer
+    permission_classes = [AllowAny]
+    pagination_class = None
+
+    def get_queryset(self):
+        internship_id = self.kwargs.get('pk')
+        try:
+            internship = InternshipOffer.objects.get(pk=internship_id)
+        except InternshipOffer.DoesNotExist:
+            return InternshipOffer.objects.none()
+
+        base_qs = InternshipOffer.objects.exclude(pk=internship_id).filter(
+            status=InternshipOffer.Status.OPEN_FOR_APPLICATION
+        )
+        
+        similar_qs = base_qs.filter(internship_type=internship.internship_type)
+        if not similar_qs.exists():
+            similar_qs = base_qs.filter(company=internship.company)
+        return similar_qs.order_by('-id')[:3]
+
 class InternshipListView(generics.ListAPIView):
     queryset = InternshipOffer.objects.all()
     serializer_class = InternshipSerializer
@@ -342,6 +392,8 @@ class InternshipListView(generics.ListAPIView):
     ordering_fields = ['id', 'title', 'offer_start_date', 'offer_end_date']
     
     def get_queryset(self):
+        from .services import update_finished_internships
+        update_finished_internships()
         queryset = super().get_queryset()
         # Admins see all offers
         if self.request.user.is_authenticated and self.request.user.role in [User.Role.ADMIN_DEPT, User.Role.ADMIN_UNIV]:
@@ -357,6 +409,59 @@ class InternshipListView(generics.ListAPIView):
                 InternshipOffer.Status.FINISHED,
             ]
         )
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        
+        user = request.user
+        if user.is_authenticated and user.role == User.Role.STUDENT:
+            student = getattr(user, 'student', None)
+            if student:
+                from .services import calculate_skills_match, calculate_location_score
+                
+                # Pre-fetch follows to optimize database queries
+                followed_company_ids = set(
+                    CompanyFollow.objects.filter(student=student)
+                    .values_list('company_id', flat=True)
+                )
+                
+                # Fetch student's CV skills and wilaya
+                student_skills_str = ""
+                student_wilaya = student.wilaya or ""
+                if hasattr(student, 'digital_cv') and student.digital_cv:
+                    student_skills_str = student.digital_cv.skills or ""
+                    if student.digital_cv.wilaya:
+                        student_wilaya = student.digital_cv.wilaya
+                
+                scored_internships = []
+                for internship in queryset:
+                    # 1. Skills Match (40%)
+                    skills_score = calculate_skills_match(student_skills_str, internship.internship_skills)
+                    
+                    # 2. Location Proximity (30%)
+                    location_score = calculate_location_score(student_wilaya, internship.wilaya, internship.internship_location)
+                    
+                    # 3. Follow Company Status (30%)
+                    is_followed = internship.company_id in followed_company_ids
+                    follow_score = 30.0 if is_followed else 0.0
+                    
+                    relevance_score = round(skills_score + location_score + follow_score, 1)
+                    internship.relevance_score = relevance_score
+                    scored_internships.append(internship)
+                
+                # Sort by relevance_score descending by default (only if no custom ordering is requested)
+                if not request.query_params.get('ordering'):
+                    scored_internships.sort(key=lambda x: (x.relevance_score, x.id), reverse=True)
+                
+                queryset = scored_internships
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 class CompanyInternshipListView(generics.ListAPIView):
     queryset = InternshipOffer.objects.all()
@@ -767,44 +872,44 @@ class AdminUnivDashboardView(generics.GenericAPIView):
                 role=User.Role.STUDENT,
                 student__department__university=university
             ).count()
-            total_companies = Company.objects.filter(
-                internshipoffer__application__student__department__university=university
-            ).distinct().count()
+            total_departments = university.departments.count()
         else:
             total_students = 0
-            total_companies = 0
+            total_departments = 0
+
+        # Total active companies registered on the platform
+        total_companies = Company.objects.filter(role=User.Role.COMPANY, is_active=True).count()
 
         stats = {
             "totalStudents": total_students,
             "totalCompanies": total_companies,
-            "pendingValidations": applications.filter(status=Application.Status.ACCEPTED, is_validated_by_admin=False).count(),
-            "validatedInternships": applications.filter(status__in=[Application.Status.VALIDATED, Application.Status.COMPLETE], is_validated_by_admin=True).count(),
+            "totalDepartments": total_departments,
         }
 
-        # Recent applications pending validation
-        recent_apps = applications.filter(
-            status=Application.Status.ACCEPTED, 
-            is_validated_by_admin=False
-        ).select_related('student', 'internship', 'internship__company').order_by('-application_date')[:5]
+        # Partner companies (prioritize university-linked, fallback to platform-active to stay populated)
+        companies = Company.objects.none()
+        if university:
+            companies = Company.objects.filter(
+                internshipoffer__application__student__department__university=university
+            ).distinct()[:5]
+            
+        if not companies.exists():
+            companies = Company.objects.filter(role=User.Role.COMPANY, is_active=True)[:5]
 
-        recent_apps_data = []
-        for app in recent_apps:
-            student = app.student
-            candidate_name = f"{student.first_name} {student.last_name}".strip() or student.username or student.email
-
-            recent_apps_data.append({
-                "id": app.id,
-                "studentId": student.id,
-                "candidate": candidate_name,
-                "internshipTitle": app.internship.title,
-                "companyName": app.internship.company.name,
-                "appliedDate": app.application_date.strftime("%Y-%m-%d"),
-                "status": "Pending Validation"
+        companies_data = []
+        for comp in companies:
+            companies_data.append({
+                "id": comp.id,
+                "name": comp.name,
+                "field": comp.company_field or "Technology",
+                "location": comp.location or "Algeria",
+                "email": comp.email,
+                "size": comp.size or "10-50 Employees"
             })
 
         return Response({
             "stats": stats,
-            "applications": recent_apps_data
+            "companies": companies_data
         })
 
 
@@ -1615,3 +1720,37 @@ class ReviewListCreateView(generics.ListCreateAPIView):
         
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+class AdminUnivDepartmentListView(generics.ListCreateAPIView):
+    serializer_class = DepartmentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        if self.request.user.role != User.Role.ADMIN_UNIV:
+            raise PermissionDenied("Only Admin Univ can access this.")
+        try:
+            university = University.objects.get(admin_id=self.request.user.pk)
+            return Department.objects.filter(university=university)
+        except University.DoesNotExist:
+            return Department.objects.none()
+
+    def perform_create(self, serializer):
+        if self.request.user.role != User.Role.ADMIN_UNIV:
+            raise PermissionDenied("Only Admin Univ can access this.")
+        try:
+            university = University.objects.get(admin_id=self.request.user.pk)
+            serializer.save(university=university)
+        except University.DoesNotExist:
+            raise PermissionDenied("University does not exist.")
+
+class AdminUnivDepartmentDetailView(generics.DestroyAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        if self.request.user.role != User.Role.ADMIN_UNIV:
+            raise PermissionDenied("Only Admin Univ can access this.")
+        try:
+            university = University.objects.get(admin_id=self.request.user.pk)
+            return Department.objects.filter(university=university)
+        except University.DoesNotExist:
+            return Department.objects.none()

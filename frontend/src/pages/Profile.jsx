@@ -343,12 +343,10 @@ export default function Profile() {
                     <div className="divider-line" />
 
                     {/* Section 3: Credentials Details */}
-                    <div className="section-header">
-                        {isCompany ? 'Company Operations Details' : 'Student Academic Details'}
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-y-8 gap-x-8">
-                        {isCompany ? (
-                            <>
+                    {isCompany && (
+                        <>
+                            <div className="section-header">Company Operations Details</div>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-y-8 gap-x-8">
                                 <div>
                                     <div className="grid-label">Organization Name</div>
                                     <div className="grid-value">{profile.name || profile.username}</div>
@@ -401,9 +399,14 @@ export default function Profile() {
                                     <div className="grid-label">Message</div>
                                     <div className="grid-value">{profile.message || 'Active partner organization'}</div>
                                 </div>
-                            </>
-                        ) : (
-                            <>
+                            </div>
+                        </>
+                    )}
+
+                    {profile.role === 'STUDENT' && (
+                        <>
+                            <div className="section-header">Student Academic Details</div>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-y-8 gap-x-8">
                                 <div>
                                     <div className="grid-label">First Name</div>
                                     <div className="grid-value">{profile.first_name || 'N/A'}</div>
@@ -445,24 +448,69 @@ export default function Profile() {
                                     <div className="grid-label">Account Verification</div>
                                     <div className="grid-value">Student verified by university</div>
                                 </div>
-                            </>
-                        )}
-                    </div>
+                            </div>
+                        </>
+                    )}
 
-                    <div className="divider-line" />
+                    {['SUPERADMIN', 'ADMIN_UNIV', 'ADMIN_DEPT'].includes(profile.role) && (
+                        <>
+                            <div className="section-header">Administration Details</div>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-y-8 gap-x-8">
+                                <div>
+                                    <div className="grid-label">First Name</div>
+                                    <div className="grid-value">{profile.first_name || 'N/A'}</div>
+                                </div>
+                                <div>
+                                    <div className="grid-label">Last Name</div>
+                                    <div className="grid-value">{profile.last_name || 'N/A'}</div>
+                                </div>
+                                <div>
+                                    <div className="grid-label">Email Address</div>
+                                    <div className="grid-value">
+                                        <a href={`mailto:${profile.email}`} className="info-link">{profile.email}</a>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div className="grid-label">Role / Privilege</div>
+                                    <div className="grid-value font-semibold">
+                                        {profile.role === 'SUPERADMIN' ? 'Super Administrator' :
+                                         profile.role === 'ADMIN_UNIV' ? 'University Administrator' :
+                                         profile.role === 'ADMIN_DEPT' ? 'Department Administrator' : profile.role}
+                                    </div>
+                                </div>
+                                {profile.university_name && (
+                                    <div>
+                                        <div className="grid-label">University</div>
+                                        <div className="grid-value font-medium text-primary">{profile.university_name}</div>
+                                    </div>
+                                )}
+                                {profile.department && (
+                                    <div>
+                                        <div className="grid-label">Department</div>
+                                        <div className="grid-value font-medium">{profile.department}</div>
+                                    </div>
+                                )}
+                            </div>
+                        </>
+                    )}
 
                     {/* Section 4: Bio/Description */}
-                    <div className="section-header">
-                        {isCompany ? 'Corporate Statement' : 'Student Statement / Biography'}
-                    </div>
-                    <div className="bio-container p-6 rounded-2xl shadow-sm">
-                        <p className="text-[13.5px] leading-relaxed font-medium whitespace-pre-wrap">
-                            {isCompany
-                                ? (profile.description || 'No corporate statement available.')
-                                : (profile.bio || 'No biography available.')
-                            }
-                        </p>
-                    </div>
+                    {!['SUPERADMIN', 'ADMIN_UNIV', 'ADMIN_DEPT'].includes(profile.role) && (
+                        <>
+                            <div className="divider-line" />
+                            <div className="section-header">
+                                {isCompany ? 'Corporate Statement' : 'Student Statement / Biography'}
+                            </div>
+                            <div className="bio-container p-6 rounded-2xl shadow-sm">
+                                <p className="text-[13.5px] leading-relaxed font-medium whitespace-pre-wrap">
+                                    {isCompany
+                                        ? (profile.description || 'No corporate statement available.')
+                                        : (profile.bio || 'No biography available.')
+                                    }
+                                </p>
+                            </div>
+                        </>
+                    )}
 
                 </div>
             </div>

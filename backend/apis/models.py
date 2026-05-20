@@ -34,9 +34,20 @@ class Company(User):
     status_required = models.CharField(max_length=255, blank=True, null=True, default="Corporate Verification")
     message = models.CharField(max_length=255, blank=True, null=True, default="Active partner organization")
     size = models.CharField(max_length=100, blank=True, null=True, default="10-50 Employees")
+    guidelines_handbook = models.FileField(upload_to='company_resources/', blank=True, null=True)
+    agreement_template = models.FileField(upload_to='company_resources/', blank=True, null=True)
 
     class Meta:
         verbose_name_plural = "Companies"
+
+class CompanyResource(models.Model):
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='resources')
+    file = models.FileField(upload_to='company_resources/')
+    name = models.CharField(max_length=255)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} - {self.company.name}"
 
 class AdminDept(User):
     department = models.ForeignKey('Department', on_delete=models.PROTECT, related_name='admin_depts')

@@ -44,12 +44,19 @@ export default function AdminUsers() {
   // Get search params for role filtering
   const [searchParams] = useSearchParams();
   const roleFilter = searchParams.get("role"); // STUDENT, COMPANY, ADMIN_UNIV
+  const departmentFilter = searchParams.get("department");
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      // Fetch with role query param if defined
-      const url = roleFilter ? `/users/?role=${roleFilter}` : "/users/";
+      // Fetch with role and department query params if defined
+      let url = "/users/";
+      const params = [];
+      if (roleFilter) params.push(`role=${roleFilter}`);
+      if (departmentFilter) params.push(`department=${departmentFilter}`);
+      if (params.length > 0) {
+        url += `?${params.join("&")}`;
+      }
       const res = await api.get(url);
       setUsers(res.data.results || res.data);
     } catch (error) {
@@ -62,7 +69,7 @@ export default function AdminUsers() {
 
   useEffect(() => {
     fetchUsers();
-  }, [roleFilter]);
+  }, [roleFilter, departmentFilter]);
 
   const handleToggleStatus = async (user) => {
     try {
