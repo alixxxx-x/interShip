@@ -23,12 +23,6 @@ export default function FloatingChatbot() {
   const chatEndRef = useRef(null);
   const dk = theme === "dark";
 
-  // Hide the chatbot on Login and Register routes
-  const hideRoutes = ["/login", "/register"];
-  if (hideRoutes.includes(location.pathname)) {
-    return null;
-  }
-
   // Show a welcome tooltip briefly after 3 seconds, if never opened before
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -86,6 +80,12 @@ export default function FloatingChatbot() {
       setIsTyping(false);
     }, 1200);
   };
+
+  // Hide the chatbot on Login and Register routes
+  const hideRoutes = ["/login", "/register"];
+  if (hideRoutes.includes(location.pathname)) {
+    return null;
+  }
 
   return (
     <>

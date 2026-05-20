@@ -62,12 +62,11 @@ function Register() {
 
         const fetchUniversities = async () => {
             try {
-                const url = `${import.meta.env.VITE_API_URL}users/?role=ADMIN_UNIV`.replace(/([^:]\/)\/+/g, "$1");
+                const url = `${import.meta.env.VITE_API_URL}universities/`.replace(/([^:]\/)\/+/g, "$1");
                 const res = await axios.get(url);
                 const data = res.data.results || res.data;
-                const univList = data.filter(u => u.university_name);
-                if (univList && univList.length > 0) {
-                    setUniversities(univList);
+                if (data && data.length > 0) {
+                    setUniversities(data);
                 } else {
                     setUniversities(fallbackUniversities);
                 }
@@ -79,16 +78,29 @@ function Register() {
         fetchUniversities();
     }, []);
 
-    const handleUnivChange = (univName) => {
+    const handleUnivChange = async (univName) => {
         setSelectedUniv(univName);
         setErrors(prev => ({ ...prev, university: null }));
-        const univ = universities.find(u => u.university_name === univName);
-        if (univ && univ.departments) {
-            setDepartments(univ.departments);
+        const univ = universities.find(u => (u.name || u.university_name) === univName);
+        if (univ) {
+            setSelectedUnivDomain(normalizeDomain(univ.email_domain || ""));
+            if (univ.id) {
+                try {
+                    const url = `${import.meta.env.VITE_API_URL}departments/?university_id=${univ.id}`.replace(/([^:]\/)\/+/g, "$1");
+                    const res = await axios.get(url);
+                    const data = res.data.results || res.data;
+                    setDepartments(data);
+                } catch (error) {
+                    console.error("Failed to fetch departments", error);
+                    setDepartments(univ.departments || []);
+                }
+            } else {
+                setDepartments(univ.departments || []);
+            }
         } else {
             setDepartments([]);
+            setSelectedUnivDomain("");
         }
-        setSelectedUnivDomain(normalizeDomain(univ?.email_domain || ""));
         setSelectedDept("");
     };
 
@@ -150,6 +162,16 @@ function Register() {
                     newErrors[key] = Array.isArray(backendErrors[key]) ? backendErrors[key][0] : backendErrors[key];
                 }
                 setErrors(newErrors);
+
+                // Show a toast message for the validation errors
+                if (newErrors.matricule) {
+                    toast.error(newErrors.matricule);
+                } else {
+                    const firstErrorKey = Object.keys(newErrors)[0];
+                    if (firstErrorKey) {
+                        toast.error(newErrors[firstErrorKey]);
+                    }
+                }
             } else {
                 toast.error("Registration failed. Please check your connection and try again.");
             }
@@ -216,30 +238,70 @@ function Register() {
 
                         <form onSubmit={handleSubmit} className="space-y-3">
                             {role === "STUDENT" ? (
-                                <div className="flex gap-3">
-                                    <div className="space-y-1 flex-1">
-                                        <label className="text-[11px] font-semibold text-black ml-1">{t("firstName")}</label>
-                                        <input
-                                            type="text"
-                                            placeholder={t("firstName")}
-                                            value={firstName}
-                                            onChange={(e) => { setFirstName(e.target.value); setErrors(prev => ({ ...prev, firstName: null })) }}
-                                            className="w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans"
-                                        />
-                                        {errors.firstName && <p className="text-[10px] text-red-500 ml-1">{errors.firstName}</p>}
+                                <>
+                                    <div className="flex gap-3">
+                                        <div className="space-y-1 flex-1">
+                                            <label className="text-[11px] font-semibold text-black ml-1">{t("firstName")}</label>
+                                            <input
+                                                type="text"
+                                                placeholder={t("firstName")}
+                                                value={firstName}
+                                                onChange={(e) => { setFirstName(e.target.value); setErrors(prev => ({ ...prev, firstName: null })) }}
+                                                className="w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans"
+                                            />
+                                            {errors.firstName && <p className="text-[10px] text-red-500 ml-1">{errors.firstName}</p>}
+                                        </div>
+                                        <div className="space-y-1 flex-1">
+                                            <label className="text-[11px] font-semibold text-black ml-1">{t("lastName")}</label>
+                                            <input
+                                                type="text"
+                                                placeholder={t("lastName")}
+                                                value={lastName}
+                                                onChange={(e) => { setLastName(e.target.value); setErrors(prev => ({ ...prev, lastName: null })) }}
+                                                className="w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans"
+                                            />
+                                            {errors.lastName && <p className="text-[10px] text-red-500 ml-1">{errors.lastName}</p>}
+                                        </div>
                                     </div>
-                                    <div className="space-y-1 flex-1">
-                                        <label className="text-[11px] font-semibold text-black ml-1">{t("lastName")}</label>
-                                        <input
-                                            type="text"
-                                            placeholder={t("lastName")}
-                                            value={lastName}
-                                            onChange={(e) => { setLastName(e.target.value); setErrors(prev => ({ ...prev, lastName: null })) }}
-                                            className="w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans"
-                                        />
-                                        {errors.lastName && <p className="text-[10px] text-red-500 ml-1">{errors.lastName}</p>}
+                                    <div className="space-y-1">
+                                        <label className="text-[11px] font-semibold text-black ml-1">University</label>
+                                        <div className="relative">
+                                            <select
+                                                value={selectedUniv}
+                                                onChange={(e) => handleUnivChange(e.target.value)}
+                                                className="w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 bg-white transition-all text-[13px] font-medium text-slate-700 font-sans appearance-none"
+                                            >
+                                                <option value="">Select your university</option>
+                                                {universities.map(u => (
+                                                    <option key={u.id} value={u.name || u.university_name}>{u.name || u.university_name}</option>
+                                                ))}
+                                            </select>
+                                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                                <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                            </div>
+                                        </div>
+                                        {errors.university && <p className="text-[10px] text-red-500 ml-1">{errors.university}</p>}
                                     </div>
-                                </div>
+                                    <div className="space-y-1">
+                                        <div className="relative">
+                                            <select
+                                                value={selectedDept}
+                                                onChange={(e) => { setSelectedDept(e.target.value); setErrors(prev => ({ ...prev, department: null })) }}
+                                                className="w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 bg-white transition-all text-[13px] font-medium text-slate-700 font-sans appearance-none"
+                                                disabled={!selectedUniv}
+                                            >
+                                                <option value="">Select your department</option>
+                                                {departments.map((d, i) => (
+                                                    <option key={d.id || i} value={d.name || d}>{d.name || d}</option>
+                                                ))}
+                                            </select>
+                                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                                <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                            </div>
+                                        </div>
+                                        {errors.department && <p className="text-[10px] text-red-500 ml-1">{errors.department}</p>}
+                                    </div>
+                                </>
                             ) : (
                                 <div className="space-y-1">
                                     <label className="text-[11px] font-semibold text-black ml-1">{role === "COMPANY" ? (t("companyName") || "Company Name") : t("username")}</label>

@@ -10,6 +10,7 @@ class User(AbstractUser):
         COMPANY = 'COMPANY', 'Company'
         ADMIN_DEPT = 'ADMIN_DEPT', 'Admin Dept'
         ADMIN_UNIV = 'ADMIN_UNIV', 'Admin Univ'
+        ADMIN = 'ADMIN', 'Super Admin'
 
     email = models.EmailField(unique=True)
     username = models.CharField(max_length=150, null=True, blank=True)

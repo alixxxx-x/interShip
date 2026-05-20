@@ -1241,33 +1241,170 @@ class GenerateInternshipCertificateView(generics.GenericAPIView):
             )
 
         # =========================
-        # HTML TEMPLATE CONTEXT
+        # PREMIUM PDF GENERATION WITH BACKGROUND
         # =========================
+        import os
+        import uuid
+        from PIL import Image, ImageDraw, ImageFont
+
         student = application.student
         student_name = f"{student.first_name} {student.last_name}".strip() or student.username or student.email
-
-        html_string = render_to_string(
-            'internship_certificate.html', 
-            {
-                'student_name': student_name,
-                'company_name': application.internship.company.name,
-                'internship_title': application.internship.title,
-                'start_date': application.internship.offer_start_date,
-                'end_date': application.internship.offer_end_date,
-                'university_name': application.student.department.university.name,
-                'certificate_date': timezone.now().date(),
-            }
-        )
-
-        # =========================
-        # PDF GENERATION (xhtml2pdf)
-        # =========================
+        
+        # Paths to template and custom calligraphy font inside media root
+        template_path = os.path.join(settings.MEDIA_ROOT, 'internship_images', 'certificate_templates.png')
+        font_path = os.path.join(settings.MEDIA_ROOT, 'internship_images', 'ITCEDSCR.TTF')
+        
+        use_pillow_flow = os.path.exists(template_path)
+        temp_img_path = None
         result = io.BytesIO()
 
-        pdf = pisa.pisaDocument(
-            io.BytesIO(html_string.encode("UTF-8")),
-            result
-        )
+        if use_pillow_flow:
+            try:
+                # Open template image
+                img = Image.open(template_path)
+                width, height = img.size
+                draw = ImageDraw.Draw(img)
+                
+                # Standard sans-serif font for sentence dates and bottom date
+                sans_font_paths = [
+                    r"C:\Windows\Fonts\arial.ttf",
+                    "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+                    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                    "/usr/share/fonts/TTF/DejaVuSans.ttf",
+                ]
+                font_arial = None
+                font_bottom = None
+                for path in sans_font_paths:
+                    if os.path.exists(path):
+                        try:
+                            font_arial = ImageFont.truetype(path, 45)
+                            font_bottom = ImageFont.truetype(path, 55)
+                            break
+                        except Exception:
+                            pass
+
+                # Determine font (fallback to system Times Italic if custom font is missing)
+                if os.path.exists(font_path):
+                    font = ImageFont.truetype(font_path, 250)
+                else:
+                    # Robust calligraphy fallback paths for server-side compatibility
+                    calligraphy_font_paths = [
+                        r"C:\Windows\Fonts\timesi.ttf",
+                        "/usr/share/fonts/truetype/liberation/LiberationSerif-Italic.ttf",
+                        "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Italic.ttf",
+                    ]
+                    font = None
+                    for path in calligraphy_font_paths:
+                        if os.path.exists(path):
+                            try:
+                                font = ImageFont.truetype(path, 250)
+                                break
+                            except Exception:
+                                pass
+                    if not font:
+                        font = ImageFont.load_default()
+
+                if not font_arial:
+                    font_arial = font_bottom = ImageFont.load_default()
+                
+                # Draw student name centered horizontally and vertically at y = 870
+                draw.text((width / 2, 870), student_name.title(), fill="#1e293b", font=font, anchor="mm")
+                
+                # Get start and end dates and construct strings matching the user's reference style
+                english_months = [
+                    "January", "February", "March", "April", "May", "June",
+                    "July", "August", "September", "October", "November", "December"
+                ]
+                start_date = application.internship.offer_start_date
+                end_date = application.internship.offer_end_date
+                
+                start_month = english_months[start_date.month - 1]
+                end_month = english_months[end_date.month - 1]
+                
+                start_date_str = start_month
+                end_date_str = f"{end_month} {end_date.year}."
+                bottom_date_str = end_date.strftime("%d.%m.%y")
+                
+                # Draw end date above the Date line on bottom-left
+                draw.text((585, 1410), bottom_date_str, fill="#1e293b", font=font_bottom, anchor="mm")
+                
+                # Draw start and end dates in the "from [blank] to [blank]" gaps
+                draw.text((1385, 1165), start_date_str, fill="#1e293b", font=font_arial, anchor="mm")
+                draw.text((1620, 1165), end_date_str, fill="#1e293b", font=font_arial, anchor="mm")
+                
+                # Save modified image to a unique temp file inside media/internship_images
+                temp_filename = f"temp_cert_{uuid.uuid4().hex}.png"
+                temp_img_dir = os.path.join(settings.MEDIA_ROOT, 'internship_images')
+                os.makedirs(temp_img_dir, exist_ok=True)
+                temp_img_path = os.path.join(temp_img_dir, temp_filename)
+                img.save(temp_img_path)
+                
+                # HTML template containing only the dynamically generated image scaled to A4 landscape
+                html_string = f"""
+                <!DOCTYPE html>
+                <html>
+                <head>
+                <style>
+                    @page {{
+                        size: a4 landscape;
+                        margin: 0;
+                        @frame content_frame {{
+                            left: 0pt;
+                            top: 0pt;
+                            width: 842pt;
+                            height: 595pt;
+                        }}
+                    }}
+                    body {{
+                        margin: 0;
+                        padding: 0;
+                    }}
+                    img {{
+                        width: 842pt;
+                        height: 595pt;
+                    }}
+                </style>
+                </head>
+                <body>
+                    <img src="{temp_img_path}" />
+                </body>
+                </html>
+                """
+                
+                pdf = pisa.pisaDocument(
+                    io.BytesIO(html_string.encode("UTF-8")),
+                    result
+                )
+                
+            except Exception:
+                use_pillow_flow = False
+
+        if not use_pillow_flow:
+            # Fallback to older HTML template context in case Pillow generation fails
+            html_string = render_to_string(
+                'internship_certificate.html', 
+                {
+                    'student_name': student_name,
+                    'company_name': application.internship.company.name,
+                    'internship_title': application.internship.title,
+                    'start_date': application.internship.offer_start_date,
+                    'end_date': application.internship.offer_end_date,
+                    'university_name': application.student.department.university.name,
+                    'certificate_date': timezone.now().date(),
+                }
+            )
+            
+            pdf = pisa.pisaDocument(
+                io.BytesIO(html_string.encode("UTF-8")),
+                result
+            )
+
+        # Cleanup temporary image file if it was created
+        if temp_img_path and os.path.exists(temp_img_path):
+            try:
+                os.remove(temp_img_path)
+            except Exception:
+                pass
 
         if pdf.err:
             return Response(
@@ -1284,6 +1421,7 @@ class GenerateInternshipCertificateView(generics.GenericAPIView):
         )
 
         return response
+
 
 # CV Generation View 
 
@@ -1306,124 +1444,121 @@ class GenerateCVView(generics.GenericAPIView):
         except Exception:
             return Response({"error": "This student has not created a digital CV yet."}, status=404)
 
+        from io import BytesIO
+        from django.http import FileResponse
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+        from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY, TA_LEFT, TA_RIGHT
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table as RLTable, TableStyle
+        from reportlab.lib import colors
+        import json
+
         buffer = BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
-        from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-        from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
         
         styles = getSampleStyleSheet()
         
         name_style = ParagraphStyle(
             'NameStyle', 
             parent=styles['Normal'], 
-            fontName='Helvetica-Bold', 
+            fontName='Times-Bold', 
             fontSize=16, 
             alignment=TA_CENTER, 
-            spaceAfter=5
+            spaceAfter=5,
+            textColor=colors.black
         )
+        
         contact_style = ParagraphStyle(
             'ContactStyle', 
             parent=styles['Normal'], 
-            fontName='Helvetica', 
+            fontName='Times-Roman', 
             fontSize=10, 
             alignment=TA_CENTER, 
-            spaceAfter=2
+            spaceAfter=2,
+            textColor=colors.black
         )
+        
         body_style = ParagraphStyle(
             'BodyStyle',
             parent=styles['Normal'],
-            fontName='Helvetica',
+            fontName='Times-Roman',
             fontSize=10,
             leading=14,
             alignment=TA_JUSTIFY,
-            spaceAfter=10
+            spaceAfter=10,
+            textColor=colors.black
+        )
+        
+        bullet_style = ParagraphStyle(
+            'BulletStyle',
+            parent=body_style,
+            leftIndent=15,
+            firstLineIndent=0,
+            spaceBefore=0,
+            spaceAfter=2
         )
         
         elements = []
 
         # Header - Name
-        elements.append(Paragraph(f"{cv.first_name} {cv.last_name}".upper(), name_style))
+        elements.append(Paragraph(f"{cv.first_name} {cv.last_name}", name_style))
         
-        # Contact Info Styles
-        contact_style_left = ParagraphStyle('ContactLeft', parent=styles['Normal'], fontName='Helvetica', fontSize=9, alignment=0) # TA_LEFT
-        contact_style_right = ParagraphStyle('ContactRight', parent=styles['Normal'], fontName='Helvetica', fontSize=9, alignment=2) # TA_RIGHT
-
-        # Contact Info Table Data
-        left_data = []
-        if cv.email: left_data.append(f"<b>Email:</b> {cv.email}")
-        if cv.phone: left_data.append(f"<b>Phone:</b> {cv.phone}")
-        
-        right_data = []
+        # Contact Info
+        contact_parts_1 = []
+        if cv.email: contact_parts_1.append(cv.email)
+        if cv.phone: contact_parts_1.append(cv.phone)
         loc = cv.address or cv.wilaya
-        if loc: right_data.append(f"<b>Location:</b> {loc}")
-        uid = cv.university_id or student.university_id
-        if uid: right_data.append(f"<b>Student ID:</b> {uid}")
-
-        # Construct table rows
-        table_rows = []
-        for i in range(max(len(left_data), len(right_data))):
-            l = left_data[i] if i < len(left_data) else ""
-            r = right_data[i] if i < len(right_data) else ""
-            table_rows.append([Paragraph(l, contact_style_left), Paragraph(r, contact_style_right)])
-
-        if table_rows:
-            t = RLTable(table_rows, colWidths=['50%', '50%'])
-            t.setStyle(TableStyle([
-                ('VALIGN', (0,0), (-1,-1), 'TOP'),
-                ('LEFTPADDING', (0,0), (-1,-1), 0),
-                ('RIGHTPADDING', (0,0), (-1,-1), 0),
-                ('BOTTOMPADDING', (0,0), (-1,-1), 2),
-            ]))
-            elements.append(t)
+        if loc: contact_parts_1.append(loc)
+        
+        if contact_parts_1:
+            elements.append(Paragraph(" &nbsp;&nbsp;&nbsp;&nbsp; ".join(contact_parts_1), contact_style))
+            
+        contact_parts_2 = []
+        if cv.linkedin: contact_parts_2.append(cv.linkedin)
+        if cv.github: contact_parts_2.append(cv.github)
+        if cv.portfolio_link: contact_parts_2.append(cv.portfolio_link)
+        
+        if contact_parts_2:
+            elements.append(Paragraph(" &nbsp;&nbsp;&nbsp;&nbsp; ".join(contact_parts_2), contact_style))
             
         elements.append(Spacer(1, 15))
 
         def add_section(title, content):
             if not content: return
             
-            # Section Header with line below
-            t = RLTable([[title.upper()]], colWidths=['100%'])
+            # Section Header with black line below
+            t = RLTable([[title]], colWidths=['100%'])
             t.setStyle(TableStyle([
-                ('FONTNAME', (0,0), (-1,-1), 'Helvetica-Bold'),
+                ('FONTNAME', (0,0), (-1,-1), 'Times-Bold'),
                 ('FONTSIZE', (0,0), (-1,-1), 11),
-                ('TEXTCOLOR', (0,0), (-1,-1), colors.HexColor("#4c1d95")), # Purple-900
+                ('TEXTCOLOR', (0,0), (-1,-1), colors.black),
                 ('ALIGN', (0,0), (-1,-1), 'LEFT'),
                 ('BOTTOMPADDING', (0,0), (-1,-1), 3),
-                ('TOPPADDING', (0,0), (-1,-1), 12),
-                ('LINEBELOW', (0,0), (-1,-1), 1.5, colors.HexColor("#7c3aed")), # Purple-600
+                ('TOPPADDING', (0,0), (-1,-1), 8),
+                ('LINEBELOW', (0,0), (-1,-1), 1, colors.black),
             ]))
             elements.append(t)
             elements.append(Spacer(1, 8))
             
             # Content
-            import json
             try:
                 parsed = json.loads(content)
                 if isinstance(parsed, list):
                     # For list-like content, use bullet points
                     for item in parsed:
                         if item.strip():
-                            elements.append(Paragraph(f"• {item.strip()}", body_style))
+                            elements.append(Paragraph(f"• {item.strip()}", bullet_style))
                     return
             except Exception:
                 pass
                 
             elements.append(Paragraph(content.replace('\n', '<br/>'), body_style))
 
-        add_section("Summary", cv.profile_summary)
-        add_section("Education", cv.education)
-        add_section("Professional Experience", cv.experience)
-        add_section("Skills", cv.skills)
-        add_section("Languages", cv.languages)
-
-        # Move links to the bottom in a nice "Links & Portfolio" section
-        links_content = []
-        if cv.linkedin: links_content.append(f"<b>LinkedIn:</b> {cv.linkedin}")
-        if cv.github: links_content.append(f"<b>GitHub:</b> {cv.github}")
-        if cv.portfolio_link: links_content.append(f"<b>Portfolio:</b> {cv.portfolio_link}")
-        
-        if links_content:
-            add_section("Links & Portfolio", "<br/>".join(links_content))
+        add_section("SUMMARY", cv.profile_summary)
+        add_section("EDUCATION", cv.education)
+        add_section("PROFESSIONAL EXPERIENCE", cv.experience)
+        add_section("SKILLS", cv.skills)
+        add_section("LANGUAGES", cv.languages)
 
         doc.build(elements)
         buffer.seek(0)
@@ -1720,6 +1855,34 @@ class ReviewListCreateView(generics.ListCreateAPIView):
         
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+class UniversityPublicListView(generics.ListAPIView):
+    serializer_class = UniversitySerializer
+    permission_classes = [AllowAny]
+    pagination_class = None
+    queryset = University.objects.all().order_by('name') if hasattr(University, 'objects') else []
+
+    def get_queryset(self):
+        qs = University.objects.all().order_by('name')
+        print(f"--- [DIAGNOSTIC] Universities requested. Count in DB: {qs.count()} ---")
+        for u in qs:
+            print(f"  - Univ ID: {u.id}, Name: {u.name}, Domain: {u.email_domain}")
+        return qs
+
+class DepartmentPublicListView(generics.ListAPIView):
+    serializer_class = DepartmentSerializer
+    permission_classes = [AllowAny]
+    pagination_class = None
+
+    def get_queryset(self):
+        university_id = self.request.query_params.get('university_id')
+        if university_id:
+            qs = Department.objects.filter(university_id=university_id).order_by('name')
+            print(f"--- [DIAGNOSTIC] Departments requested for Univ ID {university_id}. Count: {qs.count()} ---")
+            return qs
+        qs = Department.objects.all().order_by('name')
+        print(f"--- [DIAGNOSTIC] All Departments requested. Count: {qs.count()} ---")
+        return qs
 
 class AdminUnivDepartmentListView(generics.ListCreateAPIView):
     serializer_class = DepartmentSerializer

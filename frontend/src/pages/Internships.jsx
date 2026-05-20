@@ -6,8 +6,8 @@ import { useLanguage } from '@/components/language-provider';
 import { useTheme } from '@/components/theme-provider';
 
 const PER_PAGE = 6;
-const WILAYAS = ["Adrar","Chlef","Laghouat","Oum El Bouaghi","Batna","Bejaia","Biskra","Bechar","Blida","Bouira","Tamanrasset","Tebessa","Tlemcen","Tiaret","Tizi Ouzou","Algiers","Djelfa","Jijel","Setif","Saida","Skikda","Sidi Bel Abbes","Annabba","Guelma","Constantine","Medea","Mostaganem","M'Sila","Mascara","Ouargla","Oran","El Bayadh","Illizi","Bordj Bou Arreridj","Boumerdes","El Tarf","Tindouf","Tissemsilt","El Oued","Khenchela","Souk Ahras","Tipaza","Mila","Ain Defla","Naama","Ain Temouchent","Ghardaia","Relizane"];
-const SKILLS = ["React","Node.js","Python","UI/UX Design","Marketing","Data Science","Java","C++","SQL","Graphic Design","Project Management","JavaScript","TypeScript","HTML/CSS","PHP","Laravel","Flutter","AWS","Docker","Machine Learning","Figma"];
+const WILAYAS = ["Adrar", "Chlef", "Laghouat", "Oum El Bouaghi", "Batna", "Bejaia", "Biskra", "Bechar", "Blida", "Bouira", "Tamanrasset", "Tebessa", "Tlemcen", "Tiaret", "Tizi Ouzou", "Algiers", "Djelfa", "Jijel", "Setif", "Saida", "Skikda", "Sidi Bel Abbes", "Annabba", "Guelma", "Constantine", "Medea", "Mostaganem", "M'Sila", "Mascara", "Ouargla", "Oran", "El Bayadh", "Illizi", "Bordj Bou Arreridj", "Boumerdes", "El Tarf", "Tindouf", "Tissemsilt", "El Oued", "Khenchela", "Souk Ahras", "Tipaza", "Mila", "Ain Defla", "Naama", "Ain Temouchent", "Ghardaia", "Relizane"];
+const SKILLS = ["React", "Node.js", "Python", "UI/UX Design", "Marketing", "Data Science", "Java", "C++", "SQL", "Graphic Design", "Project Management", "JavaScript", "TypeScript", "HTML/CSS", "PHP", "Laravel", "Flutter", "AWS", "Docker", "Machine Learning", "Figma"];
 const F = "'SF Pro Display', 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 
 
@@ -67,7 +67,7 @@ export default function Internships() {
     const match = str.match(/\d+/);
     if (!match) return 90;
     let num = parseInt(match[0], 10);
-    
+
     if (str.includes('month')) {
       return num * 30;
     }
@@ -106,7 +106,8 @@ export default function Internships() {
 
   useEffect(() => {
     (async () => {
-      try { setLoading(true);
+      try {
+        setLoading(true);
         const res = await api.get('/internships/');
         const raw = res.data.results || res.data;
         setInternships((Array.isArray(raw) ? raw : []).map(item => {
@@ -119,12 +120,12 @@ export default function Internships() {
 
   const filtered = (Array.isArray(internships) ? internships : []).filter(i => {
     const q = search.toLowerCase();
-    
+
     // Parse duration in days dynamically
     const durationDays = getDurationInDays(i.internship_duration);
     const activeMinDays = minMonths * (timeUnit === "months" ? 30 : timeUnit === "weeks" ? 7 : 1);
     const activeMaxDays = maxMonths * (timeUnit === "months" ? 30 : timeUnit === "weeks" ? 7 : 1);
-    
+
     // Use only the internship-specific rating (not company-wide fallback)
     const rating = parseFloat(parseFloat(i.rating || 0).toFixed(1));
     const starBucket = Math.floor(rating);
@@ -158,14 +159,14 @@ export default function Internships() {
   });
 
   const pages = Math.max(1, Math.ceil(sorted.length / PER_PAGE));
-  const items = sorted.slice((page-1)*PER_PAGE, page*PER_PAGE);
+  const items = sorted.slice((page - 1) * PER_PAGE, page * PER_PAGE);
   useEffect(() => { setPage(1); }, [search, type, loc, wilaya, skills, minMonths, maxMonths, sortBy, selectedRatings, timeUnit]);
 
   const pills = [];
-  if (type) pills.push({ l: type.replace('_',' '), c: () => setType("") });
+  if (type) pills.push({ l: type.replace('_', ' '), c: () => setType("") });
   if (loc) pills.push({ l: loc, c: () => setLoc("") });
   if (wilaya) pills.push({ l: wilaya, c: () => setWilaya("") });
-  
+
   // Custom unit pill
   const isTimeFilterActive = () => {
     if (timeUnit === "months") return minMonths > 1 || maxMonths < 12;
@@ -210,7 +211,7 @@ export default function Internships() {
 
   return (
     <>
-    <style>{`
+      <style>{`
       .sidebar-scroll::-webkit-scrollbar { width: 6px; }
       .sidebar-scroll::-webkit-scrollbar-track { background: transparent !important; }
       .sidebar-scroll::-webkit-scrollbar-thumb { background: #86bbff; border-radius: 10px; min-height: 30px; }
@@ -301,27 +302,27 @@ export default function Internships() {
         font-family: ${F};
       }
     `}</style>
-    <div style={{ fontFamily: F, background: bg, minHeight: "100vh", color: txt }}>
-      {/* HEADER */}
-      <div style={{ textAlign: "center", padding: "48px 24px 36px" }}>
-        <h1 style={{ fontSize: 32, fontWeight: 700, margin: 0, letterSpacing: "-0.02em" }}>{t("exploreInternships")}</h1>
-        <div style={{ fontSize: 13, color: txt2, marginTop: 6 }}>
-          <Link to="/" style={{ color: txt2, textDecoration: "none" }}>Home</Link>
-          <span style={{ margin: "0 8px" }}>/</span>
-          <span style={{ color: txt, fontWeight: 500 }}>Internships</span>
+      <div style={{ fontFamily: F, background: bg, minHeight: "100vh", color: txt }}>
+        {/* HEADER */}
+        <div style={{ textAlign: "center", padding: "48px 24px 36px" }}>
+          <h1 style={{ fontSize: 32, fontWeight: 700, margin: 0, letterSpacing: "-0.02em" }}>{t("exploreInternships")}</h1>
+          <div style={{ fontSize: 13, color: txt2, marginTop: 6 }}>
+            <Link to="/" style={{ color: txt2, textDecoration: "none" }}>Home</Link>
+            <span style={{ margin: "0 8px" }}>/</span>
+            <span style={{ color: txt, fontWeight: 500 }}>Internships</span>
+          </div>
         </div>
-      </div>
 
-      <div style={{ maxWidth: 1240, margin: "0 auto", padding: "0 32px 80px" }}>
-        {/* TOP BAR — single line */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `1px solid ${bdr}`, paddingBottom: 16, marginBottom: 0 }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: txt, whiteSpace: "nowrap" }}>Filter Options</span>
-          <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-            <span style={{ fontSize: 13, color: txt2 }}>Showing {Math.min((page-1)*PER_PAGE+1, filtered.length)}-{Math.min(page*PER_PAGE, filtered.length)} of {filtered.length} results</span>
+        <div style={{ maxWidth: 1240, margin: "0 auto", padding: "0 32px 80px" }}>
+          {/* TOP BAR — single line */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `1px solid ${bdr}`, paddingBottom: 16, marginBottom: 0 }}>
+            <span style={{ fontSize: 15, fontWeight: 700, color: txt, whiteSpace: "nowrap" }}>Filter Options</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+              <span style={{ fontSize: 13, color: txt2 }}>Showing {Math.min((page - 1) * PER_PAGE + 1, filtered.length)}-{Math.min(page * PER_PAGE, filtered.length)} of {filtered.length} results</span>
               <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: txt2 }}>
                 <span>Sort by :</span>
-                
-                <div 
+
+                <div
                   onClick={() => setSortOpen(!sortOpen)}
                   style={{ padding: "6px 28px 6px 14px", borderRadius: 20, background: "hsl(var(--card))", color: txt, border: `1px solid ${bdr}`, cursor: "pointer", fontWeight: 500, fontFamily: F, position: "relative", userSelect: "none" }}
                 >
@@ -332,7 +333,7 @@ export default function Internships() {
                   {sortBy === "default" && "Default Sorting"}
                   <ChevronDown size={14} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: txt2 }} />
                 </div>
-                
+
                 {sortOpen && (
                   <>
                     <div onClick={() => setSortOpen(false)} style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 90 }} />
@@ -373,69 +374,69 @@ export default function Internships() {
             </div>
           </div>
 
-        {/* ACTIVE FILTERS ROW */}
-        {pills.length > 0 && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "14px 0", flexWrap: "wrap" }}>
-            <span style={{ fontSize: 13, color: txt2, marginRight: 4 }}>Active Filter</span>
-            {pills.map((p, i) => (
-              <button key={i} onClick={p.c} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", background: pillBg, color: pillTxt, border: "none", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: F, transition: "opacity 0.2s" }}
-                onMouseEnter={e => e.currentTarget.style.opacity = "0.8"} onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
-                {p.l} <X size={12} />
-              </button>
-            ))}
-            <button onClick={clearAll} style={{ background: "none", border: "none", color: accent, fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: F, textDecoration: "underline", textUnderlineOffset: 3 }}>Clear All</button>
-          </div>
-        )}
-
-        {/* MAIN TWO-COLUMN LAYOUT */}
-        <div style={{ display: "flex", gap: 48, paddingTop: 24 }}>
-
-          {/* LEFT SIDEBAR */}
-          <aside style={{ width: 180, flexShrink: 0 }}>
-            {/* Search */}
-            <div style={{ position: "relative", marginBottom: 28 }}>
-              <Search size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: txt2 }} />
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..." style={{ width: "100%", padding: "8px 10px 8px 30px", border: `1px solid ${bdr}`, borderRadius: 8, background: "transparent", color: txt, fontSize: 13, outline: "none", boxSizing: "border-box", fontFamily: F }} />
-            </div>
-
-            {/* By Type */}
-            <div style={{ marginBottom: 28 }}>
-              <h4 style={{ fontSize: 14, fontWeight: 700, color: txt, marginBottom: 12 }}>By Type</h4>
-              {[{l:"All Types",v:""},{l:"Full Time",v:"FULL_TIME"},{l:"Part Time",v:"PART_TIME"}].map(o => (
-                <button key={o.v} onClick={() => setType(o.v)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0", background: "none", border: "none", cursor: "pointer", width: "100%" }}>
-                  <div style={{ width: 14, height: 14, borderRadius: "50%", border: `1.5px solid ${type===o.v ? accent : "hsl(var(--muted-foreground))"}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    {type===o.v && <div style={{ width: 7, height: 7, borderRadius: "50%", background: accent }} />}
-                  </div>
-                  <span style={{ fontSize: 13, color: type===o.v ? txt : txt2 }}>{o.l}</span>
+          {/* ACTIVE FILTERS ROW */}
+          {pills.length > 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "14px 0", flexWrap: "wrap" }}>
+              <span style={{ fontSize: 13, color: txt2, marginRight: 4 }}>Active Filter</span>
+              {pills.map((p, i) => (
+                <button key={i} onClick={p.c} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", background: pillBg, color: pillTxt, border: "none", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: F, transition: "opacity 0.2s" }}
+                  onMouseEnter={e => e.currentTarget.style.opacity = "0.8"} onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
+                  {p.l} <X size={12} />
                 </button>
               ))}
+              <button onClick={clearAll} style={{ background: "none", border: "none", color: accent, fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: F, textDecoration: "underline", textUnderlineOffset: 3 }}>Clear All</button>
             </div>
+          )}
 
-            {/* By Location */}
-            <div style={{ marginBottom: 28 }}>
-              <h4 style={{ fontSize: 14, fontWeight: 700, color: txt, marginBottom: 12 }}>By Location</h4>
-              {[{l:"All",v:""},{l:"Remote",v:"REMOTE"},{l:"Onsite",v:"ONSITE"},{l:"Hybrid",v:"HYBRID"}].map(o => (
-                <button key={o.v} onClick={() => setLoc(o.v)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0", background: "none", border: "none", cursor: "pointer", width: "100%" }}>
-                  <div style={{ width: 14, height: 14, borderRadius: "50%", border: `1.5px solid ${loc===o.v ? accent : "hsl(var(--muted-foreground))"}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    {loc===o.v && <div style={{ width: 7, height: 7, borderRadius: "50%", background: accent }} />}
-                  </div>
-                  <span style={{ fontSize: 13, color: loc===o.v ? txt : txt2 }}>{o.l}</span>
-                </button>
-              ))}
-            </div>
+          {/* MAIN TWO-COLUMN LAYOUT */}
+          <div style={{ display: "flex", gap: 48, paddingTop: 24 }}>
 
-            {/* By Time Frame */}
-            <div style={{ marginBottom: 28 }}>
-              <h4 style={{ fontSize: 14, fontWeight: 600, color: txt, marginBottom: 4, fontFamily: F }}>Time Frame</h4>
-              <div style={{ fontSize: 13, color: txt2, marginBottom: 12, fontWeight: 400, fontFamily: F }}>
-                {(() => {
-                  const unitLabel = timeUnit === "months" ? "Month" : timeUnit === "weeks" ? "Week" : "Day";
-                  if (minMonths === maxMonths) {
-                    return `${minMonths} ${unitLabel}${minMonths > 1 ? 's' : ''}`;
-                  }
-                  return `${minMonths} ${unitLabel}${minMonths > 1 ? 's' : ''} - ${maxMonths} ${unitLabel}${maxMonths > 1 ? 's' : ''}`;
-                })()}
+            {/* LEFT SIDEBAR */}
+            <aside style={{ width: 180, flexShrink: 0 }}>
+              {/* Search */}
+              <div style={{ position: "relative", marginBottom: 28 }}>
+                <Search size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: txt2 }} />
+                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..." style={{ width: "100%", padding: "8px 10px 8px 30px", border: `1px solid ${bdr}`, borderRadius: 8, background: "transparent", color: txt, fontSize: 13, outline: "none", boxSizing: "border-box", fontFamily: F }} />
               </div>
+
+              {/* By Type */}
+              <div style={{ marginBottom: 28 }}>
+                <h4 style={{ fontSize: 14, fontWeight: 700, color: txt, marginBottom: 12 }}>By Type</h4>
+                {[{ l: "All Types", v: "" }, { l: "Full Time", v: "FULL_TIME" }, { l: "Part Time", v: "PART_TIME" }].map(o => (
+                  <button key={o.v} onClick={() => setType(o.v)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0", background: "none", border: "none", cursor: "pointer", width: "100%" }}>
+                    <div style={{ width: 14, height: 14, borderRadius: "50%", border: `1.5px solid ${type === o.v ? accent : "hsl(var(--muted-foreground))"}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      {type === o.v && <div style={{ width: 7, height: 7, borderRadius: "50%", background: accent }} />}
+                    </div>
+                    <span style={{ fontSize: 13, color: type === o.v ? txt : txt2 }}>{o.l}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* By Location */}
+              <div style={{ marginBottom: 28 }}>
+                <h4 style={{ fontSize: 14, fontWeight: 700, color: txt, marginBottom: 12 }}>By Location</h4>
+                {[{ l: "All", v: "" }, { l: "Remote", v: "REMOTE" }, { l: "Onsite", v: "ONSITE" }, { l: "Hybrid", v: "HYBRID" }].map(o => (
+                  <button key={o.v} onClick={() => setLoc(o.v)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0", background: "none", border: "none", cursor: "pointer", width: "100%" }}>
+                    <div style={{ width: 14, height: 14, borderRadius: "50%", border: `1.5px solid ${loc === o.v ? accent : "hsl(var(--muted-foreground))"}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      {loc === o.v && <div style={{ width: 7, height: 7, borderRadius: "50%", background: accent }} />}
+                    </div>
+                    <span style={{ fontSize: 13, color: loc === o.v ? txt : txt2 }}>{o.l}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* By Time Frame */}
+              <div style={{ marginBottom: 28 }}>
+                <h4 style={{ fontSize: 14, fontWeight: 600, color: txt, marginBottom: 4, fontFamily: F }}>Time Frame</h4>
+                <div style={{ fontSize: 13, color: txt2, marginBottom: 12, fontWeight: 400, fontFamily: F }}>
+                  {(() => {
+                    const unitLabel = timeUnit === "months" ? "Month" : timeUnit === "weeks" ? "Week" : "Day";
+                    if (minMonths === maxMonths) {
+                      return `${minMonths} ${unitLabel}${minMonths > 1 ? 's' : ''}`;
+                    }
+                    return `${minMonths} ${unitLabel}${minMonths > 1 ? 's' : ''} - ${maxMonths} ${unitLabel}${maxMonths > 1 ? 's' : ''}`;
+                  })()}
+                </div>
 
               {/* Segmented Switcher */}
               <div style={{
@@ -628,14 +629,16 @@ export default function Internships() {
             <div style={{ marginBottom: 28 }}>
               <h4 style={{ fontSize: 14, fontWeight: 700, color: txt, marginBottom: 12 }}>By Skills</h4>
               <div className="sidebar-scroll" style={{ maxHeight: 220, overflowY: "auto" }}>
-                {SKILLS.map(s => { const on = skills.includes(s); return (
-                  <button key={s} onClick={() => setSkills(p => on ? p.filter(x=>x!==s) : [...p,s])} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0", background: "none", border: "none", cursor: "pointer", width: "100%" }}>
-                    <div style={{ width: 14, height: 14, borderRadius: 3, border: `1.5px solid ${on ? accent : "hsl(var(--muted-foreground))"}`, background: on ? accent : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      {on && <svg width="9" height="9" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                    </div>
-                    <span style={{ fontSize: 13, color: on ? txt : txt2 }}>{s}</span>
-                  </button>
-                ); })}
+                {SKILLS.map(s => {
+                  const on = skills.includes(s); return (
+                    <button key={s} onClick={() => setSkills(p => on ? p.filter(x => x !== s) : [...p, s])} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0", background: "none", border: "none", cursor: "pointer", width: "100%" }}>
+                      <div style={{ width: 14, height: 14, borderRadius: 3, border: `1.5px solid ${on ? accent : (dk ? "rgba(255,255,255,0.25)" : "#ccc")}`, background: on ? accent : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        {on && <svg width="9" height="9" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+                      </div>
+                      <span style={{ fontSize: 13, color: on ? txt : txt2 }}>{s}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </aside>
@@ -645,7 +648,7 @@ export default function Internships() {
             <div style={{ flex: 1 }}>
               {loading ? (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
-                  {Array(6).fill(0).map((_,i) => <div key={i} style={{ height: 300, borderRadius: 16, background: "hsl(var(--muted))" }} />)}
+                  {Array(6).fill(0).map((_, i) => <div key={i} style={{ height: 300, borderRadius: 16, background: dk ? "rgba(255,255,255,0.04)" : "#f5f5f5" }} />)}
                 </div>
               ) : items.length > 0 ? (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
@@ -655,11 +658,11 @@ export default function Internships() {
                     const isRated = rating > 0;
                     return (
                       <div key={n.id} onClick={() => navigate(`/internships/${n.id}`)} style={{ cursor: "pointer", transition: "transform 0.3s", borderRadius: 0 }}
-                        onMouseEnter={e => e.currentTarget.style.transform="translateY(-3px)"} onMouseLeave={e => e.currentTarget.style.transform="translateY(0)"}>
+                        onMouseEnter={e => e.currentTarget.style.transform = "translateY(-3px)"} onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}>
                         {/* Image */}
-                        <div style={{ width: "100%", aspectRatio: "1/1", borderRadius: 16, overflow: "hidden", background: "hsl(var(--muted))", position: "relative", marginBottom: 12 }}>
+                        <div style={{ width: "100%", aspectRatio: "1/1", borderRadius: 16, overflow: "hidden", background: dk ? "#222" : "#f1f5f9", position: "relative", marginBottom: 12 }}>
                           {n.banner_image ? <img src={n.banner_image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                           : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.15 }}><Briefcase size={48} /></div>}
+                            : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.15 }}><Briefcase size={48} /></div>}
                           {(() => {
                             if (n.status === "OPEN_FOR_APPLICATION") {
                               return (
@@ -685,12 +688,18 @@ export default function Internships() {
                                   Finished
                                 </div>
                               );
+                            } else if (n.status === "CANCELLED") {
+                              return (
+                                <div style={{ position: "absolute", top: 12, left: 12, background: "#ef4444", color: "#fff", fontSize: 10, fontWeight: 700, padding: "4px 10px", borderRadius: 20 }}>
+                                  Cancelled
+                                </div>
+                              );
                             }
                             return null;
                           })()}
-                          <button onClick={e => { e.stopPropagation(); setLiked(p => { const n2 = new Set(p); n2.has(n.id)?n2.delete(n.id):n2.add(n.id); return n2; }); }}
+                          <button onClick={e => { e.stopPropagation(); setLiked(p => { const n2 = new Set(p); n2.has(n.id) ? n2.delete(n.id) : n2.add(n.id); return n2; }); }}
                             style={{ position: "absolute", top: 12, right: 12, width: 30, height: 30, borderRadius: "50%", background: "rgba(255,255,255,0.9)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                            <Heart size={14} style={{ color: liked.has(n.id)?"#e53e3e":"#666", fill: liked.has(n.id)?"#e53e3e":"none" }} />
+                            <Heart size={14} style={{ color: liked.has(n.id) ? "#e53e3e" : "#666", fill: liked.has(n.id) ? "#e53e3e" : "none" }} />
                           </button>
                         </div>
                         {/* Info */}
@@ -705,12 +714,12 @@ export default function Internships() {
                               <span style={{ fontSize: 11, fontWeight: 600, color: isRated ? txt : txt2 }}>{rating}</span>
                             </div>
                           </div>
-                          <span style={{ fontSize: 12, color: txt2 }}>{(n.type||"").replace("_"," ")}</span>
+                          <span style={{ fontSize: 12, color: txt2 }}>{(n.type || "").replace("_", " ")}</span>
                         </div>
                         <h3 style={{ fontSize: 15, fontWeight: 600, color: txt, margin: "0 0 6px", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n.title}</h3>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, color: txt2 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                            <MapPin size={12} /> 
+                            <MapPin size={12} />
                             {n.wilaya ? `${n.wilaya} • ` : ""}
                             {n.internship_location ? (n.internship_location.charAt(0).toUpperCase() + n.internship_location.slice(1).toLowerCase()) : "N/A"}
                           </div>
@@ -756,12 +765,11 @@ export default function Internships() {
                 </button>
               </div>
             )}
-
           </div>
-        </div>
 
-        {/* PLATFORM FEATURES */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 24, marginTop: 72, borderTop: `1px solid ${bdr}`, paddingTop: 48, flexWrap: "wrap" }}>
+          </div >
+  {/* PLATFORM FEATURES */ }
+  < div style = {{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 24, marginTop: 72, borderTop: `1px solid ${bdr}`, paddingTop: 48, flexWrap: "wrap" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 16, flex: "1 1 250px" }}>
             <div style={{ position: "relative", zIndex: 1, display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 44, flexShrink: 0 }}>
               <div style={{ position: "absolute", bottom: -2, right: -2, width: 32, height: 32, borderRadius: "40% 60% 60% 40% / 40% 40% 60% 60%", background: "rgba(29, 78, 216, 0.12)", zIndex: -1 }} />
@@ -794,9 +802,9 @@ export default function Internships() {
               <p style={{ fontSize: 12, color: txt2, margin: 0, lineHeight: 1.4, fontFamily: F }}>Our team is here to assist you at every single step.</p>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
+        </div >
+      </div >
+    </div >
     </>
   );
 }
