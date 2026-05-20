@@ -768,8 +768,6 @@ export default function Internships() {
           </div>
 
           </div >
-        </div >
-
   {/* PLATFORM FEATURES */ }
   < div style = {{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 24, marginTop: 72, borderTop: `1px solid ${bdr}`, paddingTop: 48, flexWrap: "wrap" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 16, flex: "1 1 250px" }}>
