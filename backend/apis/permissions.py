@@ -6,7 +6,7 @@ class IsAdmin(permissions.BasePermission):
         return (
             request.user and 
             request.user.is_authenticated and 
-            request.user.role in [User.Role.ADMIN_DEPT, User.Role.ADMIN_UNIV]
+            (request.user.role in [User.Role.ADMIN_DEPT, User.Role.ADMIN_UNIV, 'ADMIN'] or request.user.is_superuser)
         )
 class IsCompany(permissions.BasePermission):
     def has_permission(self, request, view):
