@@ -19,6 +19,8 @@ import Profile from "@/pages/Profile";
 import InternshipDetails from "@/pages/InternshipDetails";
 import StudentGuidelines from "@/pages/StudentGuidelines";
 import FAQ from "@/pages/FAQ";
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import TermsOfService from "@/pages/TermsOfService";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import CompanyDashboard from "@/features/dashboards/CompanyDashboard";
 import CompanyAnalytics from "@/features/dashboards/CompanyAnalytics";
@@ -74,6 +76,8 @@ function App() {
             <Route path="/internships/:id" element={<InternshipDetails />} />
             <Route path="/guidelines" element={<StudentGuidelines />} />
             <Route path="/faq" element={<FAQ />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfService />} />
             <Route path="/companies" element={<Companies />} />
             <Route path="/companies/:id" element={<CompaniesDetails />} />
             <Route
@@ -95,8 +99,10 @@ function App() {
           </Route>
 
           {/* Auth Pages (No Navbar/Footer) */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+          <Route element={<Login />}>
+            <Route path="/login" element={null} />
+            <Route path="/register" element={null} />
+          </Route>
 
           {/* Auth & Standalone Pages */}
           <Route
