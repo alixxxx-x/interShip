@@ -27,6 +27,7 @@ urlpatterns = [
     path('internships/company/', CompanyInternshipListView.as_view(), name='company-internship-list'),
 
     path('internships/<int:pk>/', InternshipRetrieveView.as_view(), name='internship-retrieve'),
+    path('internships/<int:pk>/similar/', InternshipSimilarView.as_view(), name='internship-similar'),
     path('internships/<int:pk>/update/', InternshipUpdateDestroyView.as_view(), name='internship-update'),
     path('internships/<int:pk>/delete/', InternshipUpdateDestroyView.as_view(), name='internship-delete'),
 
@@ -51,6 +52,8 @@ urlpatterns = [
     path('student/dashboard/', StudentDashboardView.as_view(), name='student-dashboard'),
     path('company/dashboard/', CompanyDashboardView.as_view(), name='company-dashboard'),
     path('admin-univ/dashboard/', AdminUnivDashboardView.as_view(), name='admin-univ-dashboard'),
+    path('admin-univ/departments/', AdminUnivDepartmentListView.as_view(), name='admin-univ-departments'),
+    path('admin-univ/departments/<int:pk>/', AdminUnivDepartmentDetailView.as_view(), name='admin-univ-department-detail'),
     path('company/followers/', CompanyFollowersCountView.as_view(), name='company-followers-count'),
 
     # Notifications

@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import api from "@/api/api";
 import { useToast } from "@/components/ui/custom-toast";
+import LoadingScreen from "@/components/ui/LoadingScreen";
 
 export default function AdminUsers() {
   const toast = useToast();
@@ -43,12 +44,19 @@ export default function AdminUsers() {
   // Get search params for role filtering
   const [searchParams] = useSearchParams();
   const roleFilter = searchParams.get("role"); // STUDENT, COMPANY, ADMIN_UNIV
+  const departmentFilter = searchParams.get("department");
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      // Fetch with role query param if defined
-      const url = roleFilter ? `/users/?role=${roleFilter}` : "/users/";
+      // Fetch with role and department query params if defined
+      let url = "/users/";
+      const params = [];
+      if (roleFilter) params.push(`role=${roleFilter}`);
+      if (departmentFilter) params.push(`department=${departmentFilter}`);
+      if (params.length > 0) {
+        url += `?${params.join("&")}`;
+      }
       const res = await api.get(url);
       setUsers(res.data.results || res.data);
     } catch (error) {
@@ -61,7 +69,7 @@ export default function AdminUsers() {
 
   useEffect(() => {
     fetchUsers();
-  }, [roleFilter]);
+  }, [roleFilter, departmentFilter]);
 
   const handleToggleStatus = async (user) => {
     try {
@@ -134,9 +142,8 @@ export default function AdminUsers() {
 
   if (loading) {
     return (
-      <div className="p-6 space-y-6">
-        <div className="h-10 w-64 bg-muted animate-pulse rounded-lg" />
-        <div className="h-[400px] w-full bg-muted animate-pulse rounded-xl" />
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] w-full">
+        <LoadingScreen fullScreen={false} />
       </div>
     );
   }

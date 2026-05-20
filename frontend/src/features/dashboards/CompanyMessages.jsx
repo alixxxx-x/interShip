@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -256,26 +255,29 @@ export default function CompanyMessages() {
   );
 
   return (
-    <div className="p-6 h-[calc(100vh-100px)] flex flex-col gap-6 animate-in fade-in duration-500">
+    <div 
+      className="p-6 lg:p-8 h-[calc(100vh-100px)] flex flex-col gap-6 animate-in fade-in duration-500 max-w-[1600px] mx-auto w-full"
+      style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif' }}
+    >
       <div className="flex flex-col gap-1">
-        <h1 className="text-3xl font-bold tracking-tight">Messages</h1>
-        <p className="text-muted-foreground">Direct communication channel with candidates.</p>
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-zinc-100">Messages</h1>
+        <p className="text-[14px] text-gray-500 dark:text-zinc-400 font-medium">Direct communication channel with candidates.</p>
       </div>
 
-      <div className="flex-1 flex gap-6 overflow-hidden">
+      <div className="flex-1 flex gap-6 overflow-hidden pb-4">
         {/* Sidebar: Student List */}
-        <Card className="w-80 flex flex-col border-none shadow-xl bg-card/50 backdrop-blur-sm overflow-hidden">
-          <CardHeader className="p-4 border-b">
+        <div className="w-80 flex flex-col bg-white dark:bg-zinc-900 rounded-xl border border-gray-150 dark:border-zinc-800/80 shadow-sm overflow-hidden">
+          <div className="p-4 border-b border-gray-100 dark:border-zinc-800">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 placeholder="Search students..."
-                className="pl-9 bg-muted/20 border-none"
+                className="pl-9 bg-gray-50 dark:bg-zinc-800/50 border-gray-200 dark:border-zinc-700 h-10 rounded-lg focus-visible:ring-1 focus-visible:ring-blue-500/30"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-          </CardHeader>
+          </div>
           <div className="flex-1 overflow-y-auto p-2 space-y-1">
             {filteredConversations.map((student) => (
               <button
@@ -320,31 +322,31 @@ export default function CompanyMessages() {
               </button>
             ))}
           </div>
-        </Card>
+        </div>
 
         {/* Main: Chat Window */}
-        <Card className="flex-1 flex flex-col border-none shadow-xl bg-card/50 backdrop-blur-sm overflow-hidden">
+        <div className="flex-1 flex flex-col bg-white dark:bg-zinc-900 rounded-xl border border-gray-150 dark:border-zinc-800/80 shadow-sm overflow-hidden">
           {activeRecipient ? (
             <>
-              <CardHeader className="p-4 border-b flex flex-row items-center justify-between">
+              <div className="p-4 border-b border-gray-100 dark:border-zinc-800 flex flex-row items-center justify-between bg-white dark:bg-zinc-900 z-10 shadow-sm">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
-                    <UserIcon className="h-5 w-5 text-primary" />
+                  <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center border border-blue-100 dark:border-blue-800/30">
+                    <UserIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div>
-                    <CardTitle className="text-lg">{activeRecipient.name}</CardTitle>
-                    <CardDescription className="flex items-center gap-1.5 text-[10px]">
+                    <h3 className="text-[15px] font-bold text-gray-900 dark:text-zinc-100">{activeRecipient.name}</h3>
+                    <div className="flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-zinc-400 font-medium">
                       <span className={cn(
                         "w-1.5 h-1.5 rounded-full",
-                        isRecipientOnline ? "bg-green-500 animate-pulse" : "bg-muted-foreground/55"
+                        isRecipientOnline ? "bg-green-500 animate-pulse" : "bg-gray-300 dark:bg-zinc-600"
                       )} />
                       {isRecipientOnline ? "Online" : "Offline"}
-                    </CardDescription>
+                    </div>
                   </div>
                 </div>
-              </CardHeader>
+              </div>
 
-              <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-muted/5">
+              <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50/50 dark:bg-zinc-900/50">
                 {messages.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-muted-foreground gap-4 opacity-50">
                     <MessageSquare className="h-12 w-12" />
@@ -390,10 +392,10 @@ export default function CompanyMessages() {
                           <div className={cn("flex flex-col gap-0.5", isMe ? "items-end ml-auto" : "items-start mr-auto")}>
                             <div className="relative">
                               <div className={cn(
-                                "px-4 py-2.5 rounded-2xl text-sm shadow-sm",
+                                "px-4 py-2.5 rounded-2xl text-[13px] shadow-sm max-w-xl break-words",
                                 isMe
-                                  ? "bg-primary text-primary-foreground shadow-primary/20"
-                                  : "bg-background border shadow-sm"
+                                  ? "bg-blue-600 text-white shadow-blue-600/20"
+                                  : "bg-white dark:bg-zinc-800 border border-gray-150 dark:border-zinc-700 text-gray-800 dark:text-zinc-200"
                               )}>
                                 {editingMessageId === msg.id ? (
                                   <div className="flex items-center gap-2 min-w-[200px]">
@@ -521,7 +523,7 @@ export default function CompanyMessages() {
                 <div ref={messagesEndRef} />
               </div>
 
-              <div className="flex flex-col bg-background border-t">
+              <div className="flex flex-col bg-white dark:bg-zinc-900 border-t border-gray-150 dark:border-zinc-800">
                 {replyingTo && (
                   <div className="flex items-center justify-between px-4 py-2 bg-muted/30 border-b">
                     <div className="flex flex-col">
@@ -533,17 +535,17 @@ export default function CompanyMessages() {
                     </button>
                   </div>
                 )}
-                <form onSubmit={handleSendMessage} className="p-4 flex gap-3 relative">
+                <form onSubmit={handleSendMessage} className="p-4 flex gap-3 relative bg-white dark:bg-zinc-900">
                 <div className="relative flex-1">
                   <Input
                     placeholder="Write a message..."
                     autoComplete="off"
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
-                    className="w-full bg-muted/20 border-none shadow-none focus-visible:ring-1 h-11"
+                    className="w-full bg-gray-50 dark:bg-zinc-800 border-gray-200 dark:border-zinc-700 shadow-sm focus-visible:ring-1 focus-visible:ring-blue-500/30 h-11 rounded-xl"
                   />
                 </div>
-                <Button type="submit" size="icon" className="h-11 w-11 shadow-lg shadow-primary/20" disabled={loading || !newMessage.trim()}>
+                <Button type="submit" size="icon" className="h-11 w-11 rounded-xl bg-blue-600 hover:bg-blue-700 shadow-sm" disabled={loading || !newMessage.trim()}>
                   <Send className="h-5 w-5" />
                 </Button>
                 </form>
@@ -560,7 +562,7 @@ export default function CompanyMessages() {
               </div>
             </div>
           )}
-        </Card>
+        </div>
       </div>
     </div>
   );

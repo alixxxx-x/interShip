@@ -35,7 +35,7 @@ import { useNavigate } from "react-router-dom";
 import api from "@/api/api";
 import { useToast } from "@/components/ui/custom-toast";
 
-export default function AdminDashboard() {
+export default function AdminDeptDashboard() {
   const toast = useToast();
   const [stats, setStats] = useState({
     total_students: 0,
@@ -142,16 +142,18 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 p-6 animate-in fade-in duration-500">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-          <p className="text-muted-foreground">
-            Monitor placements and validate internship agreements.
+          <h1 className="text-3xl font-bold tracking-tight">
+            Department Dashboard
+          </h1>
+          <p className="text-muted-foreground text-sm font-medium mt-1">
+            Welcome, Department Admin! Monitor placements and validate internship agreements.
           </p>
         </div>
-        <Button variant="outline" onClick={() => window.print()}>
+        <Button variant="outline" onClick={() => window.print()} className="rounded-xl font-bold">
           <FileText className="mr-2 h-4 w-4" />
           Export Report
         </Button>

@@ -65,6 +65,8 @@ class UserSerializer(serializers.ModelSerializer):
     status_required = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
     message = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
     size = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
+    guidelines_handbook = serializers.FileField(required=False, write_only=True, allow_null=True)
+    agreement_template = serializers.FileField(required=False, write_only=True, allow_null=True)
     
     class Meta:
         model = User
@@ -73,7 +75,7 @@ class UserSerializer(serializers.ModelSerializer):
             'first_name', 'last_name', 'is_active', 'university_id', 'wilaya', 'phone',
             'name', 'logo', 'description', 'location', 'website', 'company_field', 'founded_year', 'department',
             'department_id', 'university_name', 'email_domain', 'departments', 'matricule',
-            'status_required', 'message', 'size'
+            'status_required', 'message', 'size', 'guidelines_handbook', 'agreement_template'
         ]
         read_only_fields = ['id']
     def _normalize_domain(self, domain):
@@ -275,6 +277,19 @@ class UserSerializer(serializers.ModelSerializer):
                 data['status_required'] = getattr(company, 'status_required', "Corporate Verification")
                 data['message'] = getattr(company, 'message', "Active partner organization")
                 data['size'] = getattr(company, 'size', "10-50 Employees")
+                
+                # Resources URLs
+                if company.guidelines_handbook:
+                    data['guidelines_handbook'] = request.build_absolute_uri(company.guidelines_handbook.url) if request else company.guidelines_handbook.url
+                else:
+                    data['guidelines_handbook'] = None
+
+                if company.agreement_template:
+                    data['agreement_template'] = request.build_absolute_uri(company.agreement_template.url) if request else company.agreement_template.url
+                else:
+                    data['agreement_template'] = None
+                    
+                data['resources'] = CompanyResourceSerializer(company.resources.all(), many=True, context={'request': request}).data
 
         elif instance.role == User.Role.ADMIN_DEPT:
             admin = getattr(instance, 'admindept', None)
@@ -436,6 +451,28 @@ class UserSerializer(serializers.ModelSerializer):
                 company.message = validated_data.get('message')
             if 'size' in validated_data:
                 company.size = validated_data.get('size')
+            if 'guidelines_handbook' in validated_data:
+                company.guidelines_handbook = validated_data.get('guidelines_handbook')
+            if 'agreement_template' in validated_data:
+                company.agreement_template = validated_data.get('agreement_template')
+            
+            # Handle multiple file uploads for resources
+            request = self.context.get('request')
+            if request:
+                if hasattr(request, 'FILES'):
+                    new_resources = request.FILES.getlist('new_resources')
+                    for f in new_resources:
+                        CompanyResource.objects.create(
+                            company=company,
+                            file=f,
+                            name=f.name
+                        )
+                # Handle resource deletion
+                if hasattr(request, 'data'):
+                    deleted_resources = request.data.getlist('deleted_resources')
+                    if deleted_resources:
+                        CompanyResource.objects.filter(company=company, id__in=deleted_resources).delete()
+
             company.save()
             
         elif instance.role == User.Role.ADMIN_DEPT and hasattr(instance, 'admindept'):
@@ -493,6 +530,11 @@ class ChangePasswordSerializer(serializers.Serializer):
             raise serializers.ValidationError("Old password is not correct")
         return value
 
+class CompanyResourceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CompanyResource
+        fields = ['id', 'file', 'name', 'uploaded_at']
+
 class CompanySerializer(serializers.ModelSerializer):
     logo = serializers.SerializerMethodField()
     open_positions_count = serializers.SerializerMethodField()
@@ -502,6 +544,10 @@ class CompanySerializer(serializers.ModelSerializer):
     reviews = serializers.SerializerMethodField()
     hired_interns_count = serializers.SerializerMethodField()
     internships = serializers.SerializerMethodField()
+    open_for_application_count = serializers.SerializerMethodField()
+    ongoing_count = serializers.SerializerMethodField()
+    finished_count = serializers.SerializerMethodField()
+    resources = CompanyResourceSerializer(many=True, read_only=True)
 
     class Meta:
         model = Company
@@ -510,7 +556,8 @@ class CompanySerializer(serializers.ModelSerializer):
             'company_field', 'founded_year', 'is_active', 'open_positions_count', 
             'total_internships_count', 'hired_interns_count', 'company_rating', 
             'review_count', 'reviews', 'internships', 'phone', 'status_required', 
-            'message', 'size'
+            'message', 'size', 'open_for_application_count', 'ongoing_count', 
+            'finished_count', 'guidelines_handbook', 'agreement_template', 'resources'
         ]
         read_only_fields = ['id']
 
@@ -534,6 +581,24 @@ class CompanySerializer(serializers.ModelSerializer):
 
     def get_total_internships_count(self, obj):
         return InternshipOffer.objects.filter(company=obj).count()
+
+    def get_open_for_application_count(self, obj):
+        return InternshipOffer.objects.filter(
+            company=obj,
+            status=InternshipOffer.Status.OPEN_FOR_APPLICATION
+        ).count()
+
+    def get_ongoing_count(self, obj):
+        return InternshipOffer.objects.filter(
+            company=obj,
+            status=InternshipOffer.Status.ONGOING
+        ).count()
+
+    def get_finished_count(self, obj):
+        return InternshipOffer.objects.filter(
+            company=obj,
+            status=InternshipOffer.Status.FINISHED
+        ).count()
 
     def get_company_rating(self, obj):
         from django.db.models import Avg
@@ -588,6 +653,7 @@ class InternshipSerializer(serializers.ModelSerializer):
     accepted_count = serializers.SerializerMethodField()
     company_rating = serializers.SerializerMethodField()
     rating = serializers.SerializerMethodField()
+    relevance_score = serializers.SerializerMethodField()
 
     class Meta:
         model = InternshipOffer
@@ -614,8 +680,35 @@ class InternshipSerializer(serializers.ModelSerializer):
             'wilaya',
             'required_skills',
             'banner_image',
+            'relevance_score',
         ]
         read_only_fields = ['id', 'internship_duration', 'company']
+
+    def get_relevance_score(self, obj):
+        # Return relevance_score if already calculated and attached (e.g. in list view)
+        if hasattr(obj, 'relevance_score'):
+            return obj.relevance_score
+
+        # Otherwise calculate on the fly for retrieve view
+        request = self.context.get('request')
+        if request and request.user.is_authenticated and request.user.role == User.Role.STUDENT:
+            student = getattr(request.user, 'student', None)
+            if student:
+                from .services import calculate_skills_match, calculate_location_score
+                student_skills_str = ""
+                student_wilaya = student.wilaya or ""
+                if hasattr(student, 'digital_cv') and student.digital_cv:
+                    student_skills_str = student.digital_cv.skills or ""
+                    if student.digital_cv.wilaya:
+                        student_wilaya = student.digital_cv.wilaya
+
+                skills_score = calculate_skills_match(student_skills_str, obj.internship_skills)
+                location_score = calculate_location_score(student_wilaya, obj.wilaya, obj.internship_location)
+                is_followed = CompanyFollow.objects.filter(student=student, company_id=obj.company_id).exists()
+                follow_score = 30.0 if is_followed else 0.0
+
+                return round(skills_score + location_score + follow_score, 1)
+        return None
 
     def get_accepted_count(self, obj):
         return obj.application_set.filter(
@@ -900,4 +993,16 @@ class ReviewSerializer(serializers.ModelSerializer):
             return f"{first_part} ago"
         except Exception:
             return "recently"
+
+class DepartmentSerializer(serializers.ModelSerializer):
+    university_name = serializers.CharField(source='university.name', read_only=True)
+    student_count = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = Department
+        fields = ['id', 'name', 'university', 'university_name', 'student_count']
+        read_only_fields = ['university']
+
+    def get_student_count(self, obj):
+        return obj.students.count()
 

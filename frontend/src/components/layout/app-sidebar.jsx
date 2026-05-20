@@ -70,7 +70,7 @@ const data = {
         },
         {
           title: "New Posting",
-          url: "/companydashboard?newOffer=true",
+          url: "/companydashboard/new-offer",
         },
       ],
     },
@@ -90,7 +90,7 @@ const data = {
           },
           {
             title: "Help Center",
-            url: "/help",
+            url: "/contact",
           },
         ],
       },
@@ -224,7 +224,7 @@ export function AppSidebar({ ...props }) {
           },
           {
             title: t("sidebarHelpCenter"),
-            url: "/help",
+            url: "/contact",
           },
         ],
       },
@@ -285,47 +285,84 @@ export function AppSidebar({ ...props }) {
               ],
             },
           ];
+        } else if (userInfo.role === "ADMIN_UNIV") {
+          baseItems = [
+            {
+              title: t("sidebarDashboard"),
+              url: "/adminunivdashboard",
+              icon: LayoutDashboard,
+              isActive: location.pathname === "/adminunivdashboard" || location.pathname === "/adminunivdashboard/analytics",
+              items: [
+                {
+                  title: t("sidebarOverview"),
+                  url: "/adminunivdashboard",
+                },
+                {
+                  title: t("sidebarAnalytics"),
+                  url: "/adminunivdashboard/analytics",
+                },
+              ],
+            },
+            {
+              title: "Companies",
+              url: "/adminunivdashboard/companies",
+              icon: Building2,
+              isActive: location.pathname.startsWith("/adminunivdashboard/companies"),
+            },
+            {
+              title: "Departments",
+              url: "/adminunivdashboard/departments",
+              icon: GraduationCap,
+              isActive: location.pathname.startsWith("/adminunivdashboard/departments"),
+            },
+            {
+              title: t("sidebarMessages"),
+              url: "/adminunivdashboard/messages",
+              icon: MessageSquare,
+              isActive: location.pathname.startsWith("/adminunivdashboard/messages"),
+              badge: hasUnreadMessages,
+            },
+            {
+              title: t("sidebarSettings"),
+              url: "/settings",
+              icon: Settings2,
+            },
+          ]
         } else {
           baseItems = [
             {
               title: t("sidebarDashboard"),
-              url: adminPath,
+              url: "/admindashboard",
               icon: LayoutDashboard,
-              isActive: location.pathname === adminPath,
+              isActive: location.pathname === "/admindashboard" || location.pathname === "/admindashboard/analytics",
               items: [
                 {
                   title: t("sidebarOverview"),
-                  url: adminPath,
+                  url: "/admindashboard",
                 },
                 {
                   title: t("sidebarAnalytics"),
-                  url: `${adminPath}/analytics`,
+                  url: "/admindashboard/analytics",
                 },
               ],
             },
             {
               title: t("sidebarUserManagement"),
-              url: `${adminPath}/users`,
+              url: "/admindashboard/users",
               icon: Users,
-              isActive: location.pathname.startsWith(`${adminPath}/users`),
-            },
-            {
-              title: t("sidebarCompanies"),
-              url: `${adminPath}/companies`,
-              icon: SquareTerminal,
-              isActive: location.pathname.startsWith(`${adminPath}/companies`),
+              isActive: location.pathname.startsWith("/admindashboard/users"),
             },
             {
               title: t("sidebarValidations"),
-              url: `${adminPath}/validations`,
+              url: "/admindashboard/validations",
               icon: CheckCircle,
-              isActive: location.pathname.startsWith(`${adminPath}/validations`),
+              isActive: location.pathname.startsWith("/admindashboard/validations"),
             },
             {
               title: t("sidebarMessages"),
-              url: `${adminPath}/messages`,
+              url: "/admindashboard/messages",
               icon: MessageSquare,
-              isActive: location.pathname.startsWith(`${adminPath}/messages`),
+              isActive: location.pathname.startsWith("/admindashboard/messages"),
               badge: hasUnreadMessages,
             },
             {
@@ -354,7 +391,7 @@ export function AppSidebar({ ...props }) {
           items: [
             { title: t("sidebarBrowseAll"), url: "/internships" },
             { title: t("sidebarMyListings"), url: "/companydashboard/listings" },
-            { title: t("sidebarNewPosting"), url: "/companydashboard?newOffer=true" },
+            { title: t("sidebarNewPosting"), url: "/companydashboard/new-offer" },
           ],
         },
         {
@@ -379,7 +416,7 @@ export function AppSidebar({ ...props }) {
           icon: Settings2,
           items: [
             { title: t("sidebarSettings"), url: "/settings" },
-            { title: t("sidebarHelpCenter"), url: "/help" },
+            { title: t("sidebarHelpCenter"), url: "/contact" },
           ],
         },
       ].map(item => {

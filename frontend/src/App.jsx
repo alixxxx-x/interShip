@@ -25,6 +25,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import CompanyDashboard from "@/features/dashboards/CompanyDashboard";
 import CompanyAnalytics from "@/features/dashboards/CompanyAnalytics";
 import CompanyListings from "@/features/dashboards/CompanyListings";
+import CreateOfferPage from "@/features/dashboards/CreateOfferPage";
 import AllApplications from "@/features/dashboards/AllApplications";
 import StudentDashboard from "@/features/dashboards/StudentDashboard";
 import MyApplications from "@/features/dashboards/MyApplications";
@@ -32,8 +33,9 @@ import TrackInternships from "@/features/dashboards/TrackInternships";
 import StudentRoute from "@/routes/StudentRoute";
 import DashboardRedirect from "@/routes/DashboardRedirect";
 import MyCv from "@/features/dashboards/MyCv";
-import AdminDashboard from "@/features/dashboards/AdminDashboard";
+import AdminDeptDashboard from "@/features/dashboards/AdminDeptDashboard";
 import AdminUnivDashboard from "@/features/dashboards/AdminUnivDashboard";
+import AdminDepartments from "@/features/dashboards/AdminDepartments";
 import SuperAdminDashboard from "@/features/dashboards/SuperAdminDashboard";
 import SuperAdminUniversities from "@/features/dashboards/SuperAdminUniversities";
 import AdminUsers from "@/features/dashboards/AdminUsers";
@@ -47,6 +49,7 @@ import Settings from "@/pages/Settings";
 
 import CompanyMessages from "@/features/dashboards/CompanyMessages";
 import StudentMessages from "@/features/dashboards/StudentMessages";
+import FloatingChatbot from "@/components/FloatingChatbot";
 
 import { LanguageProvider } from "@/components/language-provider";
 import { ToastProvider } from "@/components/ui/custom-toast";
@@ -115,7 +118,7 @@ function App() {
               </AdminRoute>
             }
           >
-            <Route index element={<AdminDashboard />} />
+            <Route index element={<AdminDeptDashboard />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="companies" element={<AdminCompanies />} />
             <Route path="validations" element={<AdminValidations />} />
@@ -133,9 +136,9 @@ function App() {
             }
           >
             <Route index element={<AdminUnivDashboard />} />
-            <Route path="users" element={<AdminUsers />} />
             <Route path="companies" element={<AdminCompanies />} />
-            <Route path="validations" element={<AdminValidations />} />
+            <Route path="departments" element={<AdminDepartments />} />
+            <Route path="users" element={<AdminUsers />} />
             <Route path="analytics" element={<AdminAnalytics />} />
             <Route path="messages" element={<AdminMessages />} />
             <Route path="notifications" element={<Notifications />} />
@@ -174,6 +177,7 @@ function App() {
           <Route element={<CompanyRoute><DashboardLayout /></CompanyRoute>}>
             <Route path="/companydashboard" element={<CompanyDashboard />} />
             <Route path="/companydashboard/analytics" element={<CompanyAnalytics />} />
+            <Route path="/companydashboard/new-offer" element={<CreateOfferPage />} />
             <Route path="/companydashboard/listings" element={<CompanyListings />} />
             <Route path="/companydashboard/applications" element={<AllApplications />} />
             <Route path="/companydashboard/TrackInternships" element={<CompanyTrackInternships />} />
@@ -191,6 +195,7 @@ function App() {
             <Route path="/studentdashboard/notifications" element={<Notifications />} />
           </Route>
         </Routes>
+        <FloatingChatbot />
       </TooltipProvider>
       </ToastProvider>
       </LanguageProvider>
