@@ -79,4 +79,7 @@ urlpatterns = [
     path('auth/forgot-password/', ForgotPasswordView.as_view(), name='forgot_password'),
     path('auth/verify-reset-code/', VerifyResetCodeView.as_view(), name='verify_reset_code'),
     path('auth/reset-password/', ResetPasswordView.as_view(), name='reset_password'),
+
+    # Reviews
+    path('internships/<int:internship_id>/reviews/', ReviewListCreateView.as_view(), name='internship-reviews'),
 ]

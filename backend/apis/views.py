@@ -135,6 +135,7 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
     permission_classes = [IsAuthenticated]
     
     def get_object(self):
+        ensure_student_profile(self.request.user)
         return self.request.user
 
 
@@ -159,7 +160,7 @@ class UserAdminUpdateView(generics.RetrieveUpdateDestroyAPIView):
     ordering_fields = ['id', 'username']
 
 class CompanyListView(generics.ListAPIView):
-    queryset = Company.objects.filter(role=User.Role.COMPANY)
+    queryset = Company.objects.filter(role=User.Role.COMPANY, is_active=True)
     serializer_class = CompanySerializer
     permission_classes = [AllowAny] # Allow all users to see companies
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
@@ -1149,7 +1150,7 @@ class GenerateInternshipCertificateView(generics.GenericAPIView):
                 'start_date': application.internship.offer_start_date,
                 'end_date': application.internship.offer_end_date,
                 'university_name': application.student.department.university.name,
-                'certificate_date': datetime.now().date(),
+                'certificate_date': timezone.now().date(),
             }
         )
 
@@ -1546,3 +1547,71 @@ class AdminRejectCompanyView(APIView):
         return Response({
             "message": f"Company '{company_name}' has been rejected and removed from the database."
         }, status=status.HTTP_200_OK)
+
+
+class ReviewListCreateView(generics.ListCreateAPIView):
+    serializer_class = ReviewSerializer
+    
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [AllowAny()]
+        return [IsAuthenticated()]
+
+    def get_queryset(self):
+        internship_id = self.kwargs.get('internship_id')
+        queryset = Review.objects.filter(internship_id=internship_id)
+        
+        sort_by = self.request.query_params.get('sort_by', 'newest')
+        if sort_by == 'highest':
+            queryset = queryset.order_by('-rating', '-created_at')
+        else:  # newest
+            queryset = queryset.order_by('-created_at')
+            
+        return queryset
+
+    def create(self, request, *args, **kwargs):
+        if request.user.role != User.Role.STUDENT:
+            return Response(
+                {"error": "Only students can write reviews."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        ensure_student_profile(request.user)
+        try:
+            student = request.user.student
+        except Exception:
+            student = Student.objects.filter(id=request.user.id).first()
+            if not student:
+                try:
+                    s = Student(user_ptr=request.user)
+                    for field in request.user._meta.fields:
+                        if field.name not in ['id', 'user_ptr']:
+                            setattr(s, field.name, getattr(request.user, field.name))
+                    s.save()
+                    student = s
+                except Exception as e:
+                    return Response(
+                        {"error": f"Failed to access or auto-heal student profile: {str(e)}"},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    )
+        internship_id = self.kwargs.get('internship_id')
+        internship = get_object_or_404(InternshipOffer, pk=internship_id)
+        
+        if Review.objects.filter(student=student, internship=internship).exists():
+            return Response(
+                {"error": "You have already reviewed this internship."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        is_verified = Application.objects.filter(
+            student=student,
+            internship=internship,
+            status__in=[Application.Status.VALIDATED, Application.Status.COMPLETE]
+        ).exists()
+        
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(student=student, internship=internship, is_verified=is_verified)
+        
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)

@@ -30,6 +30,10 @@ class Company(User):
     website = models.URLField(blank=True, null=True)
     company_field = models.CharField(max_length=255, blank=True, null=True)
     founded_year = models.IntegerField(blank=True, null=True)
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    status_required = models.CharField(max_length=255, blank=True, null=True, default="Corporate Verification")
+    message = models.CharField(max_length=255, blank=True, null=True, default="Active partner organization")
+    size = models.CharField(max_length=100, blank=True, null=True, default="10-50 Employees")
 
     class Meta:
         verbose_name_plural = "Companies"
@@ -337,3 +341,21 @@ class Matriculation(models.Model):
 
     def __str__(self):
         return f"{self.company_name or 'Unknown'} - {self.matricule}"
+
+
+class Review(models.Model):
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='reviews')
+    internship = models.ForeignKey(InternshipOffer, on_delete=models.CASCADE, related_name='reviews')
+    rating = models.IntegerField(default=5)
+    title = models.CharField(max_length=255, blank=True, null=True)
+    text = models.TextField(blank=True, null=True)
+    is_verified = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        unique_together = ('student', 'internship')
+
+    def __str__(self):
+        return f"Review by {self.student.email} for {self.internship.title} - {self.rating} Stars"
+

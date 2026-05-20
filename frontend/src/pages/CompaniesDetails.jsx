@@ -52,6 +52,15 @@ export default function CompaniesDetails() {
     }
   });
 
+  const [isLiked, setIsLiked] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`liked_company_${id}`);
+      return saved === "true";
+    } catch {
+      return false;
+    }
+  });
+
   useEffect(() => {
     const fetchCompanyDetails = async () => {
       try {
@@ -88,6 +97,18 @@ export default function CompaniesDetails() {
     });
   };
 
+  const toggleLike = () => {
+    setIsLiked(p => {
+      const next = !p;
+      try {
+        localStorage.setItem(`liked_company_${id}`, String(next));
+      } catch (e) {
+        console.error(e);
+      }
+      return next;
+    });
+  };
+
   // Premium Typography & Theme Constants
   const F = "'Inter', -apple-system, BlinkMacSystemFont, sans-serif";
   const cardBg = dk ? "#121214" : "#ffffff";
@@ -97,11 +118,19 @@ export default function CompaniesDetails() {
   const pillBg = dk ? "rgba(255,255,255,0.04)" : "#f3f4f6";
   const hoverBg = dk ? "rgba(255,255,255,0.03)" : "#f9fafb";
   const accentColor = "#2563eb"; // Premium slate blue
-  
-  // Calculate mockup values
-  const mockRating = (4.5 + (parseInt(id || "1") % 6) * 0.1).toFixed(1);
-  const mockReviewsCount = 30 + (parseInt(id || "1") * 17) % 150;
+  // Real backend values
+  const companyRating = company?.company_rating ?? 0.0;
+  const reviewCount = company?.review_count ?? 0;
   const companyAge = company?.founded_year ? (new Date().getFullYear() - company.founded_year) : 5 + (parseInt(id || "1") % 10);
+  const avatarColors = ["#2563eb", "#8b5cf6", "#10b981", "#ca8a04", "#ec4899"];
+  const getInitials = (name) => {
+    if (!name) return "?";
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.trim().slice(0, 2).toUpperCase();
+  };
 
   const getCompanyCover = (field, idVal) => {
     const f = (field || "").toLowerCase();
@@ -327,7 +356,7 @@ export default function CompaniesDetails() {
 
       <div style={{ minHeight: "100vh", background: "transparent", color: txt, fontFamily: F, paddingBottom: 80, paddingTop: 20 }}>
         <div style={{ maxWidth: 1140, margin: "0 auto", padding: "0 24px" }}>
-          
+
           {/* Breadcrumb Back Navigation */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
             <button
@@ -341,10 +370,10 @@ export default function CompaniesDetails() {
 
             <div style={{ display: "flex", gap: 8 }}>
               <button
-                onClick={toggleFollow}
-                style={{ width: 36, height: 36, borderRadius: "50%", background: dk ? "rgba(255,255,255,0.04)" : "#fff", border: `1px solid ${bdr}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: isFollowing ? "#e53e3e" : txt2, transition: "all 0.2s" }}
+                onClick={toggleLike}
+                style={{ width: 36, height: 36, borderRadius: "50%", background: dk ? "rgba(255,255,255,0.04)" : "#fff", border: `1px solid ${bdr}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: isLiked ? "#e53e3e" : txt2, transition: "all 0.2s" }}
               >
-                <Heart size={16} style={{ fill: isFollowing ? "#e53e3e" : "none" }} />
+                <Heart size={16} style={{ fill: isLiked ? "#e53e3e" : "none" }} />
               </button>
               <button style={{ width: 36, height: 36, borderRadius: "50%", background: dk ? "rgba(255,255,255,0.04)" : "#fff", border: `1px solid ${bdr}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: txt2 }}>
                 <Share2 size={16} />
@@ -391,7 +420,7 @@ export default function CompaniesDetails() {
                     <MessageSquare size={16} />
                     Get in Touch
                   </button>
-                  
+
                   <a
                     href={company.website ? (company.website.startsWith('http') ? company.website : `https://${company.website}`) : "https://internia.com"}
                     target="_blank"
@@ -406,10 +435,10 @@ export default function CompaniesDetails() {
                     onClick={toggleFollow}
                     className="btn-premium-outline"
                     style={{
-                      background: isFollowing 
+                      background: isFollowing
                         ? (dk ? "rgba(16, 185, 129, 0.12)" : "#ecfdf5")
                         : (dk ? "rgba(37, 99, 235, 0.12)" : "#eff6ff"),
-                      color: isFollowing 
+                      color: isFollowing
                         ? (dk ? "#34d399" : "#047857")
                         : (dk ? "#60a5fa" : "#2563eb"),
                       borderColor: isFollowing
@@ -448,7 +477,7 @@ export default function CompaniesDetails() {
               <div>
                 <p style={{ fontSize: 11, fontWeight: 700, color: txt2, textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 2px" }}>Rating</p>
                 <p style={{ fontSize: 15, fontWeight: 800, color: txt, margin: 0 }}>
-                  {mockRating} <span style={{ fontSize: 12, fontWeight: 500, color: txt2 }}>/ 5.0</span>
+                  {companyRating} <span style={{ fontSize: 12, fontWeight: 500, color: txt2 }}>/ 5.0</span>
                 </p>
               </div>
             </div>
@@ -472,7 +501,7 @@ export default function CompaniesDetails() {
               <div>
                 <p style={{ fontSize: 11, fontWeight: 700, color: txt2, textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 2px" }}>Reviews</p>
                 <p style={{ fontSize: 15, fontWeight: 800, color: txt, margin: 0 }}>
-                  {mockReviewsCount} <span style={{ fontSize: 12, fontWeight: 500, color: txt2 }}>Feedback</span>
+                  {reviewCount} <span style={{ fontSize: 12, fontWeight: 500, color: txt2 }}>Feedback</span>
                 </p>
               </div>
             </div>
@@ -492,10 +521,10 @@ export default function CompaniesDetails() {
 
           {/* 3. TWO COLUMN GRID LAYOUT */}
           <div className="company-layout-grid">
-            
+
             {/* LEFT COLUMN - MAIN DETAILS */}
             <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
-              
+
               {/* Card A: About Company */}
               <div className="premium-card">
                 <h2 style={{ fontSize: 18, fontWeight: 800, margin: "0 0 16px", display: "flex", alignItems: "center", gap: 10, color: txt, letterSpacing: "-0.01em" }}>
@@ -520,7 +549,7 @@ export default function CompaniesDetails() {
                 <p style={{ fontSize: 13, color: txt2, margin: "0 0 24px" }}>
                   Deadline: <span style={{ fontWeight: 600, color: txt }}>Start: March 15, 2026 | End: May 30, 2026</span>
                 </p>
-                
+
                 <div style={{ position: "relative", marginBottom: 12 }}>
                   {/* Colorful Multi-segment Progress Bar */}
                   <div style={{ height: 8, width: "100%", borderRadius: 4, background: bdr, display: "flex", overflow: "hidden" }}>
@@ -530,7 +559,7 @@ export default function CompaniesDetails() {
                     <div style={{ width: "10%", background: bdr }} />
                   </div>
                 </div>
-                
+
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, fontSize: 12, fontWeight: 600, color: txt2 }}>
                   <span style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "#10b981" }} />Applications (Open)</span>
                   <span style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "#f59e0b" }} />Interviews (Active)</span>
@@ -544,7 +573,7 @@ export default function CompaniesDetails() {
                   <FileText size={20} style={{ color: txt2 }} />
                   Program Resources & Downloads
                 </h2>
-                
+
                 <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                   <div className="download-resource-card">
                     <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -619,49 +648,40 @@ export default function CompaniesDetails() {
                   <MessageSquare size={20} style={{ color: txt2 }} />
                   Testimonials from Past Interns
                 </h2>
-                
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                  <div className="intern-feedback-row">
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <div style={{ width: 36, height: 36, borderRadius: "50%", background: accentColor, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700 }}>
-                          JB
-                        </div>
-                        <div>
-                          <h4 style={{ fontSize: 13.5, fontWeight: 700, color: txt, margin: 0 }}>Jack Brady</h4>
-                          <p style={{ fontSize: 11, color: txt2, margin: 0 }}>Software Engineering Intern • 2025</p>
-                        </div>
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 4, color: "#eab308", fontSize: 12, fontWeight: 700 }}>
-                        <Star size={13} style={{ fill: "#eab308" }} />
-                        5.0
-                      </div>
-                    </div>
-                    <p style={{ fontSize: 13, color: txt2, lineHeight: 1.6, margin: 0 }}>
-                      "I got to collaborate on real-world projects and build modern React dashboards under great mentorship. The company's work environment is truly innovative and supportive."
-                    </p>
-                  </div>
 
-                  <div className="intern-feedback-row">
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#8b5cf6", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700 }}>
-                          SA
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  {company.reviews && company.reviews.length > 0 ? (
+                    company.reviews.map((rev, idx) => (
+                      <div key={rev.id || idx} className="intern-feedback-row">
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            {rev.avatar ? (
+                              <img src={rev.avatar} alt={rev.name} style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover" }} />
+                            ) : (
+                              <div style={{ width: 36, height: 36, borderRadius: "50%", background: avatarColors[idx % avatarColors.length], color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700 }}>
+                                {getInitials(rev.name)}
+                              </div>
+                            )}
+                            <div>
+                              <h4 style={{ fontSize: 13.5, fontWeight: 700, color: txt, margin: 0 }}>{rev.name}</h4>
+                              <p style={{ fontSize: 11, color: txt2, margin: 0 }}>{rev.internship_title || "Intern"} • {rev.internship_year || 2025}</p>
+                            </div>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 4, color: "#eab308", fontSize: 12, fontWeight: 700 }}>
+                            <Star size={13} style={{ fill: "#eab308" }} />
+                            {parseFloat(rev.rating).toFixed(1)}
+                          </div>
                         </div>
-                        <div>
-                          <h4 style={{ fontSize: 13.5, fontWeight: 700, color: txt, margin: 0 }}>Samy Amir</h4>
-                          <p style={{ fontSize: 11, color: txt2, margin: 0 }}>AI Research Assistant • 2025</p>
-                        </div>
+                        <p style={{ fontSize: 13, color: txt2, lineHeight: 1.6, margin: 0 }}>
+                          "{rev.text}"
+                        </p>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 4, color: "#eab308", fontSize: 12, fontWeight: 700 }}>
-                        <Star size={13} style={{ fill: "#eab308" }} />
-                        4.8
-                      </div>
+                    ))
+                  ) : (
+                    <div style={{ textAlign: "center", padding: "24px 12px", color: txt2, fontSize: 13.5, border: `1px dashed ${bdr}`, borderRadius: 16 }}>
+                      No testimonials yet from past interns.
                     </div>
-                    <p style={{ fontSize: 13, color: txt2, lineHeight: 1.6, margin: 0 }}>
-                      "An outstanding place to grow. I worked with the core data science team to optimize training models. Highly recommend this internship to anyone looking for deep technical exposure."
-                    </p>
-                  </div>
+                  )}
                 </div>
               </div>
 
@@ -679,7 +699,7 @@ export default function CompaniesDetails() {
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   {company.internships && company.internships.length > 0 ? (
-                    company.internships.map((internship) => (
+                    company.internships.slice(0, 3).map((internship) => (
                       <div
                         key={internship.id}
                         onClick={() => navigate(`/internships/${internship.id}`)}
@@ -747,14 +767,14 @@ export default function CompaniesDetails() {
 
             {/* RIGHT COLUMN - SIDEBAR */}
             <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
-              
+
               {/* Card 1: GPS Map & Location */}
               <div className="premium-card">
                 <h3 style={{ fontSize: 16, fontWeight: 800, color: txt, margin: "0 0 16px", display: "flex", alignItems: "center", gap: 8 }}>
                   <MapPin size={18} style={{ color: txt2 }} />
                   Company Location
                 </h3>
-                
+
                 {/* Embed GPS Google Map iframe */}
                 <div style={{ borderRadius: 14, overflow: "hidden", border: `1px solid ${bdr}`, marginBottom: 16, height: 200, background: dk ? "#18181b" : "#f4f4f5" }}>
                   <iframe
@@ -795,7 +815,7 @@ export default function CompaniesDetails() {
                 <h3 style={{ fontSize: 16, fontWeight: 800, color: txt, margin: "0 0 20px" }}>
                   {t("companySnapshot")}
                 </h3>
-                
+
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                   <SidebarItem icon={Calendar} label={t("founded")} value={company.founded_year?.toString() || t("notAvailable")} txt={txt} txt2={txt2} bdr={bdr} />
                   <SidebarItem icon={Briefcase} label={t("field")} value={company.company_field || t("notAvailable")} txt={txt} txt2={txt2} bdr={bdr} />
@@ -861,10 +881,10 @@ export default function CompaniesDetails() {
                   }} />
                   {(company.total_internships_count || 0) > 0 ? "ACTIVELY HIRING" : "NEXT CYCLE SOON"}
                 </div>
-                
+
                 <h3 style={{ fontSize: 17, fontWeight: 700, margin: "0 0 6px", position: "relative", zIndex: 2, letterSpacing: "-0.01em" }}>{t("weAreHiring")}</h3>
                 <p style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", margin: "0 0 20px", lineHeight: 1.4, position: "relative", zIndex: 2 }}>{t("joinOurTeam")}</p>
-                
+
                 {/* Side-by-Side Modern Metrics Panel */}
                 <div style={{
                   display: "flex",
@@ -911,7 +931,7 @@ export default function CompaniesDetails() {
                       </span>
                     </div>
                     <span style={{ fontSize: 18, fontWeight: 700, color: "#ffffff" }}>
-                      {mockReviewsCount * 2 + 3}
+                      {company.hired_interns_count || 0}
                     </span>
                   </div>
                 </div>

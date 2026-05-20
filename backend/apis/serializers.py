@@ -62,6 +62,9 @@ class UserSerializer(serializers.ModelSerializer):
     email_domain = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
     departments = serializers.JSONField(required=False, write_only=True, allow_null=True)
     matricule = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
+    status_required = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
+    message = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
+    size = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
     
     class Meta:
         model = User
@@ -69,7 +72,8 @@ class UserSerializer(serializers.ModelSerializer):
             'id', 'username', 'email', 'role', 'profile_picture', 'password',
             'first_name', 'last_name', 'is_active', 'university_id', 'wilaya', 'phone',
             'name', 'logo', 'description', 'location', 'website', 'company_field', 'founded_year', 'department',
-            'department_id', 'university_name', 'email_domain', 'departments', 'matricule'
+            'department_id', 'university_name', 'email_domain', 'departments', 'matricule',
+            'status_required', 'message', 'size'
         ]
         read_only_fields = ['id']
     def _normalize_domain(self, domain):
@@ -226,6 +230,12 @@ class UserSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
+        request = self.context.get('request')
+
+        if instance.profile_picture:
+            pic_url = instance.profile_picture.url
+            if request:
+                data['profile_picture'] = request.build_absolute_uri(pic_url)
 
         if instance.role == User.Role.STUDENT:
             student = getattr(instance, 'student', None)
@@ -249,12 +259,22 @@ class UserSerializer(serializers.ModelSerializer):
             company = getattr(instance, 'company', None)
             if company:
                 data['name'] = company.name
-                data['logo'] = company.logo.url if company.logo else None
+                logo = company.logo.url if company.logo else None
+                if not logo and company.profile_picture:
+                    logo = company.profile_picture.url
+                if logo and request:
+                    data['logo'] = request.build_absolute_uri(logo)
+                else:
+                    data['logo'] = logo
                 data['description'] = company.description
                 data['location'] = company.location
                 data['website'] = company.website
                 data['company_field'] = company.company_field
                 data['founded_year'] = company.founded_year
+                data['phone'] = getattr(company, 'phone', None)
+                data['status_required'] = getattr(company, 'status_required', "Corporate Verification")
+                data['message'] = getattr(company, 'message', "Active partner organization")
+                data['size'] = getattr(company, 'size', "10-50 Employees")
 
         elif instance.role == User.Role.ADMIN_DEPT:
             admin = getattr(instance, 'admindept', None)
@@ -408,6 +428,14 @@ class UserSerializer(serializers.ModelSerializer):
                 company.company_field = validated_data.get('company_field')
             if 'founded_year' in validated_data:
                 company.founded_year = validated_data.get('founded_year')
+            if 'phone' in validated_data:
+                company.phone = validated_data.get('phone')
+            if 'status_required' in validated_data:
+                company.status_required = validated_data.get('status_required')
+            if 'message' in validated_data:
+                company.message = validated_data.get('message')
+            if 'size' in validated_data:
+                company.size = validated_data.get('size')
             company.save()
             
         elif instance.role == User.Role.ADMIN_DEPT and hasattr(instance, 'admindept'):
@@ -469,11 +497,21 @@ class CompanySerializer(serializers.ModelSerializer):
     logo = serializers.SerializerMethodField()
     open_positions_count = serializers.SerializerMethodField()
     total_internships_count = serializers.SerializerMethodField()
+    company_rating = serializers.SerializerMethodField()
+    review_count = serializers.SerializerMethodField()
+    reviews = serializers.SerializerMethodField()
+    hired_interns_count = serializers.SerializerMethodField()
     internships = serializers.SerializerMethodField()
 
     class Meta:
         model = Company
-        fields = ['id', 'email', 'name', 'logo', 'description', 'location', 'website', 'company_field', 'founded_year', 'is_active', 'open_positions_count', 'total_internships_count', 'internships']
+        fields = [
+            'id', 'email', 'name', 'logo', 'description', 'location', 'website', 
+            'company_field', 'founded_year', 'is_active', 'open_positions_count', 
+            'total_internships_count', 'hired_interns_count', 'company_rating', 
+            'review_count', 'reviews', 'internships', 'phone', 'status_required', 
+            'message', 'size'
+        ]
         read_only_fields = ['id']
 
     def get_logo(self, obj):
@@ -496,6 +534,31 @@ class CompanySerializer(serializers.ModelSerializer):
 
     def get_total_internships_count(self, obj):
         return InternshipOffer.objects.filter(company=obj).count()
+
+    def get_company_rating(self, obj):
+        from django.db.models import Avg
+        reviews = Review.objects.filter(internship__company=obj)
+        if reviews.exists():
+            avg = reviews.aggregate(Avg('rating'))['rating__avg']
+            return round(avg, 1) if avg else 0.0
+        return 0.0
+
+    def get_review_count(self, obj):
+        return Review.objects.filter(internship__company=obj).count()
+
+    def get_reviews(self, obj):
+        reviews = list(Review.objects.filter(internship__company=obj))
+        import random
+        selected_reviews = random.sample(reviews, min(len(reviews), 2)) if reviews else []
+        serializer = ReviewSerializer(selected_reviews, many=True, context=self.context)
+        return serializer.data
+
+    def get_hired_interns_count(self, obj):
+        return Application.objects.filter(
+            internship__company=obj,
+            status__in=[Application.Status.VALIDATED, Application.Status.COMPLETE],
+            is_validated_by_admin=True
+        ).count()
 
     def get_internships(self, obj):
         offers = InternshipOffer.objects.filter(company=obj)
@@ -523,6 +586,8 @@ class InternshipSerializer(serializers.ModelSerializer):
     required_skills = serializers.CharField(write_only=True, required=False)
     banner_image = serializers.ImageField(write_only=True, required=False)
     accepted_count = serializers.SerializerMethodField()
+    company_rating = serializers.SerializerMethodField()
+    rating = serializers.SerializerMethodField()
 
     class Meta:
         model = InternshipOffer
@@ -532,6 +597,8 @@ class InternshipSerializer(serializers.ModelSerializer):
             'description',
             'company',
             'company_name',
+            'company_rating',
+            'rating',
             'internship_location',
             'status',
             'internship_type',
@@ -555,6 +622,20 @@ class InternshipSerializer(serializers.ModelSerializer):
             status__in=[Application.Status.VALIDATED, Application.Status.COMPLETE],
             is_validated_by_admin=True
         ).count()
+
+    def get_company_rating(self, obj):
+        from django.db.models import Avg
+        reviews = Review.objects.filter(internship__company_id=obj.company_id)
+        if reviews.exists():
+            return reviews.aggregate(Avg('rating'))['rating__avg']
+        return 0.0
+
+    def get_rating(self, obj):
+        from django.db.models import Avg
+        reviews = Review.objects.filter(internship=obj)
+        if reviews.exists():
+            return reviews.aggregate(Avg('rating'))['rating__avg']
+        return 0.0
 
     def create(self, validated_data):
         # Map frontend fields to backend fields
@@ -777,3 +858,46 @@ class DigitalCVSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
         instance.save()
         return instance
+
+
+from django.utils.timesince import timesince
+
+class ReviewSerializer(serializers.ModelSerializer):
+    name = serializers.SerializerMethodField()
+    avatar = serializers.SerializerMethodField()
+    time = serializers.SerializerMethodField()
+    internship_title = serializers.CharField(source='internship.title', read_only=True)
+    internship_year = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Review
+        fields = ['id', 'student', 'name', 'avatar', 'rating', 'title', 'text', 'is_verified', 'time', 'created_at', 'internship_title', 'internship_year']
+        read_only_fields = ['id', 'student', 'is_verified', 'created_at']
+
+    def get_internship_year(self, obj):
+        if obj.internship and obj.internship.offer_start_date:
+            return obj.internship.offer_start_date.year
+        if obj.created_at:
+            return obj.created_at.year
+        return 2025
+
+    def get_name(self, obj):
+        student = obj.student
+        fullname = f"{student.first_name} {student.last_name}".strip()
+        return fullname or student.username or student.email
+
+    def get_avatar(self, obj):
+        request = self.context.get('request')
+        avatar = obj.student.profile_picture.url if obj.student.profile_picture else None
+        if avatar and request:
+            return request.build_absolute_uri(avatar)
+        return avatar
+
+    def get_time(self, obj):
+        try:
+            ts = timesince(obj.created_at)
+            first_part = ts.split(',')[0]
+            return f"{first_part} ago"
+        except Exception:
+            return "recently"
+

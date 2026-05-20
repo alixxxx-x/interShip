@@ -63,6 +63,13 @@ export default function InternshipDetails() {
   const [reviewsSort, setReviewsSort] = useState("newest");
   const [reviewsSortOpen, setReviewsSortOpen] = useState(false);
 
+  const [reviews, setReviews] = useState([]);
+  const [showWriteReviewForm, setShowWriteReviewForm] = useState(false);
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [newReviewRating, setNewReviewRating] = useState(5);
+  const [newReviewTitle, setNewReviewTitle] = useState("");
+  const [newReviewText, setNewReviewText] = useState("");
+
   const { theme } = useTheme();
 
   // Premium Theme Constants
@@ -79,47 +86,6 @@ export default function InternshipDetails() {
 
   // Mock Thumbnails / Context Gallery
   const [thumbnails, setThumbnails] = useState([]);
-
-  // Mock Reviews matching the scanned image perfectly
-  const mockReviews = [
-    {
-      id: 1,
-      name: "Kristin Watson",
-      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80",
-      verified: true,
-      time: "1 month ago",
-      rating: 5.0,
-      title: "Absolutely love this product!",
-      text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
-      images: [
-        "https://images.unsplash.com/photo-1611078489935-0cb964de46d6?auto=format&fit=crop&w=150&q=80",
-        "https://images.unsplash.com/photo-1598440947619-2ce611ce517a?auto=format&fit=crop&w=150&q=80",
-        "https://images.unsplash.com/photo-1556228578-0d85b1a4d571?auto=format&fit=crop&w=150&q=80"
-      ]
-    },
-    {
-      id: 2,
-      name: "Jenny Wilson",
-      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=150&q=80",
-      verified: true,
-      time: "2 month ago",
-      rating: 5.0,
-      title: "Perfect for my skincare routine!",
-      text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
-      images: []
-    },
-    {
-      id: 3,
-      name: "Darlene Robertson",
-      avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80",
-      verified: true,
-      time: "2 month ago",
-      rating: 5.0,
-      title: "",
-      text: "",
-      images: []
-    }
-  ];
 
   const mockSuggestions = [
     {
@@ -159,6 +125,64 @@ export default function InternshipDetails() {
       number_of_places: 1
     }
   ];
+
+  const fetchReviews = async () => {
+    try {
+      const res = await api.get(`/internships/${id}/reviews/?sort_by=${reviewsSort}`);
+      const raw = res.data.results || res.data;
+      setReviews(Array.isArray(raw) ? raw : []);
+    } catch (e) {
+      console.error("Error fetching reviews:", e);
+    }
+  };
+
+  useEffect(() => {
+    fetchReviews();
+  }, [id, reviewsSort]);
+
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      setSubmittingReview(true);
+      await api.post(`/internships/${id}/reviews/`, {
+        rating: newReviewRating,
+        title: newReviewTitle,
+        text: newReviewText
+      });
+      toast.success("Review submitted successfully!");
+      setNewReviewTitle("");
+      setNewReviewText("");
+      setNewReviewRating(5);
+      setShowWriteReviewForm(false);
+      fetchReviews();
+    } catch (err) {
+      console.error("Error submitting review:", err);
+      const data = err.response?.data;
+      let msg = "Failed to submit review.";
+      if (typeof data === 'string') {
+        msg = data;
+      } else if (data) {
+        msg = data.error || data.detail || data.non_field_errors?.[0] || Object.values(data)[0] || msg;
+      }
+      toast.error(msg);
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
+  const reviewsToDisplay = reviews;
+  const displayTotalReviews = reviews.length;
+  const displayRating = reviews.length > 0
+    ? parseFloat((reviews.reduce((acc, curr) => acc + curr.rating, 0) / reviews.length).toFixed(1))
+    : 0.0;
+
+  const breakdownPct = [5, 4, 3, 2, 1].map(stars => {
+    if (reviews.length > 0) {
+      const count = reviews.filter(r => Math.round(r.rating) === stars).length;
+      return Math.round((count / reviews.length) * 100);
+    }
+    return 0;
+  });
 
   useEffect(() => {
     const fetchDetails = async () => {
@@ -421,6 +445,10 @@ export default function InternshipDetails() {
         color: ${dk ? "#fff" : "#1f2937"};
         font-weight: 600;
       }
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-12px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
     `}</style>
 
       <div style={{ minHeight: "100vh", background: bg, color: txt, fontFamily: F, paddingBottom: 64, paddingTop: 32 }}>
@@ -492,10 +520,18 @@ export default function InternshipDetails() {
                   <div style={{ width: 4, height: 4, borderRadius: "50%", background: dk ? "rgba(255,255,255,0.2)" : "#d1d5db" }} />
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <div style={{ display: "flex", gap: 2 }}>
-                      {Array(5).fill(0).map((_, i) => <Star key={i} size={15} fill="#fbbf24" color="#fbbf24" />)}
+                      {Array(5).fill(0).map((_, i) => (
+                        <Star
+                          key={i}
+                          size={15}
+                          fill={i < Math.round(displayRating) ? "#fbbf24" : "none"}
+                          color={i < Math.round(displayRating) ? "#fbbf24" : (dk ? "rgba(255,255,255,0.2)" : "#d1d5db")}
+                          strokeWidth={1.5}
+                        />
+                      ))}
                     </div>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: txt }}>4.9</span>
-                    <span style={{ fontSize: 13, color: txt2 }}>(12 Reviews)</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: txt }}>{displayRating}</span>
+                    <span style={{ fontSize: 13, color: txt2 }}>({displayTotalReviews} Review{displayTotalReviews !== 1 ? 's' : ''})</span>
                   </div>
                 </div>
 
@@ -686,27 +722,35 @@ export default function InternshipDetails() {
             {activeTab === "reviews" && (
               <div>
                 {/* Star Rating summary breakdown */}
-                <div style={{ display: "flex", alignItems: "flex-start", gap: 64, marginBottom: 48 }}>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 64, marginBottom: 48, flexWrap: "wrap" }}>
                   {/* Left score card */}
                   <div style={{ display: "flex", flexDirection: "column", minWidth: 140 }}>
                     <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 6 }}>
-                      <span style={{ fontSize: 36, fontWeight: 500, color: txt, fontFamily: F }}>4.8</span>
+                      <span style={{ fontSize: 36, fontWeight: 500, color: txt, fontFamily: F }}>{displayRating}</span>
                       <span style={{ fontSize: 13, color: txt2, fontWeight: 500 }}>out of 5</span>
                     </div>
                     <div style={{ display: "flex", gap: 2, marginBottom: 8 }}>
-                      {Array(5).fill(0).map((_, i) => <Star key={i} size={16} fill="#fbbf24" color="#fbbf24" strokeWidth={1} />)}
+                      {Array(5).fill(0).map((_, i) => (
+                        <Star
+                          key={i}
+                          size={16}
+                          fill={i < Math.round(displayRating) ? "#fbbf24" : "none"}
+                          color={i < Math.round(displayRating) ? "#fbbf24" : (dk ? "rgba(255,255,255,0.2)" : "#d1d5db")}
+                          strokeWidth={1.5}
+                        />
+                      ))}
                     </div>
-                    <span style={{ fontSize: 12, color: txt2 }}>(245 Review)</span>
+                    <span style={{ fontSize: 12, color: txt2 }}>({displayTotalReviews} Review{displayTotalReviews !== 1 ? 's' : ''})</span>
                   </div>
 
                   {/* Right score bars */}
                   <div style={{ display: "flex", flexDirection: "column", gap: 10, flex: 1, maxWidth: 400 }}>
                     {[
-                      { stars: 5, pct: 85 },
-                      { stars: 4, pct: 40 },
-                      { stars: 3, pct: 15 },
-                      { stars: 2, pct: 5 },
-                      { stars: 1, pct: 2 }
+                      { stars: 5, pct: breakdownPct[0] },
+                      { stars: 4, pct: breakdownPct[1] },
+                      { stars: 3, pct: breakdownPct[2] },
+                      { stars: 2, pct: breakdownPct[3] },
+                      { stars: 1, pct: breakdownPct[4] }
                     ].map((r, i) => (
                       <div key={i} style={{ display: "flex", alignItems: "center", gap: 16, fontSize: 12, color: txt2, fontFamily: F }}>
                         <span style={{ width: 44, textAlign: "left", fontWeight: 500, fontSize: 11 }}>{r.stars} Star</span>
@@ -716,13 +760,166 @@ export default function InternshipDetails() {
                       </div>
                     ))}
                   </div>
+
+                  {/* Write review toggle column */}
+                  {userRole === 'STUDENT' && (
+                    <div style={{ display: "flex", flex: 1, justifyContent: "flex-end", minWidth: 150, alignSelf: "center" }}>
+                      <button
+                        onClick={() => setShowWriteReviewForm(!showWriteReviewForm)}
+                        className="secondary-btn"
+                        style={{
+                          background: dk ? "rgba(255, 255, 255, 0.03)" : "#ffffff",
+                          color: showWriteReviewForm ? "#ef4444" : txt,
+                          border: `1px solid ${showWriteReviewForm ? (dk ? "rgba(239, 68, 68, 0.3)" : "#fca5a5") : bdr}`,
+                          padding: "8px 16px",
+                          borderRadius: 20,
+                          fontSize: 13,
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                          fontFamily: F,
+                          transition: "all 0.2s ease"
+                        }}
+                      >
+                        <MessageSquare size={14} style={{ color: showWriteReviewForm ? "#ef4444" : txt2 }} />
+                        {showWriteReviewForm ? "Cancel Review" : "Write a Review"}
+                      </button>
+                    </div>
+                  )}
                 </div>
+
+                {/* Write Review Form Block */}
+                {showWriteReviewForm && userRole === 'STUDENT' && (
+                  <form
+                    onSubmit={handleReviewSubmit}
+                    style={{
+                      background: dk ? "rgba(255, 255, 255, 0.02)" : "#fafafa",
+                      border: `1px solid ${bdr}`,
+                      borderRadius: 24,
+                      padding: "32px 36px",
+                      marginBottom: 40,
+                      animation: "fadeIn 0.3s ease-out",
+                      fontFamily: F,
+                      boxSizing: "border-box"
+                    }}
+                  >
+                    <h3 style={{ fontSize: "1.15rem", fontWeight: 700, color: txt, margin: "0 0 6px" }}>Write a Review</h3>
+                    <p style={{ fontSize: "0.875rem", color: txt2, margin: "0 0 24px" }}>Share your experience with this internship offer to help other students.</p>
+
+                    {/* Star selection */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 28 }}>
+                      <span style={{ fontSize: "0.9rem", fontWeight: 600, color: txt }}>Your Rating:</span>
+                      <div style={{ display: "flex", gap: 4 }}>
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            size={20}
+                            fill={star <= newReviewRating ? "#fbbf24" : "none"}
+                            color={star <= newReviewRating ? "#fbbf24" : (dk ? "rgba(255,255,255,0.2)" : "#d1d5db")}
+                            strokeWidth={1.5}
+                            style={{ cursor: "pointer", transition: "transform 0.1s" }}
+                            onClick={() => setNewReviewRating(star)}
+                            onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.2)"}
+                            onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
+                          />
+                        ))}
+                      </div>
+                      <span style={{ fontSize: "0.9rem", fontWeight: 600, color: txt, marginLeft: 8 }}>{parseFloat(newReviewRating).toFixed(1)} Star</span>
+                    </div>
+
+                    {/* Review Title input */}
+                    <div style={{ marginBottom: 24 }}>
+                      <label htmlFor="review-title-input" style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, color: txt, marginBottom: 8 }}>Review Title</label>
+                      <input
+                        id="review-title-input"
+                        type="text"
+                        required
+                        placeholder="e.g. Absolutely love this internship!"
+                        value={newReviewTitle}
+                        onChange={(e) => setNewReviewTitle(e.target.value)}
+                        style={{
+                          width: "100%",
+                          padding: "14px 20px",
+                          borderRadius: 16,
+                          background: dk ? "rgba(255, 255, 255, 0.04)" : "#ffffff",
+                          border: `1.5px solid ${bdr}`,
+                          color: txt,
+                          fontSize: 14,
+                          fontFamily: F,
+                          outline: "none",
+                          boxSizing: "border-box",
+                          transition: "border-color 0.2s"
+                        }}
+                        onFocus={(e) => e.currentTarget.style.borderColor = accent}
+                        onBlur={(e) => e.currentTarget.style.borderColor = bdr}
+                      />
+                    </div>
+
+                    {/* Review Comments textarea */}
+                    <div style={{ marginBottom: 32 }}>
+                      <label htmlFor="review-text-input" style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, color: txt, marginBottom: 8 }}>Review Comments</label>
+                      <textarea
+                        id="review-text-input"
+                        required
+                        rows={4}
+                        placeholder="Share details of your experience, work environment, or what you learned..."
+                        value={newReviewText}
+                        onChange={(e) => setNewReviewText(e.target.value)}
+                        style={{
+                          width: "100%",
+                          padding: "16px 20px",
+                          borderRadius: 16,
+                          background: dk ? "rgba(255, 255, 255, 0.04)" : "#ffffff",
+                          border: `1.5px solid ${bdr}`,
+                          color: txt,
+                          fontSize: 14,
+                          fontFamily: F,
+                          outline: "none",
+                          boxSizing: "border-box",
+                          resize: "vertical",
+                          transition: "border-color 0.2s"
+                        }}
+                        onFocus={(e) => e.currentTarget.style.borderColor = accent}
+                        onBlur={(e) => e.currentTarget.style.borderColor = bdr}
+                      />
+                    </div>
+
+                    {/* Submit Review Button */}
+                    <button
+                      type="submit"
+                      disabled={submittingReview}
+                      className="detail-btn"
+                      style={{
+                        background: accent,
+                        color: "#ffffff",
+                        border: "none",
+                        padding: "14px 28px",
+                        borderRadius: 24,
+                        fontSize: 14,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 8,
+                        boxShadow: "0 4px 12px rgba(29, 78, 216, 0.15)",
+                        transition: "all 0.2s ease"
+                      }}
+                    >
+                      {submittingReview ? "Submitting..." : "Submit Review"}
+                      <Send size={14} />
+                    </button>
+                  </form>
+                )}
 
                 {/* Review list heading */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
                   <div>
                     <h4 style={{ fontSize: 15, fontWeight: 600, color: txt, margin: "0 0 8px" }}>Review List</h4>
-                    <span style={{ fontSize: 12, color: txt2 }}>Showing 1-4 of 24 results</span>
+                    <span style={{ fontSize: 12, color: txt2 }}>
+                      Showing {reviewsToDisplay.length > 0 ? `1-${reviewsToDisplay.length}` : "0"} of {displayTotalReviews} results
+                    </span>
                   </div>
                   <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: txt2 }}>
                     <span>Sort by :</span>
@@ -760,54 +957,70 @@ export default function InternshipDetails() {
 
                 {/* Review cards list */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
-                  {mockReviews.map(r => (
-                    <div key={r.id} style={{ display: "flex", flexDirection: "column", gap: 16, borderBottom: `1px solid ${dk ? "rgba(255,255,255,0.06)" : "#f1f5f9"}`, paddingBottom: 32 }}>
+                  {reviewsToDisplay.length > 0 ? (
+                    reviewsToDisplay.map(r => {
+                      const isVerified = r.is_verified || r.verified;
+                      return (
+                        <div key={r.id} style={{ display: "flex", flexDirection: "column", gap: 16, borderBottom: `1px solid ${dk ? "rgba(255,255,255,0.06)" : "#f1f5f9"}`, paddingBottom: 32 }}>
 
-                      {/* User profile row */}
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                          {/* Avatar */}
-                          <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#f1f5f9", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                            {r.avatar ? <img src={r.avatar} alt={r.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ fontSize: 14, fontWeight: 600, color: txt2 }}>{r.name[0]}</span>}
-                          </div>
-                          <div style={{ display: "flex", flexDirection: "column" }}>
-                            <h5 style={{ fontSize: 14, fontWeight: 500, color: txt, margin: "0 0 2px" }}>{r.name}</h5>
-                            {r.verified && (
-                              <span style={{ fontSize: 12, color: txt2 }}>
-                                (Verified)
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <span style={{ fontSize: 13, color: txt2 }}>{r.time}</span>
-                      </div>
-
-                      {/* Review text */}
-                      {r.title || r.text ? (
-                        <div>
-                          {r.title && <h6 style={{ fontSize: 15, fontWeight: 600, color: txt, margin: "0 0 8px" }}>{r.title}</h6>}
-                          {r.text && <p style={{ fontSize: 14, color: txt2, lineHeight: 1.6, margin: "0 0 16px" }}>{r.text}</p>}
-
-                          {/* Rating stars */}
-                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            <div style={{ display: "flex", gap: 2 }}>
-                              {Array(5).fill(0).map((_, i) => <Star key={i} size={14} fill={i < Math.floor(r.rating) ? "#fbbf24" : "none"} color={i < Math.floor(r.rating) ? "#fbbf24" : "#e2e8f0"} strokeWidth={1.5} />)}
+                          {/* User profile row */}
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                              {/* Avatar */}
+                              <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#f1f5f9", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                {r.avatar ? <img src={r.avatar} alt={r.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ fontSize: 14, fontWeight: 600, color: txt2 }}>{r.name ? r.name[0] : "?"}</span>}
+                              </div>
+                              <div style={{ display: "flex", flexDirection: "column" }}>
+                                <h5 style={{ fontSize: 14, fontWeight: 500, color: txt, margin: "0 0 2px" }}>{r.name}</h5>
+                                {isVerified && (
+                                  <span style={{ fontSize: 12, color: txt2 }}>
+                                    (Verified)
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                            <span style={{ fontSize: 13, fontWeight: 500, color: txt }}>{r.rating.toFixed(1)}</span>
+                            <span style={{ fontSize: 13, color: txt2 }}>{r.time}</span>
                           </div>
+
+                          {/* Review text */}
+                          {r.title || r.text ? (
+                            <div>
+                              {r.title && <h6 style={{ fontSize: 15, fontWeight: 600, color: txt, margin: "0 0 8px" }}>{r.title}</h6>}
+                              {r.text && <p style={{ fontSize: 14, color: txt2, lineHeight: 1.6, margin: "0 0 16px" }}>{r.text}</p>}
+
+                              {/* Rating stars */}
+                              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                <div style={{ display: "flex", gap: 2 }}>
+                                  {Array(5).fill(0).map((_, i) => (
+                                    <Star
+                                      key={i}
+                                      size={14}
+                                      fill={i < Math.floor(r.rating) ? "#fbbf24" : "none"}
+                                      color={i < Math.floor(r.rating) ? "#fbbf24" : (dk ? "rgba(255,255,255,0.2)" : "#e2e8f0")}
+                                      strokeWidth={1.5}
+                                    />
+                                  ))}
+                                </div>
+                                <span style={{ fontSize: 13, fontWeight: 500, color: txt }}>{parseFloat(r.rating).toFixed(1)}</span>
+                              </div>
+                            </div>
+                          ) : null}
+
                         </div>
-                      ) : null}
-
-                      {/* Work environment thumbnails strip removed */}
-
+                      );
+                    })
+                  ) : (
+                    <div style={{ padding: "40px 20px", textAlign: "center", background: dk ? "rgba(255,255,255,0.02)" : "#fafafa", borderRadius: 24, border: `1px dashed ${bdr}` }}>
+                      <p style={{ margin: 0, fontStyle: "italic", color: txt2, fontSize: 15 }}>No reviews yet for this internship offer.</p>
                     </div>
-                  ))}
+                  )}
                 </div>
+
 
               </div>
             )}
 
-            {/* TAB 4: SUGGESTIONS */}
+{/* TAB 4: SUGGESTIONS */}
             {activeTab === "suggestions" && (
               <div>
                 <h3 style={{ fontSize: 18, fontWeight: 700, color: txt, marginBottom: 24 }}>You might also like</h3>
@@ -815,6 +1028,8 @@ export default function InternshipDetails() {
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
                     {suggestions.map(n => {
                       const spotsLeft = Math.max(0, n.number_of_places - (n.accepted_count || 0));
+                      const rawRating = n.rating || n.company_rating || 0.0;
+                      const rating = parseFloat(parseFloat(rawRating).toFixed(1));
                     return (
                       <div key={n.id} onClick={() => navigate(`/internships/${n.id}`)} style={{ cursor: "pointer", transition: "transform 0.3s", borderRadius: 0 }}
                         onMouseEnter={e => e.currentTarget.style.transform = "translateY(-3px)"} onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}>
@@ -839,7 +1054,16 @@ export default function InternshipDetails() {
                         </div>
                         {/* Info */}
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                          <span style={{ fontSize: 12, color: txt2 }}>{n.company_name}</span>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span style={{ fontSize: 12, color: txt2 }}>{n.company_name}</span>
+                            <span style={{ fontSize: 8, color: dk ? "rgba(255,255,255,0.2)" : "#d1d5db" }}>•</span>
+                            <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="#FFC107" stroke="#FFC107" strokeWidth="1">
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                              </svg>
+                              <span style={{ fontSize: 11, fontWeight: 600, color: txt }}>{rating}</span>
+                            </div>
+                          </div>
                           <span style={{ fontSize: 12, color: txt2 }}>{(n.type || "").replace("_", " ")}</span>
                         </div>
                         <h3 style={{ fontSize: 15, fontWeight: 600, color: txt, margin: "0 0 6px", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n.title}</h3>
