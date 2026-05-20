@@ -422,19 +422,6 @@ export function AppSidebar({ ...props }) {
       ].map(item => {
         const newItem = item.title === "Notifications" ? { ...item, badge: unreadCount > 0 } : item
 
-        // For company role, mark Analytics subitem as coming soon
-        if (userInfo?.role === "COMPANY" && newItem.items) {
-          return {
-            ...newItem,
-            items: newItem.items.map(si => {
-              if (si.title === t("sidebarAnalytics")) {
-                return { ...si, notice: t("comingSoon") }
-              }
-              return si
-            })
-          }
-        }
-
         return newItem
       })
     }

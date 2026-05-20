@@ -66,10 +66,19 @@ export default function AllApplications() {
 
   const handleStatusChange = async (offer, id, newStatus) => {
     try {
-      await api.patch(`/applications/${id}/update/`, { status: newStatus });
+      const response = await api.patch(`/applications/${id}/update/`, { status: newStatus });
+      const updatedApp = response.data;
+      
+      // Fallback for DRF cached serializer not returning the updated date immediately
+      if (newStatus === 'REJECTED' && !updatedApp.company_rejection_date) {
+        updatedApp.company_rejection_date = new Date().toISOString();
+      } else if (newStatus !== 'REJECTED') {
+        updatedApp.company_rejection_date = null;
+      }
+
       setApplicationsByOffer(prev => {
         const updatedApplications = prev[offer].map(app =>
-          app.id === id ? { ...app, status: newStatus } : app
+          app.id === id ? { ...app, ...updatedApp } : app
         );
         return { ...prev, [offer]: updatedApplications };
       });
@@ -163,6 +172,14 @@ export default function AllApplications() {
     return labels[status] || status;
   };
 
+  const isWithin48h = (dateStr) => {
+    if (!dateStr) return false;
+    const rejectionDate = new Date(dateStr);
+    const now = new Date();
+    const diffHours = (now - rejectionDate) / (1000 * 60 * 60);
+    return diffHours <= 48;
+  };
+
   const offers = Object.keys(applicationsByOffer);
   const currentOfferIndex = offers.indexOf(selectedOffer);
 
@@ -232,7 +249,7 @@ export default function AllApplications() {
         const next = { ...prev };
         Object.keys(next).forEach(offer => {
           next[offer] = next[offer].map(app =>
-            selectedIds.has(app.id) ? { ...app, status: 'ACCEPTED' } : app
+            selectedIds.has(app.id) ? { ...app, status: 'ACCEPTED', company_rejection_date: null } : app
           );
         });
         return next;
@@ -254,7 +271,7 @@ export default function AllApplications() {
         const next = { ...prev };
         Object.keys(next).forEach(offer => {
           next[offer] = next[offer].map(app =>
-            selectedIds.has(app.id) ? { ...app, status: 'REJECTED' } : app
+            selectedIds.has(app.id) ? { ...app, status: 'REJECTED', company_rejection_date: new Date().toISOString() } : app
           );
         });
         return next;
@@ -454,10 +471,6 @@ export default function AllApplications() {
             )}
           </div>
 
-          {/* Primary Action Button - Royal Blue brand color (#1d4ed8) */}
-          <button className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-xs transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/55">
-            <span>+ Add New</span>
-          </button>
         </div>
       </div>
 
@@ -564,13 +577,13 @@ export default function AllApplications() {
                         {activeDropdownId === application.id && (
                           <>
                             <div className="fixed inset-0 z-10" onClick={() => setActiveDropdownId(null)} />
-                            <div className="absolute right-6 mt-1 w-36 rounded-lg bg-white dark:bg-zinc-850 border border-gray-200 dark:border-zinc-700/80 shadow-lg py-1 z-20 text-left">
+                            <div className="absolute right-6 mt-1 w-36 rounded-lg bg-white dark:bg-zinc-855 border border-gray-200 dark:border-zinc-700/80 shadow-lg py-1 z-20 text-left">
                               {application.status === "PENDING" ? (
                                 <>
                                   <button
                                     className="w-full text-left px-4 py-2 text-[12px] text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 font-semibold flex items-center gap-2"
                                     onClick={() => {
-                                      handleStatusChange(selectedOffer, application.id, 'ACCEPTED');
+                                      handleStatusChange(application.offer, application.id, 'ACCEPTED');
                                       setActiveDropdownId(null);
                                     }}
                                   >
@@ -580,7 +593,7 @@ export default function AllApplications() {
                                   <button
                                     className="w-full text-left px-4 py-2 text-[12px] text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 font-semibold flex items-center gap-2"
                                     onClick={() => {
-                                      handleStatusChange(selectedOffer, application.id, 'REJECTED');
+                                      handleStatusChange(application.offer, application.id, 'REJECTED');
                                       setActiveDropdownId(null);
                                     }}
                                   >
@@ -589,17 +602,47 @@ export default function AllApplications() {
                                   </button>
                                 </>
                               ) : application.status === "ACCEPTED" ? (
-                                <button
-                                  className="w-full text-left px-4 py-2 text-[12px] text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-750 font-semibold flex items-center gap-2 disabled:opacity-50"
-                                  disabled={application.is_validated_by_admin}
-                                  onClick={() => {
-                                    handleStatusChange(selectedOffer, application.id, 'PENDING');
-                                    setActiveDropdownId(null);
-                                  }}
-                                >
-                                  <Pencil className="w-3.5 h-3.5" />
-                                  Edit Status
-                                </button>
+                                <>
+                                  <button
+                                    className="w-full text-left px-4 py-2 text-[12px] text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-750 font-semibold flex items-center gap-2 disabled:opacity-50"
+                                    disabled={application.is_validated_by_admin}
+                                    onClick={() => {
+                                      handleStatusChange(application.offer, application.id, 'PENDING');
+                                      setActiveDropdownId(null);
+                                    }}
+                                  >
+                                    <Pencil className="w-3.5 h-3.5" />
+                                    Edit Status
+                                  </button>
+                                  <button
+                                    className="w-full text-left px-4 py-2 text-[12px] text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 font-semibold flex items-center gap-2 disabled:opacity-50"
+                                    disabled={application.is_validated_by_admin}
+                                    onClick={() => {
+                                      handleStatusChange(application.offer, application.id, 'REJECTED');
+                                      setActiveDropdownId(null);
+                                    }}
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                    Reject Candidate
+                                  </button>
+                                </>
+                              ) : application.status === "REJECTED" && !application.admin_rejection_date ? (
+                                <>
+                                  {isWithin48h(application.company_rejection_date) ? (
+                                    <button
+                                      className="w-full text-left px-4 py-2 text-[12px] text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 font-semibold flex items-center gap-2"
+                                      onClick={() => {
+                                        handleStatusChange(application.offer, application.id, 'ACCEPTED');
+                                        setActiveDropdownId(null);
+                                      }}
+                                    >
+                                      <Check className="w-3.5 h-3.5" />
+                                      Accept Candidate
+                                    </button>
+                                  ) : (
+                                    <div className="px-4 py-2 text-[11px] text-gray-400 dark:text-zinc-500 italic">Cannot accept (48h passed)</div>
+                                  )}
+                                </>
                               ) : (
                                 <div className="px-4 py-2 text-[11px] text-gray-400 dark:text-zinc-500 italic">No actions</div>
                               )}

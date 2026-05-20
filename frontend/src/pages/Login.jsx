@@ -800,6 +800,7 @@ function Login() {
                                                     }}>Department</label>
                                                     <select
                                                         value={major}
+                                                        disabled={!university}
                                                         onChange={(e) => { setMajor(e.target.value); setErrors(p => ({ ...p, major: null })) }}
                                                         style={{
                                                             width: "100%",
@@ -807,13 +808,14 @@ function Login() {
                                                             padding: "0 24px 0 10px",
                                                             borderRadius: 6,
                                                             border: errors.major ? "1px solid #ff3b30" : themeInputBorder,
-                                                            background: themeInputBg,
+                                                            background: university ? themeInputBg : (isDark ? "#242427" : "#f5f5f7"),
+                                                            opacity: university ? 1 : 0.6,
                                                             fontSize: 11,
-                                                            color: major ? themeTextColor : "#8e8e93",
+                                                            color: university ? (major ? themeTextColor : "#8e8e93") : "#8e8e93",
                                                             outline: "none",
                                                             fontFamily: font,
                                                             boxSizing: "border-box",
-                                                            cursor: "pointer",
+                                                            cursor: university ? "pointer" : "not-allowed",
                                                             appearance: "none",
                                                             backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238e8e93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
                                                             backgroundRepeat: "no-repeat",

@@ -1,30 +1,26 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { 
-  Briefcase, 
-  Users, 
-  TrendingUp, 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Briefcase,
+  Users,
+  TrendingUp,
   Plus,
-  Heart,
-  Eye,
-  CheckCircle2,
-  Circle,
-  ArrowUpRight,
   FileText,
-  Building2,
-  Calendar,
-  Sparkles,
   RefreshCw,
   Search,
   Bell,
-  MoreHorizontal,
   ChevronDown,
   Clock,
   SlidersHorizontal,
   ArrowUpDown,
-  BookOpen,
   Zap,
   GraduationCap,
   Layers
@@ -52,15 +48,70 @@ export default function CompanyDashboard() {
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
   const navigate = useNavigate();
 
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    return months[new Date().getMonth()];
+  });
+  const [selectedPosting, setSelectedPosting] = useState("all");
+  const [postings, setPostings] = useState([]);
+  const [flowTrendData, setFlowTrendData] = useState([]);
+
+  const [globalSearchTerm, setGlobalSearchTerm] = useState("");
+  const [tableSearchTerm, setTableSearchTerm] = useState("");
+  const [sortOrder, setSortOrder] = useState("desc");
+  const [statusFilter, setStatusFilter] = useState("All");
+
+  const filteredApplications = useMemo(() => {
+    let result = applications;
+
+    if (globalSearchTerm.trim()) {
+      const term = globalSearchTerm.toLowerCase();
+      result = result.filter(app =>
+        (app.candidate && app.candidate.toLowerCase().includes(term)) ||
+        (app.internshipTitle && app.internshipTitle.toLowerCase().includes(term)) ||
+        (app.email && app.email.toLowerCase().includes(term))
+      );
+    }
+
+    if (tableSearchTerm.trim()) {
+      const term = tableSearchTerm.toLowerCase();
+      result = result.filter(app =>
+        (app.candidate && app.candidate.toLowerCase().includes(term)) ||
+        (app.internshipTitle && app.internshipTitle.toLowerCase().includes(term)) ||
+        (app.email && app.email.toLowerCase().includes(term))
+      );
+    }
+
+    if (statusFilter !== "All") {
+      result = result.filter(app => app.status === statusFilter);
+    }
+
+    result = [...result].sort((a, b) => {
+      const nameA = a.candidate?.toLowerCase() || "";
+      const nameB = b.candidate?.toLowerCase() || "";
+      if (nameA < nameB) return sortOrder === "asc" ? -1 : 1;
+      if (nameA > nameB) return sortOrder === "asc" ? 1 : -1;
+      return 0;
+    });
+
+    return result;
+  }, [applications, globalSearchTerm, tableSearchTerm, sortOrder, statusFilter]);
+
   const openModal = () => navigate("/companydashboard/new-offer");
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = async (monthVal = selectedMonth, postingVal = selectedPosting) => {
     try {
-      setLoading(true);
+      if (!stats) {
+        setLoading(true);
+      }
       setError(null);
 
       const [res, notifRes] = await Promise.all([
-        api.get("/company/dashboard/"),
+        api.get(`/company/dashboard/?month=${monthVal}&internship_id=${postingVal}`),
         api.get("/notifications/").catch(err => {
           console.error("Failed to fetch unread count:", err);
           return { data: { unreadCount: 0 } };
@@ -69,9 +120,13 @@ export default function CompanyDashboard() {
 
       const nextStats = res?.data?.stats ?? null;
       const nextApps = Array.isArray(res?.data?.applications) ? res.data.applications : [];
+      const nextPostings = Array.isArray(res?.data?.postings) ? res.data.postings : [];
+      const nextVelocity = Array.isArray(res?.data?.velocity) ? res.data.velocity : [];
 
       setStats(nextStats);
       setApplications(nextApps);
+      setPostings(nextPostings);
+      setFlowTrendData(nextVelocity);
       setUnreadNotificationsCount(notifRes?.data?.unreadCount ?? 0);
     } catch (error) {
       console.error("Failed to load dashboard:", error);
@@ -84,8 +139,8 @@ export default function CompanyDashboard() {
   };
 
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
+    fetchDashboardData(selectedMonth, selectedPosting);
+  }, [selectedMonth, selectedPosting]);
 
   if (loading) {
     return (
@@ -126,16 +181,7 @@ export default function CompanyDashboard() {
     { name: "Engineering", value: 10, color: "#4f46e5" }, // Indigo
   ];
 
-  // --- Progress Overview Trend Data (gradient area chart) ---
-  const flowTrendData = [
-    { name: "1", value: 20 },
-    { name: "5", value: 25 },
-    { name: "10", value: 23 },
-    { name: "15", value: 48 },
-    { name: "20", value: 40 },
-    { name: "25", value: 65 },
-    { name: "30", value: 90 },
-  ];
+
 
   const getStatusBadgeStyles = (status) => {
     const maps = {
@@ -170,7 +216,7 @@ export default function CompanyDashboard() {
 
   return (
     <div className="p-4 md:p-6 lg:p-8 space-y-4 sm:space-y-6 animate-in fade-in duration-500 bg-background text-foreground">
-      
+
       {/* 1. TOP HEADER ROW */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-1">
         <div className="flex flex-col">
@@ -185,9 +231,9 @@ export default function CompanyDashboard() {
         <div className="flex items-center gap-2.5 self-end md:self-auto">
           {/* Notification Button */}
           <div className="relative">
-            <Button 
-              variant="outline" 
-              size="icon" 
+            <Button
+              variant="outline"
+              size="icon"
               onClick={() => navigate("/companydashboard/notifications")}
               className="h-8.5 w-8.5 rounded-full bg-card border-border hover:bg-muted transition-colors"
             >
@@ -202,16 +248,14 @@ export default function CompanyDashboard() {
           {/* Search bar */}
           <div className="relative w-48 sm:w-64 md:w-72">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <input 
-              type="text" 
-              placeholder="Search for Applications, Postings..." 
+            <input
+              type="text"
+              placeholder="Search for Applications, Postings..."
+              value={globalSearchTerm}
+              onChange={(e) => setGlobalSearchTerm(e.target.value)}
               className="w-full h-8.5 pl-8.5 pr-4 rounded-xl border border-input bg-card text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-ring focus:ring-1 focus:ring-ring transition"
             />
           </div>
-
-          <Button variant="outline" size="icon" className="h-8.5 w-8.5 rounded-xl bg-card border-border hover:bg-muted transition-colors">
-            <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-          </Button>
         </div>
       </div>
 
@@ -219,9 +263,9 @@ export default function CompanyDashboard() {
       <div className="space-y-2.5">
         <div className="flex items-center justify-between">
           <h2 className="text-sm sm:text-base font-semibold text-foreground">Highlights</h2>
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={fetchDashboardData}
             className="text-[11px] text-muted-foreground hover:text-foreground gap-1 font-medium transition-colors"
           >
@@ -232,7 +276,7 @@ export default function CompanyDashboard() {
 
         {/* HIGHLIGHTS GRID (4 Cards - 2 cols on mobile/tablet, 4 on desktop) */}
         <div className="grid gap-3 sm:gap-4 lg:gap-5 grid-cols-2 lg:grid-cols-4">
-          
+
           {/* Highlight 1: Pending Applications */}
           <Card className="rounded-2xl border border-border bg-card shadow-sm hover:shadow-md transition-shadow">
             <CardContent className="p-3 sm:p-4 md:p-5 flex flex-col justify-between h-full">
@@ -304,7 +348,7 @@ export default function CompanyDashboard() {
               </div>
               <div className="flex flex-col mt-3 sm:mt-4">
                 <span className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-slate-900 dark:text-white leading-none">
-                  92%
+                  {stats?.recruitmentScore ?? 100}%
                 </span>
                 <span className="text-[9px] sm:text-[10px] text-muted-foreground mt-1.5">
                   Average response rate
@@ -316,8 +360,8 @@ export default function CompanyDashboard() {
         </div>
       </div>
       {/* 3. MIDDLE ROW (Progress Overview & Activity Split equivalents) */}
-      <div className="grid gap-4 lg:gap-6 lg:grid-cols-3 items-start">
-        
+      <div className="grid gap-4 lg:gap-6 lg:grid-cols-3 items-stretch">
+
         {/* Progress Overview Card (2/3 width) */}
         <Card className="lg:col-span-2 rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-1">
@@ -330,14 +374,40 @@ export default function CompanyDashboard() {
 
             {/* Dropdown controls in header */}
             <div className="flex items-center gap-1.5 self-start sm:self-auto">
-              <Button variant="outline" size="sm" className="h-7 rounded-lg bg-muted/50 border-border text-[10px] sm:text-[11px] font-semibold gap-1 text-foreground hover:bg-muted px-2">
-                <span>All Postings</span>
-                <ChevronDown className="h-3 w-3 text-muted-foreground" />
-              </Button>
-              <Button variant="outline" size="sm" className="h-7 rounded-lg bg-muted/50 border-border text-[10px] sm:text-[11px] font-semibold gap-1 text-foreground hover:bg-muted px-2">
-                <span>October</span>
-                <ChevronDown className="h-3 w-3 text-muted-foreground" />
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7 rounded-lg bg-muted/50 border-border text-[10px] sm:text-[11px] font-semibold gap-1 text-foreground hover:bg-muted px-2">
+                    <span>{selectedPosting === "all" ? "All Postings" : postings.find(p => String(p.id) === String(selectedPosting))?.title || "All Postings"}</span>
+                    <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 bg-card border-border text-foreground">
+                  <DropdownMenuItem onClick={() => setSelectedPosting("all")}>
+                    All Postings
+                  </DropdownMenuItem>
+                  {postings.map(posting => (
+                    <DropdownMenuItem key={posting.id} onClick={() => setSelectedPosting(String(posting.id))}>
+                      {posting.title}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7 rounded-lg bg-muted/50 border-border text-[10px] sm:text-[11px] font-semibold gap-1 text-foreground hover:bg-muted px-2">
+                    <span>{selectedMonth}</span>
+                    <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="max-h-60 overflow-y-auto w-32 bg-card border-border text-foreground">
+                  {months.map(m => (
+                    <DropdownMenuItem key={m} onClick={() => setSelectedMonth(m)}>
+                      {m}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
 
@@ -348,15 +418,18 @@ export default function CompanyDashboard() {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tickLine={false} axisLine={false} tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} />
                 <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} />
-                <Tooltip 
+                <Tooltip
                   content={({ active, payload }) => {
                     if (active && payload && payload.length) {
                       return (
                         <div className="bg-card rounded-xl border border-border p-2.5 shadow-lg flex flex-col space-y-1">
-                          <span className="text-[9px] font-bold text-muted-foreground">Oct 15, 2025</span>
+                          <span className="text-[9px] font-bold text-muted-foreground">
+                            {selectedMonth} {payload[0].payload.name}, 2026
+                          </span>
                           <div className="flex items-center gap-1">
-                            <span className="text-xs font-bold text-foreground">{payload[0].value}% rate</span>
-                            <span className="text-[8px] font-bold text-emerald-600 bg-emerald-500/15 px-1 py-0.2 rounded">+5%</span>
+                            <span className="text-xs font-bold text-foreground">
+                              {payload[0].value} {payload[0].value === 1 ? 'application' : 'applications'}
+                            </span>
                           </div>
                         </div>
                       );
@@ -364,18 +437,18 @@ export default function CompanyDashboard() {
                     return null;
                   }}
                 />
-                <Area 
-                  type="monotone" 
-                  dataKey="value" 
-                  stroke="#38bdf8" 
+                <Area
+                  type="monotone"
+                  dataKey="value"
+                  stroke="#38bdf8"
                   strokeWidth={2}
-                  fill="url(#colorVelocity)" 
+                  fill="url(#colorVelocity)"
                   activeDot={{ r: 5, stroke: '#38bdf8', strokeWidth: 1.5, fill: '#fff' }}
                 />
                 <defs>
                   <linearGradient id="colorVelocity" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="#38bdf8" stopOpacity={0.0}/>
+                    <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#38bdf8" stopOpacity={0.0} />
                   </linearGradient>
                 </defs>
               </AreaChart>
@@ -389,17 +462,6 @@ export default function CompanyDashboard() {
             <div className="flex items-center gap-1 min-w-0">
               <TrendingUp className="h-4 w-4 text-foreground flex-shrink-0" />
               <CardTitle className="text-xs sm:text-sm lg:text-xs xl:text-sm 2xl:text-base font-semibold text-foreground truncate">Talent Distribution</CardTitle>
-            </div>
-            
-            {/* Header Mini Controls */}
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <Button variant="ghost" size="icon" className="h-6 w-6 rounded-lg text-muted-foreground hover:text-foreground">
-                <Search className="h-3 w-3" />
-              </Button>
-              <div className="hidden md:flex items-center border border-border rounded-lg bg-muted/50 overflow-hidden">
-                <button className="h-6 px-1.5 text-[9px] font-bold text-muted-foreground border-r border-border hover:bg-muted">&lt;</button>
-                <button className="h-6 px-1.5 text-[9px] font-bold text-foreground hover:bg-muted">&gt;</button>
-              </div>
             </div>
           </div>
 
@@ -470,7 +532,7 @@ export default function CompanyDashboard() {
 
       {/* 4. BOTTOM ROW (Upcoming Deadlines & Quick Review equivalents) */}
       <div className="grid gap-4 lg:gap-6 lg:grid-cols-3 items-start">
-        
+
         {/* Recent Applications (Upcoming Deadlines equivalent) */}
         <Card className="lg:col-span-2 rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-2">
@@ -483,20 +545,38 @@ export default function CompanyDashboard() {
             <div className="flex items-center gap-1.5 self-start sm:self-auto">
               <div className="relative">
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-                <input 
-                  type="text" 
-                  placeholder="Filter table..." 
+                <input
+                  type="text"
+                  placeholder="Filter table..."
+                  value={tableSearchTerm}
+                  onChange={(e) => setTableSearchTerm(e.target.value)}
                   className="h-7 w-28 sm:w-36 pl-7 pr-2 rounded-lg border border-input bg-card text-[11px] text-foreground placeholder:text-muted-foreground outline-none focus:border-ring transition"
                 />
               </div>
-              <Button variant="outline" size="sm" className="h-7 rounded-lg bg-card border-border text-[10px] sm:text-[11px] font-semibold gap-1 text-muted-foreground hover:text-foreground px-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSortOrder(prev => prev === "asc" ? "desc" : "asc")}
+                className="h-7 rounded-lg bg-card border-border text-[10px] sm:text-[11px] font-semibold gap-1 text-muted-foreground hover:text-foreground px-2"
+              >
                 <ArrowUpDown className="h-3 w-3" />
-                <span>Sort</span>
+                <span>{sortOrder === "asc" ? "Sort A-Z" : "Sort Z-A"}</span>
               </Button>
-              <Button variant="outline" size="sm" className="h-7 rounded-lg bg-card border-border text-[10px] sm:text-[11px] font-semibold gap-1 text-muted-foreground hover:text-foreground px-2">
-                <SlidersHorizontal className="h-3 w-3" />
-                <span>Filter</span>
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7 rounded-lg bg-card border-border text-[10px] sm:text-[11px] font-semibold gap-1 text-muted-foreground hover:text-foreground px-2">
+                    <SlidersHorizontal className="h-3 w-3" />
+                    <span>Filter: {statusFilter}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-36 bg-card border-border text-foreground">
+                  {["All", "Pending", "Accepted", "Rejected", "Validated", "Completed"].map(status => (
+                    <DropdownMenuItem key={status} onClick={() => setStatusFilter(status)}>
+                      {status}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
 
@@ -513,36 +593,35 @@ export default function CompanyDashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {applications.length === 0 ? (
+                {filteredApplications.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-6 text-[11px] text-muted-foreground">
                       No recent applications found.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  applications.map((app, idx) => (
+                  filteredApplications.map((app, idx) => (
                     <TableRow key={app.id || idx} className="border-b border-border hover:bg-muted/30 transition-colors">
                       {/* Candidate with colored bullet matching subject domain */}
                       <TableCell className="py-2 pl-2 sm:pl-3">
                         <div className="flex items-center gap-1.5">
-                          <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${
-                            idx === 0 ? "bg-[#38bdf8]" : idx === 1 ? "bg-[#2563eb]" : "bg-[#db2777]"
-                          }`} />
+                          <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${idx === 0 ? "bg-[#38bdf8]" : idx === 1 ? "bg-[#2563eb]" : "bg-[#db2777]"
+                            }`} />
                           <div className="flex flex-col">
                             <span className="font-semibold text-foreground text-[11px] sm:text-xs">{app.candidate}</span>
                             <span className="text-[9px] sm:text-[10px] font-medium text-muted-foreground">{app.internshipTitle || "Internship Offer"}</span>
                           </div>
                         </div>
                       </TableCell>
-                      
+
                       <TableCell className="py-2 text-[10px] sm:text-[11px] font-medium text-muted-foreground">
                         {app.appliedDate}
                       </TableCell>
-                      
+
                       <TableCell className="py-2 text-[10px] sm:text-[11px] font-medium text-muted-foreground hidden md:table-cell">
                         {app.email}
                       </TableCell>
-                      
+
                       {/* Status Badge styled in clean pastel background and matching text */}
                       <TableCell className="py-2">
                         <Badge className={`border px-1.5 py-0.5 rounded-md text-[9px] sm:text-[10px] font-semibold shadow-none ${getStatusBadgeStyles(app.status)}`}>
@@ -551,9 +630,9 @@ export default function CompanyDashboard() {
                       </TableCell>
 
                       <TableCell className="py-2 text-right pr-2 sm:pr-3">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           className="h-6.5 rounded-lg text-muted-foreground hover:text-foreground font-semibold hover:bg-muted gap-1 px-1.5 text-[9px] sm:text-[10px]"
                           onClick={() => handleDownloadCV(app)}
                         >
@@ -582,9 +661,9 @@ export default function CompanyDashboard() {
           {/* Search box inside container */}
           <div className="relative mt-2">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-            <input 
-              type="text" 
-              placeholder="Search candidate pool..." 
+            <input
+              type="text"
+              placeholder="Search candidate pool..."
               className="w-full h-7 pl-7 pr-2 rounded-lg border border-input bg-card text-[11px] text-foreground outline-none focus:border-ring transition"
             />
           </div>
@@ -605,9 +684,9 @@ export default function CompanyDashboard() {
               const IconComp = tool.icon;
               return (
                 <div key={index} className="flex flex-col items-center gap-1 flex-1 min-w-0">
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
+                  <Button
+                    variant="outline"
+                    size="icon"
                     onClick={() => navigate(tool.path)}
                     className="h-7.5 w-7.5 sm:h-8 sm:w-8 lg:h-7 lg:w-7 xl:h-8 xl:w-8 rounded-lg border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted shadow-sm transition-colors"
                   >
@@ -623,14 +702,14 @@ export default function CompanyDashboard() {
 
           {/* Bottom Action buttons matching Practice / Start Quiz */}
           <div className="flex items-center gap-1.5 w-full pt-1">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="flex-1 h-7.5 rounded-xl bg-muted/50 border-border text-[9px] sm:text-[10px] font-bold text-foreground hover:bg-muted"
               onClick={() => navigate("/companydashboard/listings")}
             >
               Manage Postings
             </Button>
-            <Button 
+            <Button
               className="flex-1 h-7.5 rounded-xl bg-primary text-[9px] sm:text-[10px] font-bold text-primary-foreground hover:bg-primary/95 gap-1 shadow-sm"
               onClick={openModal}
             >
@@ -641,7 +720,7 @@ export default function CompanyDashboard() {
         </Card>
 
       </div>
-      
+
     </div>
   );
 }

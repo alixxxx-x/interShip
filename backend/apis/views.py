@@ -526,11 +526,23 @@ class ApplicationUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
         ):
             raise PermissionDenied("Only admin-validated applications can be completed.")
 
+        # Enforce 48h window for company to change mind from rejected to accepted
+        if old_status == Application.Status.REJECTED and new_status == Application.Status.ACCEPTED:
+            if not serializer.instance.company_rejection_date or (timezone.now() - serializer.instance.company_rejection_date).total_seconds() > 48 * 3600:
+                raise PermissionDenied("Cannot change decision from rejected to accepted after 48 hours.")
+
         application = serializer.save()
         internship = application.internship
         
-        # Notify candidate on status change (The model now handles the internship status)
+        # Track rejection date / clear it
         if old_status != application.status:
+            if application.status == Application.Status.REJECTED:
+                application.company_rejection_date = timezone.now()
+                application.save(update_fields=['company_rejection_date'])
+            elif old_status == Application.Status.REJECTED:
+                application.company_rejection_date = None
+                application.save(update_fields=['company_rejection_date'])
+
             # First, remove any previous status notifications for this specific application to avoid duplicates
             Notification.objects.filter(
                 application=application,
@@ -806,16 +818,25 @@ class CompanyDashboardView(generics.GenericAPIView):
         # All applications for this company's internships
         applications = Application.objects.filter(internship__company=company)
 
+        total_apps = applications.count()
+        processed_apps = applications.exclude(status=Application.Status.PENDING).count()
+        recruitment_score = int((processed_apps / total_apps) * 100) if total_apps > 0 else 100
+
         stats = {
             "pendingApplications": applications.filter(status=Application.Status.PENDING).count(),
-            "acceptedApplications": applications.filter(status__in=[Application.Status.VALIDATED, Application.Status.COMPLETE]).count(),
+            "acceptedApplications": applications.filter(status__in=[
+                Application.Status.ACCEPTED,
+                Application.Status.VALIDATED,
+                Application.Status.COMPLETE
+            ]).count(),
             "totalInternships": internships.count(),
+            "recruitmentScore": recruitment_score,
         }
 
-        # Recent applications (limit to 5)
+        # Recent applications (all applications for sorting/filtering)
         recent_apps = applications.select_related(
             'student', 'internship'
-        ).order_by('-application_date')[:5]
+        ).order_by('-application_date')
 
         # Mapping statuses to frontend expectations
         status_map = {
@@ -851,9 +872,63 @@ class CompanyDashboardView(generics.GenericAPIView):
                 "cvUrl": cv_url,
             })
 
+        # List of postings for dropdown
+        postings_data = [
+            {"id": offer.id, "title": offer.title}
+            for offer in internships
+        ]
+
+        # Application velocity trend data based on selected month and posting
+        import calendar
+        from django.utils import timezone
+        
+        now = timezone.now()
+        year = now.year
+        
+        selected_month_param = request.query_params.get('month')
+        selected_posting_param = request.query_params.get('internship_id')
+        
+        month_map = {
+            "january": 1, "february": 2, "march": 3, "april": 4, "may": 5, "june": 6,
+            "july": 7, "august": 8, "september": 9, "october": 10, "november": 11, "december": 12
+        }
+        
+        selected_month = now.month
+        if selected_month_param:
+            if selected_month_param.lower() in month_map:
+                selected_month = month_map[selected_month_param.lower()]
+            else:
+                try:
+                    selected_month = int(selected_month_param)
+                except ValueError:
+                    pass
+        
+        chart_apps = applications.filter(application_date__year=year, application_date__month=selected_month)
+        if selected_posting_param and selected_posting_param != "all" and selected_posting_param != "":
+            try:
+                chart_apps = chart_apps.filter(internship_id=int(selected_posting_param))
+            except ValueError:
+                pass
+        
+        # Calculate daily counts for the selected month
+        from django.db.models import Count
+        daily_counts = chart_apps.values('application_date__day').annotate(count=Count('id'))
+        daily_counts_map = {item['application_date__day']: item['count'] for item in daily_counts}
+        
+        num_days = calendar.monthrange(year, selected_month)[1]
+        velocity_data = [
+            {
+                "name": str(day),
+                "value": daily_counts_map.get(day, 0)
+            }
+            for day in range(1, num_days + 1)
+        ]
+
         return Response({
             "stats": stats,
-            "applications": recent_apps_data
+            "applications": recent_apps_data,
+            "postings": postings_data,
+            "velocity": velocity_data,
         })
 
 

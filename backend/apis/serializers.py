@@ -388,6 +388,13 @@ class UserSerializer(serializers.ModelSerializer):
                             name=dept_name
                         )
 
+        # Create welcome notification for the new user
+        Notification.objects.create(
+            recipient=user,
+            notification_type=Notification.NotificationType.WELCOME,
+            message=f"Welcome to Stag.Io, {user.username}! This is your first notification."
+        )
+
         return user
 
     def update(self, instance, validated_data):
@@ -791,12 +798,14 @@ class ApplicationSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'student', 'internship', 'status', 'application_date', 
             'candidate', 'offer', 'company_name', 'email', 'cv', 
-            'is_validated_by_admin', 'admin_validation_date', 'admin_rejection_date'
+            'is_validated_by_admin', 'admin_validation_date', 'admin_rejection_date',
+            'company_rejection_date'
         ]
         read_only_fields = [
             'id', 'student', 'internship', 'application_date', 
             'candidate', 'offer', 'company_name', 'email', 'cv',
-            'is_validated_by_admin', 'admin_validation_date', 'admin_rejection_date'
+            'is_validated_by_admin', 'admin_validation_date', 'admin_rejection_date',
+            'company_rejection_date'
         ]
 
     def get_candidate(self, obj):
