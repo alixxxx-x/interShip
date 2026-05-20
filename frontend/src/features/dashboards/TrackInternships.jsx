@@ -157,7 +157,7 @@ export default function TrackInternships() {
                       </span>
                     </td>
                     <td className="py-4 px-6 text-right">
-                      {isCompleted && application.is_validated_by_admin && (
+                      {isCompleted && application.is_validated_by_admin ? (
                         <button
                           onClick={async () => {
                             try {
@@ -180,6 +180,14 @@ export default function TrackInternships() {
                         >
                           <DownloadCloud className="w-3.5 h-3.5" />
                           Download
+                        </button>
+                      ) : (
+                        <button
+                          disabled
+                          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-[11px] font-bold tracking-wide rounded-[6px] bg-gray-50 dark:bg-zinc-800/50 text-gray-400 dark:text-zinc-500 border border-gray-200/50 dark:border-zinc-700/50 cursor-not-allowed transition-all duration-200 opacity-60"
+                        >
+                          <DownloadCloud className="w-3.5 h-3.5" />
+                          Pending
                         </button>
                       )}
                     </td>
