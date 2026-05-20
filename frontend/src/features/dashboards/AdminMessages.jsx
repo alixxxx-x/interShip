@@ -1,21 +1,17 @@
-import { useState, useEffect, useRef } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import {
-  Search,
-  MessageSquare,
-  User as UserIcon,
-  Send,
-  Building2,
-  Clock,
-  CheckCheck,
-  Check,
-  Pencil,
-  Trash2,
-  X,
-  MoreVertical,
-  Reply
+import React, { useState, useEffect, useRef } from "react";
+import { 
+  Search, 
+  MessageSquare, 
+  User as UserIcon, 
+  Send, 
+  Building2, 
+  CheckCheck, 
+  Check, 
+  Pencil, 
+  Trash2, 
+  X, 
+  MoreVertical, 
+  Reply 
 } from "lucide-react";
 import api from "@/api/api";
 import { cn } from "@/lib/utils";
@@ -37,6 +33,8 @@ export default function AdminMessages() {
   const [editingText, setEditingText] = useState("");
   const [openMenuId, setOpenMenuId] = useState(null);
   const [replyingTo, setReplyingTo] = useState(null);
+
+  const appleFont = "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -84,14 +82,11 @@ export default function AdminMessages() {
     }
   };
 
-  // Fetch all companies and department students to start a conversation
   const fetchConversations = async () => {
     try {
-      // 1. Get logged in user profile
       const profileRes = await api.get("/auth/profile/");
       const userProfile = profileRes.data;
 
-      // 2. Fetch all messages to find active conversations
       const messagesRes = await api.get("/messages/");
       const allUserMessages = messagesRes.data.results || messagesRes.data;
 
@@ -109,13 +104,11 @@ export default function AdminMessages() {
       setActiveConversationIds(activeIds);
       setUnreadCounts(counts);
 
-      // Check initially on load
       const hasUnread = allUserMessages.some(
         msg => msg.recipient === userProfile.id && !msg.is_read
       );
       window.dispatchEvent(new CustomEvent('messagesUpdated', { detail: { hasUnread } }));
 
-      // 3. Fetch companies
       const companiesRes = await api.get("/companies/");
       const companies = (companiesRes.data.results || companiesRes.data).map(c => ({
         id: c.id,
@@ -128,7 +121,6 @@ export default function AdminMessages() {
 
       let contactsList = [...companies];
 
-      // 4. If ADMIN_DEPT, fetch their department's students
       if (userProfile.role === 'ADMIN_DEPT') {
         const dept = userProfile.department || "";
         const studentsRes = await api.get("/users/?role=STUDENT");
@@ -154,7 +146,6 @@ export default function AdminMessages() {
     try {
       const res = await api.get(`/messages/?recipient_id=${recipientId}`);
       setMessages(res.data.results || res.data);
-      // Recheck unread status since we read these messages
       checkUnreadStatus();
     } catch (error) {
       console.error("Failed to fetch messages:", error);
@@ -170,7 +161,6 @@ export default function AdminMessages() {
       fetchMessages(activeRecipient.id);
 
       const token = localStorage.getItem(ACCESS_TOKEN);
-      // Use wss:// in production, but ws:// for development
       const wsUrl = `ws://127.0.0.1:8000/ws/chat/?recipient_id=${activeRecipient.id}&token=${token}`;
       ws.current = new WebSocket(wsUrl);
 
@@ -214,14 +204,12 @@ export default function AdminMessages() {
         };
         setMessages(prev => [...prev, newMsg]);
 
-        // Add to active conversations dynamically when message is received
         setActiveConversationIds(prev => {
           const next = new Set(prev);
           next.add(activeRecipient.id);
           return next;
         });
 
-        // Trigger real-time sidebar dot update on message receive
         checkUnreadStatus();
       };
 
@@ -248,7 +236,6 @@ export default function AdminMessages() {
         message: finalContent
       }));
       
-      // Add to active conversations dynamically when sending a message
       setActiveConversationIds(prev => {
         const next = new Set(prev);
         next.add(activeRecipient.id);
@@ -257,7 +244,6 @@ export default function AdminMessages() {
 
       setNewMessage("");
       setReplyingTo(null);
-      // Recheck status
       setTimeout(checkUnreadStatus, 500);
     }
   };
@@ -284,115 +270,124 @@ export default function AdminMessages() {
     if (search.trim() !== "") {
       return matchesSearch;
     } else {
-      // If search is empty, only show active conversations or the currently selected contact
       return activeConversationIds.has(c.id) || (activeRecipient?.id === c.id && activeRecipient?.type === c.type);
     }
   });
 
   return (
-    <div className="p-6 h-[calc(100vh-100px)] flex flex-col gap-6 animate-in fade-in duration-500">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-3xl font-bold tracking-tight">Messages</h1>
-        <p className="text-muted-foreground">Direct communication channel with partner organizations and department students.</p>
+    <div className="p-6 h-[calc(100vh-80px)] flex flex-col gap-5 bg-background animate-in fade-in duration-500" style={{ fontFamily: appleFont }}>
+      <div className="flex flex-col gap-1 shrink-0">
+        <h1 className="text-xl font-bold text-gray-900 dark:text-zinc-50 tracking-tight flex items-center gap-2.5">
+          Messages
+        </h1>
+        <p className="text-[13px] font-medium text-gray-500 dark:text-zinc-400 mt-1">
+          Direct communication channel with partner organizations and department students.
+        </p>
       </div>
 
-      <div className="flex-1 flex gap-6 overflow-hidden">
+      <div className="flex-1 flex gap-5 overflow-hidden">
         {/* Sidebar: Contact List */}
-        <Card className="w-80 flex flex-col border-none shadow-xl bg-card/50 backdrop-blur-sm overflow-hidden">
-          <CardHeader className="p-4 border-b">
+        <div className="w-80 flex flex-col bg-white dark:bg-zinc-900 border border-gray-150 dark:border-zinc-800/80 rounded-xl shadow-sm overflow-hidden shrink-0">
+          <div className="p-4 border-b border-gray-150 dark:border-zinc-800/80 bg-gray-50/50 dark:bg-zinc-900">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
+              <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-gray-400" />
+              <input
+                type="text"
                 placeholder="Search contacts..."
-                className="pl-9 bg-muted/20 border-none"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 border border-gray-255/80 dark:border-zinc-800 rounded-lg text-xs bg-white dark:bg-zinc-850 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-gray-800 dark:text-zinc-200 shadow-sm"
               />
             </div>
-          </CardHeader>
-          <div className="flex-1 overflow-y-auto p-2 space-y-1">
+          </div>
+          
+          <div className="flex-1 overflow-y-auto p-2 space-y-1 bg-white dark:bg-zinc-900">
             {filteredConversations.length === 0 ? (
-              <div className="p-4 text-center text-xs text-muted-foreground opacity-70">
-                {search.trim() !== "" ? "No contacts match search" : "No active chats yet. Use search to find a contact!"}
+              <div className="p-6 text-center flex flex-col items-center justify-center space-y-3">
+                 <span className="text-gray-300 dark:text-zinc-700">
+                    <UserIcon className="w-8 h-8 stroke-[1.5]" />
+                 </span>
+                 <span className="text-[12px] font-medium text-gray-400 dark:text-zinc-500">
+                   {search.trim() !== "" ? "No contacts match search" : "No active chats yet."}
+                 </span>
               </div>
             ) : (
-              filteredConversations.map((contact) => (
-                <button
-                  key={`${contact.type}-${contact.id}`}
-                  onClick={() => setActiveRecipient(contact)}
-                  className={cn(
-                    "w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left",
-                    activeRecipient?.id === contact.id && activeRecipient?.type === contact.type
-                      ? "bg-primary text-primary-foreground shadow-lg"
-                      : "hover:bg-muted"
-                  )}
-                >
-                  <div className={cn(
-                    "w-10 h-10 rounded-lg flex items-center justify-center border",
-                    activeRecipient?.id === contact.id && activeRecipient?.type === contact.type ? "bg-white/20 border-white/20" : "bg-primary/10 border-primary/20"
-                  )}>
-                    {contact.isStudent ? (
-                      <UserIcon className={cn("h-5 w-5", activeRecipient?.id === contact.id && activeRecipient?.type === contact.type ? "text-white" : "text-primary")} />
-                    ) : (
-                      <Building2 className={cn("h-5 w-5", activeRecipient?.id === contact.id && activeRecipient?.type === contact.type ? "text-white" : "text-primary")} />
+              filteredConversations.map((contact) => {
+                const isActive = activeRecipient?.id === contact.id && activeRecipient?.type === contact.type;
+                return (
+                  <button
+                    key={`${contact.type}-${contact.id}`}
+                    onClick={() => setActiveRecipient(contact)}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-left",
+                      isActive
+                        ? "bg-blue-50 dark:bg-blue-900/20 shadow-sm ring-1 ring-blue-100 dark:ring-blue-900/50"
+                        : "hover:bg-gray-50 dark:hover:bg-zinc-800/50"
                     )}
-                  </div>
-                  <div className="flex-1 overflow-hidden">
-                    <p className="text-sm font-bold truncate">{contact.name}</p>
-                    <p className={cn(
-                      "text-[10px] truncate",
-                      activeRecipient?.id === contact.id && activeRecipient?.type === contact.type ? "text-white/70" : "text-muted-foreground"
+                  >
+                    <div className={cn(
+                      "w-10 h-10 rounded-full flex items-center justify-center border shadow-sm shrink-0",
+                      isActive 
+                        ? "bg-blue-100 dark:bg-blue-900/40 border-blue-200 dark:border-blue-800" 
+                        : "bg-gray-100 dark:bg-zinc-800 border-gray-200 dark:border-zinc-700"
                     )}>
-                      {contact.subtitle}
-                    </p>
-                  </div>
-                  {unreadCounts[contact.id] > 0 && (
-                    <span className={cn(
-                      "h-5 min-w-5 px-1.5 rounded-full flex items-center justify-center text-[10px] font-bold",
-                      activeRecipient?.id === contact.id && activeRecipient?.type === contact.type
-                        ? "bg-white text-primary"
-                        : "bg-primary text-primary-foreground"
-                    )}>
-                      {unreadCounts[contact.id]}
-                    </span>
-                  )}
-                </button>
-              ))
+                      {contact.isStudent ? (
+                        <UserIcon className={cn("h-4 w-4", isActive ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-zinc-400")} />
+                      ) : (
+                        <Building2 className={cn("h-4 w-4", isActive ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-zinc-400")} />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={cn("text-[13px] font-bold truncate", isActive ? "text-blue-900 dark:text-blue-100" : "text-gray-900 dark:text-zinc-100")}>{contact.name}</p>
+                      <p className={cn("text-[11px] font-medium truncate", isActive ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-zinc-400")}>
+                        {contact.subtitle}
+                      </p>
+                    </div>
+                    {unreadCounts[contact.id] > 0 && (
+                      <span className="h-4 min-w-4 px-1 rounded-full flex items-center justify-center text-[9px] font-bold bg-blue-600 text-white shadow-sm">
+                        {unreadCounts[contact.id]}
+                      </span>
+                    )}
+                  </button>
+                );
+              })
             )}
           </div>
-        </Card>
+        </div>
 
         {/* Main: Chat Window */}
-        <Card className="flex-1 flex flex-col border-none shadow-xl bg-card/50 backdrop-blur-sm overflow-hidden">
+        <div className="flex-1 flex flex-col bg-white dark:bg-zinc-900 border border-gray-150 dark:border-zinc-800/80 rounded-xl shadow-sm overflow-hidden">
           {activeRecipient ? (
             <>
-              <CardHeader className="p-4 border-b flex flex-row items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
-                    {activeRecipient.isStudent ? (
-                      <UserIcon className="h-5 w-5 text-primary" />
-                    ) : (
-                      <Building2 className="h-5 w-5 text-primary" />
-                    )}
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg">{activeRecipient.name}</CardTitle>
-                    <CardDescription className="flex items-center gap-1.5 text-[10px]">
-                      <span className={cn(
-                        "w-1.5 h-1.5 rounded-full",
-                        isRecipientOnline ? "bg-green-500 animate-pulse" : "bg-muted-foreground/55"
-                      )} />
+              {/* Chat Header */}
+              <div className="px-6 py-4 border-b border-gray-150 dark:border-zinc-800/80 flex items-center gap-3 bg-white dark:bg-zinc-900 shrink-0">
+                <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-zinc-800 flex items-center justify-center border border-blue-100 dark:border-zinc-700 shadow-sm">
+                  {activeRecipient.isStudent ? (
+                    <UserIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  ) : (
+                    <Building2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  )}
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-gray-900 dark:text-zinc-50 tracking-tight">{activeRecipient.name}</h2>
+                  <div className="flex items-center gap-1.5 text-[11px] font-medium mt-0.5">
+                    <span className={cn(
+                      "w-1.5 h-1.5 rounded-full",
+                      isRecipientOnline ? "bg-emerald-500 shadow-[0_0_4px_rgba(16,185,129,0.5)]" : "bg-gray-300 dark:bg-zinc-600"
+                    )} />
+                    <span className={isRecipientOnline ? "text-emerald-600 dark:text-emerald-400" : "text-gray-500 dark:text-zinc-400"}>
                       {isRecipientOnline ? "Online" : "Offline"}
-                    </CardDescription>
+                    </span>
                   </div>
                 </div>
-              </CardHeader>
+              </div>
 
-              <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-muted/5">
+              {/* Messages Area */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-5 bg-gray-50/50 dark:bg-zinc-950">
                 {messages.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-muted-foreground gap-4 opacity-50">
-                    <MessageSquare className="h-12 w-12" />
-                    <p className="text-sm font-medium">No messages yet. Start the conversation!</p>
+                  <div className="h-full flex flex-col items-center justify-center text-gray-400 dark:text-zinc-600 gap-3">
+                    <MessageSquare className="h-10 w-10 stroke-[1.5]" />
+                    <p className="text-[13px] font-medium text-gray-500 dark:text-zinc-400">No messages yet. Start the conversation!</p>
                   </div>
                 ) : (
                   messages.map((msg) => {
@@ -401,7 +396,7 @@ export default function AdminMessages() {
                       <div
                         key={msg.id}
                         className={cn(
-                          "flex flex-col gap-1 max-w-[70%] group",
+                          "flex flex-col gap-1 max-w-[75%] group",
                           isMe ? "ml-auto items-end" : "mr-auto items-start"
                         )}
                       >
@@ -418,10 +413,10 @@ export default function AdminMessages() {
                             if (!replyPart) return null;
                             return (
                               <div className={cn("flex flex-col gap-0.5 mb-1 px-1", isMe ? "items-end ml-auto" : "items-start mr-auto")}>
-                                <span className="text-[11px] text-muted-foreground whitespace-nowrap">
-                                  {isMe ? `You replied to ${activeRecipient?.name || activeRecipient?.first_name || activeRecipient?.email?.split('@')[0] || 'message'}` : `${activeRecipient?.name || activeRecipient?.first_name || activeRecipient?.email?.split('@')[0] || 'User'} replied to you`}
+                                <span className="text-[10px] font-semibold text-gray-500 dark:text-zinc-400">
+                                  {isMe ? `You replied to ${activeRecipient?.name || 'message'}` : `${activeRecipient?.name || 'User'} replied`}
                                 </span>
-                                <div className="px-3 py-1.5 rounded-2xl text-[13px] bg-muted text-muted-foreground truncate max-w-[250px] shadow-sm border border-border/40">
+                                <div className="px-3 py-1.5 rounded-xl text-[12px] font-medium bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-300 truncate max-w-[250px] border border-gray-200 dark:border-zinc-700">
                                   {replyPart}
                                 </div>
                               </div>
@@ -431,20 +426,21 @@ export default function AdminMessages() {
                         {/* 2. Main bubble + action icons + timestamp */}
                         <div className={cn("flex items-end gap-1.5", isMe ? "flex-row-reverse ml-auto" : "flex-row mr-auto")}>
                           {/* Vertical Container for Bubble & Timestamp */}
-                          <div className={cn("flex flex-col gap-0.5", isMe ? "items-end ml-auto" : "items-start mr-auto")}>
+                          <div className={cn("flex flex-col gap-1", isMe ? "items-end ml-auto" : "items-start mr-auto")}>
                             <div className="relative">
                               <div className={cn(
-                                "px-4 py-2.5 rounded-2xl text-sm shadow-sm",
+                                "px-4 py-2.5 text-[13px] shadow-sm leading-relaxed",
                                 isMe
-                                  ? "bg-primary text-primary-foreground shadow-primary/20"
-                                  : "bg-background border shadow-sm"
+                                  ? "bg-blue-600 text-white rounded-2xl rounded-tr-sm"
+                                  : "bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-2xl rounded-tl-sm text-gray-800 dark:text-zinc-100"
                               )}>
                                 {editingMessageId === msg.id ? (
                                   <div className="flex items-center gap-2 min-w-[200px]">
-                                    <Input
+                                    <input
+                                      type="text"
                                       value={editingText}
                                       onChange={(e) => setEditingText(e.target.value)}
-                                      className="h-7 py-0 px-2 text-xs bg-white/10 text-inherit border-none focus-visible:ring-1 focus-visible:ring-white/40 focus-visible:ring-offset-0 rounded-lg"
+                                      className="h-7 w-full px-2 text-[13px] bg-white/20 dark:bg-black/20 border-none outline-none rounded-md text-inherit placeholder-white/50"
                                       autoFocus
                                       onKeyDown={(e) => {
                                         if (e.key === 'Enter') {
@@ -477,11 +473,11 @@ export default function AdminMessages() {
                                         const baseText = replyPrefix + editingText;
                                         const finalContent = currentReaction ? baseText + '|REACT:' + currentReaction : baseText;
                                         handleEditMessage(msg.id, finalContent);
-                                    }} className="p-1 text-green-300 hover:text-green-200">
-                                      <Check className="h-4 w-4" />
+                                    }} className="p-1 hover:bg-white/20 rounded">
+                                      <Check className="h-3 w-3" />
                                     </button>
-                                    <button onClick={() => setEditingMessageId(null)} className="p-1 text-red-300 hover:text-red-200">
-                                      <X className="h-4 w-4" />
+                                    <button onClick={() => setEditingMessageId(null)} className="p-1 hover:bg-white/20 rounded">
+                                      <X className="h-3 w-3" />
                                     </button>
                                   </div>
                                 ) : (
@@ -490,7 +486,7 @@ export default function AdminMessages() {
                               </div>
                               {msg.content.includes('|REACT:') && (
                                 <div className={cn(
-                                  "absolute -bottom-2.5 w-5 h-5 bg-muted border shadow-sm rounded-full flex items-center justify-center text-[10px] z-10",
+                                  "absolute -bottom-2.5 w-6 h-6 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 shadow-sm rounded-full flex items-center justify-center text-[11px] z-10",
                                   isMe ? "left-0 -translate-x-1/4" : "right-0 translate-x-1/4"
                                 )}>
                                   {msg.content.split('|REACT:')[1]}
@@ -498,9 +494,9 @@ export default function AdminMessages() {
                               )}
                             </div>
 
-                            <div className="flex items-center gap-1 text-[9px] text-muted-foreground px-1 uppercase tracking-tighter mt-1">
+                            <div className="flex items-center gap-1 text-[10px] font-medium text-gray-400 dark:text-zinc-500 px-1 mt-0.5">
                               {isMe && (
-                                msg.is_read ? <CheckCheck className="h-3 w-3 text-blue-400" /> : <Check className="h-3 w-3" />
+                                msg.is_read ? <CheckCheck className="h-3.5 w-3.5 text-blue-500" /> : <Check className="h-3 w-3" />
                               )}
                               {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </div>
@@ -508,18 +504,17 @@ export default function AdminMessages() {
 
                           {/* Action Icons */}
                           {!editingMessageId && (
-                            <div className="flex items-center gap-0 opacity-0 group-hover:opacity-100 transition-all duration-150 mb-5 shrink-0 relative">
+                            <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity duration-150 mb-5 shrink-0 relative menu-container">
                               {isMe && (
-                                <div className="relative menu-container">
+                                <div className="relative">
                                   <button
                                     onClick={() => setOpenMenuId(openMenuId === msg.id ? null : msg.id)}
-                                    className="p-1.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                                    title="More"
+                                    className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-zinc-800 text-gray-400 hover:text-gray-600 dark:text-zinc-500 dark:hover:text-zinc-300 transition-colors"
                                   >
-                                    <MoreVertical className="h-4 w-4" />
+                                    <MoreVertical className="h-3.5 w-3.5" />
                                   </button>
                                   {openMenuId === msg.id && (
-                                    <div className="absolute bottom-9 left-0 z-50 bg-popover border border-border rounded-xl shadow-xl overflow-hidden min-w-[120px]">
+                                    <div className="absolute bottom-9 left-1/2 -translate-x-1/2 z-50 bg-white dark:bg-zinc-850 border border-gray-200 dark:border-zinc-700/80 rounded-xl shadow-lg overflow-hidden min-w-[110px] py-1">
                                       <button
                                         onClick={() => {
                                           setEditingMessageId(msg.id);
@@ -533,27 +528,28 @@ export default function AdminMessages() {
                                           setEditingText(textToEdit);
                                           setOpenMenuId(null);
                                         }}
-                                        className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted transition-colors text-foreground"
+                                        className="flex items-center gap-2 w-full px-3 py-1.5 text-[11px] font-semibold hover:bg-gray-50 dark:hover:bg-zinc-800 text-gray-700 dark:text-zinc-200"
                                       >
-                                        <Pencil className="h-3.5 w-3.5" />
-                                        Edit
+                                        <Pencil className="h-3 w-3" /> Edit
                                       </button>
                                       <button
                                         onClick={() => {
                                           handleDeleteMessage(msg.id);
                                           setOpenMenuId(null);
                                         }}
-                                        className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-destructive/10 text-destructive transition-colors"
+                                        className="flex items-center gap-2 w-full px-3 py-1.5 text-[11px] font-semibold hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-600 dark:text-rose-400"
                                       >
-                                        <Trash2 className="h-3.5 w-3.5" />
-                                        Unsend
+                                        <Trash2 className="h-3 w-3" /> Unsend
                                       </button>
                                     </div>
                                   )}
                                 </div>
                               )}
-                              <button onClick={() => setReplyingTo(msg)} className="p-1.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Reply">
-                                <Reply className="h-4 w-4" />
+                              <button 
+                                onClick={() => setReplyingTo(msg)} 
+                                className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-zinc-800 text-gray-400 hover:text-gray-600 dark:text-zinc-500 dark:hover:text-zinc-300 transition-colors"
+                              >
+                                <Reply className="h-3.5 w-3.5" />
                               </button>
                             </div>
                           )}
@@ -565,46 +561,61 @@ export default function AdminMessages() {
                 <div ref={messagesEndRef} />
               </div>
 
-              <div className="flex flex-col bg-background border-t">
+              {/* Input Area */}
+              <div className="flex flex-col bg-white dark:bg-zinc-900 border-t border-gray-150 dark:border-zinc-800/80">
                 {replyingTo && (
-                  <div className="flex items-center justify-between px-4 py-2 bg-muted/30 border-b">
+                  <div className="flex items-center justify-between px-4 py-2 bg-gray-50 dark:bg-zinc-850 border-b border-gray-150 dark:border-zinc-800">
                     <div className="flex flex-col">
-                      <span className="text-xs font-semibold text-primary">Replying to {replyingTo.sender_email === activeRecipient?.email ? 'message' : 'yourself'}</span>
-                      <span className="text-xs text-muted-foreground line-clamp-1">{replyingTo.content.split('|REACT:')[0].split('|ENDREPLY|').pop()}</span>
+                      <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wide">
+                        Replying to {replyingTo.sender_email === activeRecipient?.email ? activeRecipient?.name : 'yourself'}
+                      </span>
+                      <span className="text-[12px] font-medium text-gray-600 dark:text-zinc-300 line-clamp-1">
+                        {replyingTo.content.split('|REACT:')[0].split('|ENDREPLY|').pop()}
+                      </span>
                     </div>
-                    <button type="button" onClick={() => setReplyingTo(null)} className="p-1 hover:bg-muted rounded-full">
-                      <X className="h-4 w-4 text-muted-foreground" />
+                    <button type="button" onClick={() => setReplyingTo(null)} className="p-1.5 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded-full transition-colors">
+                      <X className="h-3.5 w-3.5 text-gray-500 dark:text-zinc-400" />
                     </button>
                   </div>
                 )}
-                <form onSubmit={handleSendMessage} className="p-4 flex gap-3 relative">
-                <div className="relative flex-1">
-                  <Input
-                    placeholder="Write a message..."
-                    autoComplete="off"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    className="w-full bg-muted/20 border-none shadow-none focus-visible:ring-1 h-11"
-                  />
-                </div>
-                <Button type="submit" size="icon" className="h-11 w-11 shadow-lg shadow-primary/20" disabled={loading || !newMessage.trim()}>
-                  <Send className="h-5 w-5" />
-                </Button>
+                <form onSubmit={handleSendMessage} className="p-4 flex gap-3 relative items-end">
+                  <div className="relative flex-1 bg-gray-100 dark:bg-zinc-800 border border-transparent focus-within:border-gray-200 dark:focus-within:border-zinc-700 focus-within:bg-white dark:focus-within:bg-zinc-900 rounded-2xl transition-all shadow-sm">
+                    <textarea
+                      placeholder="Type a message..."
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendMessage(e);
+                        }
+                      }}
+                      rows={1}
+                      className="w-full bg-transparent border-none outline-none resize-none px-4 py-3 text-[13px] text-gray-800 dark:text-zinc-200 min-h-[44px] max-h-[120px]"
+                    />
+                  </div>
+                  <button 
+                    type="submit" 
+                    disabled={loading || !newMessage.trim()}
+                    className="h-11 w-11 rounded-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 dark:disabled:bg-blue-800 disabled:cursor-not-allowed text-white flex items-center justify-center shadow-md shadow-blue-600/20 transition-colors shrink-0"
+                  >
+                    <Send className="h-4 w-4 ml-0.5" />
+                  </button>
                 </form>
               </div>
             </>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-6 p-12 text-center">
-              <div className="w-24 h-24 rounded-full bg-primary/5 flex items-center justify-center border-2 border-dashed border-primary/20">
-                <MessageSquare className="h-10 w-10 text-primary/30" />
+            <div className="flex-1 flex flex-col items-center justify-center text-gray-400 dark:text-zinc-500 gap-4 p-12 text-center bg-gray-50/50 dark:bg-zinc-950">
+              <div className="w-20 h-20 rounded-full bg-white dark:bg-zinc-900 flex items-center justify-center border border-gray-200 dark:border-zinc-800 shadow-sm">
+                <MessageSquare className="h-8 w-8 text-gray-300 dark:text-zinc-600 stroke-[1.5]" />
               </div>
-              <div className="space-y-2">
-                <h3 className="text-xl font-bold text-foreground">Select a Contact</h3>
-                <p className="max-w-[300px]">Choose a partner organization or student from the left sidebar to start direct communication.</p>
+              <div className="space-y-1.5">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-zinc-100 tracking-tight">Select a Contact</h3>
+                <p className="max-w-[280px] text-[13px] font-medium text-gray-500 dark:text-zinc-400">Choose a partner organization or student from the left sidebar to start communicating.</p>
               </div>
             </div>
           )}
-        </Card>
+        </div>
       </div>
     </div>
   );
