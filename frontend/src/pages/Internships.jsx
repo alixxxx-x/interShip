@@ -199,14 +199,14 @@ export default function Internships() {
   };
 
   // Colors
-  const bg = dk ? "#161618" : "#fff";
-  const txt = dk ? "#fff" : "#111";
-  const txt2 = dk ? "rgba(255,255,255,0.5)" : "#888";
-  const bdr = dk ? "rgba(255,255,255,0.08)" : "#e8e8e8";
-  const pillBg = dk ? "#fff" : "#2a2a2a";
-  const pillTxt = dk ? "#111" : "#fff";
-  const accent = "#1d4ed8";
-  const hoverBg = dk ? "rgba(255,255,255,0.04)" : "#f9f9f9";
+  const bg = "hsl(var(--background))";
+  const txt = "hsl(var(--foreground))";
+  const txt2 = "hsl(var(--muted-foreground))";
+  const bdr = "hsl(var(--border))";
+  const pillBg = "hsl(var(--foreground))";
+  const pillTxt = "hsl(var(--background))";
+  const accent = "#2563eb";
+  const hoverBg = "hsl(var(--accent))";
 
   return (
     <>
@@ -301,7 +301,7 @@ export default function Internships() {
         font-family: ${F};
       }
     `}</style>
-    <div style={{ fontFamily: F, background: bg, minHeight: "100vh", color: txt, transition: "background 0.3s" }}>
+    <div style={{ fontFamily: F, background: bg, minHeight: "100vh", color: txt }}>
       {/* HEADER */}
       <div style={{ textAlign: "center", padding: "48px 24px 36px" }}>
         <h1 style={{ fontSize: 32, fontWeight: 700, margin: 0, letterSpacing: "-0.02em" }}>{t("exploreInternships")}</h1>
@@ -323,7 +323,7 @@ export default function Internships() {
                 
                 <div 
                   onClick={() => setSortOpen(!sortOpen)}
-                  style={{ padding: "6px 28px 6px 14px", borderRadius: 20, background: dk?"rgba(255,255,255,0.04)":"#fff", color: txt, border: `1px solid ${dk?"rgba(255,255,255,0.1)":"#e5e7eb"}`, cursor: "pointer", fontWeight: 500, fontFamily: F, position: "relative", userSelect: "none" }}
+                  style={{ padding: "6px 28px 6px 14px", borderRadius: 20, background: "hsl(var(--card))", color: txt, border: `1px solid ${bdr}`, cursor: "pointer", fontWeight: 500, fontFamily: F, position: "relative", userSelect: "none" }}
                 >
                   {sortBy === "alpha_asc" && "Alphabetical (A-Z)"}
                   {sortBy === "alpha_desc" && "Alphabetical (Z-A)"}
@@ -336,7 +336,7 @@ export default function Internships() {
                 {sortOpen && (
                   <>
                     <div onClick={() => setSortOpen(false)} style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 90 }} />
-                    <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 4, width: 180, background: dk ? "#1c1c1e" : "#fff", border: `1px solid ${bdr}`, borderRadius: 12, boxShadow: "0 10px 25px rgba(0,0,0,0.05)", zIndex: 100, overflow: "hidden", display: "flex", flexDirection: "column", padding: 4 }}>
+                    <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 4, width: 180, background: "hsl(var(--card))", border: `1px solid ${bdr}`, borderRadius: 12, boxShadow: "0 10px 25px rgba(0,0,0,0.05)", zIndex: 100, overflow: "hidden", display: "flex", flexDirection: "column", padding: 4 }}>
                       {[
                         { l: "Default Sorting", v: "default" },
                         { l: "Alphabetical (A-Z)", v: "alpha_asc" },
@@ -357,10 +357,11 @@ export default function Internships() {
                             color: txt,
                             cursor: "pointer",
                             borderRadius: 8,
-                            background: sortBy === o.v ? (dk ? "rgba(255,255,255,0.05)" : "#f1f5f9") : "transparent"
+                            background: sortBy === o.v ? hoverBg : "transparent",
+                            transition: "background 0.2s"
                           }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = dk ? "rgba(255,255,255,0.05)" : "#f1f5f9"}
-                          onMouseLeave={(e) => e.currentTarget.style.background = sortBy === o.v ? (dk ? "rgba(255,255,255,0.05)" : "#f1f5f9") : "transparent"}
+                          onMouseEnter={(e) => e.currentTarget.style.background = hoverBg}
+                          onMouseLeave={(e) => e.currentTarget.style.background = sortBy === o.v ? hoverBg : "transparent"}
                         >
                           {o.l}
                         </div>
@@ -402,7 +403,7 @@ export default function Internships() {
               <h4 style={{ fontSize: 14, fontWeight: 700, color: txt, marginBottom: 12 }}>By Type</h4>
               {[{l:"All Types",v:""},{l:"Full Time",v:"FULL_TIME"},{l:"Part Time",v:"PART_TIME"}].map(o => (
                 <button key={o.v} onClick={() => setType(o.v)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0", background: "none", border: "none", cursor: "pointer", width: "100%" }}>
-                  <div style={{ width: 14, height: 14, borderRadius: "50%", border: `1.5px solid ${type===o.v ? accent : (dk?"rgba(255,255,255,0.25)":"#ccc")}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <div style={{ width: 14, height: 14, borderRadius: "50%", border: `1.5px solid ${type===o.v ? accent : "hsl(var(--muted-foreground))"}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                     {type===o.v && <div style={{ width: 7, height: 7, borderRadius: "50%", background: accent }} />}
                   </div>
                   <span style={{ fontSize: 13, color: type===o.v ? txt : txt2 }}>{o.l}</span>
@@ -415,7 +416,7 @@ export default function Internships() {
               <h4 style={{ fontSize: 14, fontWeight: 700, color: txt, marginBottom: 12 }}>By Location</h4>
               {[{l:"All",v:""},{l:"Remote",v:"REMOTE"},{l:"Onsite",v:"ONSITE"},{l:"Hybrid",v:"HYBRID"}].map(o => (
                 <button key={o.v} onClick={() => setLoc(o.v)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0", background: "none", border: "none", cursor: "pointer", width: "100%" }}>
-                  <div style={{ width: 14, height: 14, borderRadius: "50%", border: `1.5px solid ${loc===o.v ? accent : (dk?"rgba(255,255,255,0.25)":"#ccc")}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <div style={{ width: 14, height: 14, borderRadius: "50%", border: `1.5px solid ${loc===o.v ? accent : "hsl(var(--muted-foreground))"}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
                     {loc===o.v && <div style={{ width: 7, height: 7, borderRadius: "50%", background: accent }} />}
                   </div>
                   <span style={{ fontSize: 13, color: loc===o.v ? txt : txt2 }}>{o.l}</span>
@@ -440,7 +441,7 @@ export default function Internships() {
               <div style={{
                 display: "flex",
                 width: "100%",
-                background: dk ? "rgba(255,255,255,0.04)" : "#f1f5f9",
+                background: "hsl(var(--muted))",
                 border: `1px solid ${bdr}`,
                 borderRadius: 8,
                 padding: 2,
@@ -464,7 +465,7 @@ export default function Internships() {
                         alignItems: "center",
                         justifyContent: "center",
                         border: "none",
-                        background: active ? (dk ? "rgba(255,255,255,0.08)" : "#fff") : "transparent",
+                        background: active ? "hsl(var(--card))" : "transparent",
                         boxShadow: active ? "0 1px 3px rgba(0,0,0,0.06)" : "none",
                         borderRadius: 6,
                         fontSize: 11,
@@ -489,7 +490,7 @@ export default function Internships() {
                   right: 0,
                   top: 0,
                   bottom: 0,
-                  background: dk ? "rgba(255,255,255,0.08)" : "#e2e8f0",
+                  background: "hsl(var(--muted))",
                   borderRadius: 999
                 }} />
                 
@@ -558,7 +559,7 @@ export default function Internships() {
                         width: 14,
                         height: 14,
                         borderRadius: 3,
-                        border: `1.5px solid ${on ? accent : (dk ? "rgba(255,255,255,0.25)" : "#ccc")}`,
+                        border: `1.5px solid ${on ? accent : "hsl(var(--muted-foreground))"}`,
                         background: on ? accent : "transparent",
                         display: "flex",
                         alignItems: "center",
@@ -611,7 +612,7 @@ export default function Internships() {
                 {wilaya || "All Wilayas"} <ChevronDown size={13} />
               </button>
               {wOpen && (
-                <div style={{ position: "absolute", top: "100%", left: 0, right: 0, marginTop: 4, background: dk?"#1c1c1e":"#fff", border: `1px solid ${bdr}`, borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.12)", zIndex: 50, maxHeight: 220, display: "flex", flexDirection: "column" }}>
+                <div style={{ position: "absolute", top: "100%", left: 0, right: 0, marginTop: 4, background: "hsl(var(--card))", border: `1px solid ${bdr}`, borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.12)", zIndex: 50, maxHeight: 220, display: "flex", flexDirection: "column" }}>
                   <div style={{ padding: 6 }}><input value={wSearch} onChange={e => setWSearch(e.target.value)} placeholder="Search..." style={{ width: "100%", padding: "6px 8px", border: `1px solid ${bdr}`, borderRadius: 6, background: "transparent", color: txt, fontSize: 12, outline: "none", boxSizing: "border-box", fontFamily: F }} /></div>
                   <div className="sidebar-scroll" style={{ overflowY: "auto", maxHeight: 170, padding: "0 4px 4px" }}>
                     <button onClick={() => { setWilaya(""); setWOpen(false); setWSearch(""); }} style={{ width: "100%", textAlign: "left", padding: "6px 8px", background: !wilaya ? hoverBg : "none", border: "none", borderRadius: 6, fontSize: 12, color: txt, cursor: "pointer", fontFamily: F }}>All Wilayas</button>
@@ -629,7 +630,7 @@ export default function Internships() {
               <div className="sidebar-scroll" style={{ maxHeight: 220, overflowY: "auto" }}>
                 {SKILLS.map(s => { const on = skills.includes(s); return (
                   <button key={s} onClick={() => setSkills(p => on ? p.filter(x=>x!==s) : [...p,s])} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0", background: "none", border: "none", cursor: "pointer", width: "100%" }}>
-                    <div style={{ width: 14, height: 14, borderRadius: 3, border: `1.5px solid ${on ? accent : (dk?"rgba(255,255,255,0.25)":"#ccc")}`, background: on ? accent : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ width: 14, height: 14, borderRadius: 3, border: `1.5px solid ${on ? accent : "hsl(var(--muted-foreground))"}`, background: on ? accent : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       {on && <svg width="9" height="9" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                     </div>
                     <span style={{ fontSize: 13, color: on ? txt : txt2 }}>{s}</span>
@@ -644,7 +645,7 @@ export default function Internships() {
             <div style={{ flex: 1 }}>
               {loading ? (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
-                  {Array(6).fill(0).map((_,i) => <div key={i} style={{ height: 300, borderRadius: 16, background: dk?"rgba(255,255,255,0.04)":"#f5f5f5" }} />)}
+                  {Array(6).fill(0).map((_,i) => <div key={i} style={{ height: 300, borderRadius: 16, background: "hsl(var(--muted))" }} />)}
                 </div>
               ) : items.length > 0 ? (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
@@ -656,7 +657,7 @@ export default function Internships() {
                       <div key={n.id} onClick={() => navigate(`/internships/${n.id}`)} style={{ cursor: "pointer", transition: "transform 0.3s", borderRadius: 0 }}
                         onMouseEnter={e => e.currentTarget.style.transform="translateY(-3px)"} onMouseLeave={e => e.currentTarget.style.transform="translateY(0)"}>
                         {/* Image */}
-                        <div style={{ width: "100%", aspectRatio: "1/1", borderRadius: 16, overflow: "hidden", background: dk?"#222":"#f3f0eb", position: "relative", marginBottom: 12 }}>
+                        <div style={{ width: "100%", aspectRatio: "1/1", borderRadius: 16, overflow: "hidden", background: "hsl(var(--muted))", position: "relative", marginBottom: 12 }}>
                           {n.banner_image ? <img src={n.banner_image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                            : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.15 }}><Briefcase size={48} /></div>}
                           {n.status === "OPEN_FOR_APPLICATION" && (

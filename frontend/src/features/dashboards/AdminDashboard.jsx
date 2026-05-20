@@ -34,6 +34,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import api from "@/api/api";
 import { useToast } from "@/components/ui/custom-toast";
+import LoadingScreen from "@/components/ui/LoadingScreen";
 
 export default function AdminDashboard() {
   const toast = useToast();
@@ -104,8 +105,8 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] w-full">
+        <LoadingScreen fullScreen={false} />
       </div>
     );
   }

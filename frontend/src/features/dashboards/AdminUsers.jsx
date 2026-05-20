@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import api from "@/api/api";
 import { useToast } from "@/components/ui/custom-toast";
+import LoadingScreen from "@/components/ui/LoadingScreen";
 
 export default function AdminUsers() {
   const toast = useToast();
@@ -134,9 +135,8 @@ export default function AdminUsers() {
 
   if (loading) {
     return (
-      <div className="p-6 space-y-6">
-        <div className="h-10 w-64 bg-muted animate-pulse rounded-lg" />
-        <div className="h-[400px] w-full bg-muted animate-pulse rounded-xl" />
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] w-full">
+        <LoadingScreen fullScreen={false} />
       </div>
     );
   }

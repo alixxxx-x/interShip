@@ -32,6 +32,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import api from "@/api/api";
 import { useToast } from "@/components/ui/custom-toast";
+import LoadingScreen from "@/components/ui/LoadingScreen";
 
 export default function SuperAdminDashboard() {
   const toast = useToast();
@@ -148,12 +149,8 @@ export default function SuperAdminDashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[70vh]">
-        <div className="flex flex-col items-center gap-4">
-          <Database className="w-10 h-10 text-primary animate-pulse" />
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          <span className="text-sm font-semibold text-muted-foreground">Authenticating Super Admin Panel...</span>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] w-full">
+        <LoadingScreen fullScreen={false} />
       </div>
     );
   }

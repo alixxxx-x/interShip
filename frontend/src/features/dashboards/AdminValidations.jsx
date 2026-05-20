@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/custom-toast";
+import LoadingScreen from "@/components/ui/LoadingScreen";
 
 export default function AdminValidations() {
   const toast = useToast();
@@ -122,7 +123,13 @@ export default function AdminValidations() {
     return diffHours <= 48;
   };
 
-  if (loading) return <div className="p-6">Loading validation workflow...</div>;
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] w-full">
+        <LoadingScreen fullScreen={false} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 p-6">
