@@ -9,6 +9,29 @@ class ApisConfig(AppConfig):
         import threading
         
         def run_startup_tasks():
+            # Clean up extra companies, keeping only Google, Djezzy, and Ooredoo
+            try:
+                from .models import Company, User
+                allowed_keys = ['google', 'djezzy', 'ooredoo']
+                companies = Company.objects.all()
+                for company in list(companies):
+                    name_lower = company.name.lower()
+                    if not any(key in name_lower for key in allowed_keys):
+                        print(f"--- CLEANUP: Deleting company {company.name} ---")
+                        user_id = company.id
+                        company.delete()
+                        User.objects.filter(id=user_id).delete()
+                
+                # Also clean up loose base User records with role=COMPANY that are not matched
+                company_users = User.objects.filter(role=User.Role.COMPANY)
+                for user in list(company_users):
+                    email_or_username = (user.email or '').lower() + (user.username or '').lower()
+                    if not any(key in email_or_username for key in allowed_keys):
+                        print(f"--- CLEANUP: Deleting loose company user {user.email} ---")
+                        user.delete()
+            except Exception as e:
+                print(f"Error during company cleanup startup task: {e}")
+
             try:
                 from django.contrib.auth import get_user_model
                 User = get_user_model()

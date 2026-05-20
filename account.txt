@@ -36,8 +36,8 @@ companies :
   email :[google@gmail.com]
   password : [google]
   
-  email :[iphone@gmail.com]
-  password : [iphone]
+  email :[ooredoo@gmail.com]
+  password : [ooredoo]
 
 
 student :       
