@@ -18,11 +18,6 @@ import {
     GraduationCap,
     CheckCircle2
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useLanguage } from "@/components/language-provider";
 
 export default function Profile() {
@@ -52,10 +47,10 @@ export default function Profile() {
 
     if (loading) {
         return (
-            <div className="flex h-[60vh] items-center justify-center bg-slate-50">
+            <div className="flex h-[60vh] items-center justify-center bg-white dark:bg-background text-foreground transition-colors duration-300">
                 <div className="flex flex-col items-center gap-4">
                     <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                    <p className="text-sm font-medium text-slate-500">{t("loadingProfile")}</p>
+                    <p className="text-sm font-medium text-muted-foreground">{t("loadingProfile")}</p>
                 </div>
             </div>
         );
@@ -63,245 +58,392 @@ export default function Profile() {
 
     if (!profile) {
         return (
-            <div className="min-h-[60vh] flex flex-col items-center justify-center bg-slate-50 text-center px-4">
-                <p className="text-lg text-slate-500 mb-6 font-medium">{t("unableToLoad")}</p>
-                <Button variant="default" onClick={() => navigate('/')} className="rounded-lg h-11 px-8 font-semibold shadow-sm">
+            <div className="min-h-[60vh] flex flex-col items-center justify-center bg-white dark:bg-background text-foreground text-center px-4 transition-colors duration-300">
+                <p className="text-lg text-muted-foreground mb-6 font-medium">{t("unableToLoad")}</p>
+                <button
+                    onClick={() => navigate('/')}
+                    className="bg-primary text-primary-foreground hover:opacity-90 rounded-lg h-11 px-8 font-semibold shadow-sm transition-opacity duration-200 cursor-pointer"
+                >
                     {t("returnHome")}
-                </Button>
+                </button>
             </div>
         );
     }
 
+    const isCompany = profile.role === 'COMPANY';
+
     return (
-        <div className="bg-slate-50 min-h-screen py-16 px-4 md:px-6">
-            <div className="max-w-5xl mx-auto">
-                {/* Profile Header */}
-                <div className="bg-white rounded-2xl border border-slate-200 p-8 mb-8 shadow-sm">
-                    <div className="flex flex-col md:flex-row items-center gap-8">
-                        <Avatar className="w-32 h-32 border-4 border-white shadow-lg ring-1 ring-slate-100 flex items-center justify-center text-4xl overflow-hidden">
-                            {profile.profile_picture && (
-                                <img src={profile.profile_picture} alt={profile.username} className="w-full h-full object-cover" />
-                            )}
-                            <AvatarFallback className="bg-primary text-white font-medium">
-                                {profile.username?.charAt(0).toUpperCase() || 'A'}
-                            </AvatarFallback>
-                        </Avatar>
-                        <div className="text-center md:text-left flex-grow">
-                            <h1 className="text-3xl font-bold text-slate-900 mb-2">
-                                {profile.role === 'COMPANY'
-                                    ? (profile.name || profile.username)
-                                    : (profile.first_name || profile.last_name)
-                                        ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim()
-                                        : profile.username}
+        <div className="bg-white dark:bg-background text-foreground min-h-screen py-16 px-4 md:px-6 transition-colors duration-300">
+            <style>{`
+                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+                
+                .profile-container {
+                    font-family: 'Inter', -apple-system, sans-serif;
+                }
+                
+                /* Keep card light baby-blue in light mode */
+                .profile-card {
+                    background-color: #f0f4fa;
+                    border: 1px solid rgba(26, 58, 107, 0.05);
+                    border-radius: 28px;
+                    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.02);
+                }
+                
+                /* Set card to elegant deep navy blue in dark mode */
+                .dark .profile-card {
+                    background-color: #132237;
+                    border: 1px solid rgba(59, 130, 246, 0.15);
+                    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+                }
+                
+                /* Dynamic Icon Container */
+                .icon-container {
+                    background-color: #ffffff;
+                    color: #1a3a6b;
+                    border: 1px solid #e2e8f0;
+                }
+                .dark .icon-container {
+                    background-color: rgba(255, 255, 255, 0.05);
+                    color: #93c5fd;
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                }
+                
+                /* Dynamic Avatar Container */
+                .avatar-container {
+                    background-color: #ffffff;
+                    color: #1a3a6b;
+                    border: 4px solid #ffffff;
+                }
+                .dark .avatar-container {
+                    background-color: rgba(255, 255, 255, 0.05);
+                    color: #93c5fd;
+                    border: 4px solid #132237;
+                }
+                
+                /* Dynamic Bio Container */
+                .bio-container {
+                    background-color: #ffffff;
+                    color: #334155;
+                    border: 1px dashed #cbd5e1;
+                }
+                .dark .bio-container {
+                    background-color: rgba(255, 255, 255, 0.03);
+                    color: #e2e8f0;
+                    border: 1px dashed rgba(255, 255, 255, 0.2);
+                }
+                
+                /* Typography adaptations */
+                .section-header {
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: #1a3a6b;
+                    margin-bottom: 24px;
+                    letter-spacing: -0.01em;
+                }
+                .dark .section-header {
+                    color: #93c5fd;
+                }
+                
+                .grid-label {
+                    font-size: 12px;
+                    color: #334155;
+                    margin-bottom: 4px;
+                    font-weight: 500;
+                    letter-spacing: -0.01em;
+                }
+                .dark .grid-label {
+                    color: #94a3b8;
+                }
+                
+                .grid-value {
+                    font-size: 13px;
+                    color: #111111;
+                    font-weight: 500;
+                    letter-spacing: -0.01em;
+                }
+                .dark .grid-value {
+                    color: #f8fafc;
+                }
+                
+                .divider-line {
+                    height: 1px;
+                    background-color: rgba(26, 58, 107, 0.08);
+                    margin: 32px 0;
+                }
+                .dark .divider-line {
+                    background-color: rgba(255, 255, 255, 0.1);
+                }
+                
+                .active-badge {
+                    background-color: #ecfdf5;
+                    color: #059669;
+                    font-size: 11px;
+                    font-weight: 600;
+                    padding: 2px 8px;
+                    border-radius: 9999px;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px;
+                }
+                .dark .active-badge {
+                    background-color: rgba(5, 150, 105, 0.15);
+                    color: #34d399;
+                }
+                
+                .edit-btn {
+                    border: 1px solid rgba(26, 58, 107, 0.08);
+                    background-color: #ffffff;
+                    color: #111111;
+                    font-size: 12px;
+                    font-weight: 600;
+                    padding: 8px 16px;
+                    border-radius: 9999px;
+                    cursor: pointer;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    transition: all 0.2s;
+                }
+                .edit-btn:hover {
+                    background-color: #f7fafc;
+                }
+                .dark .edit-btn {
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    background-color: rgba(255, 255, 255, 0.05);
+                    color: #f8fafc;
+                }
+                .dark .edit-btn:hover {
+                    background-color: rgba(255, 255, 255, 0.1);
+                }
+                
+                .info-link {
+                    color: #1a3a6b;
+                    text-decoration: none;
+                }
+                .dark .info-link {
+                    color: #60a5fa;
+                }
+                .info-link:hover {
+                    text-decoration: underline;
+                }
+                
+                .text-muted-locked {
+                    color: #334155;
+                }
+                .dark .text-muted-locked {
+                    color: #94a3b8;
+                }
+                
+                .text-brand-locked {
+                    color: #1a3a6b;
+                }
+                .dark .text-brand-locked {
+                    color: #93c5fd;
+                }
+            `}</style>
+
+            <div className="max-w-5xl mx-auto profile-container">
+                <div className="profile-card p-12">
+                    {/* Header */}
+                    <div className="flex justify-between items-center mb-8">
+                        <div className="flex items-center gap-2.5">
+                            <Award className="w-[22px] h-[22px] text-[#111111] dark:text-white" />
+                            <h1 className="text-[18px] font-bold text-[#111111] dark:text-white tracking-tight">
+                                Profile Details
                             </h1>
-                            <div className="flex flex-wrap justify-center md:justify-start gap-3 items-center">
-                                <Badge className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-md font-medium text-xs px-3 py-1">
-                                    {profile.role === 'company' ? t("company") : profile.role === 'STUDENT' ? t("student") : profile.role?.replace('_', ' ')}
-                                </Badge>
-                                <div className="flex items-center gap-2 text-slate-400 text-sm font-medium">
-                                    <Calendar className="w-4 h-4" />
-                                    <span>
-                                        {profile.created_at
-                                            ? `${t("joined")} ${new Date(profile.created_at).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}`
-                                            : t("memberSince")
-                                        }
-                                    </span>
-                                </div>
-                            </div>
                         </div>
-                        <Button
-                            variant="outline"
-                            onClick={() => navigate('/settings')}
-                            className="rounded-lg h-11 px-6 font-medium border-slate-200 hover:bg-slate-50 text-slate-700 flex items-center gap-2 shadow-none"
-                        >
-                            <Settings className="w-4 h-4" />
-                            {t("settings")}
-                        </Button>
+                        <button onClick={() => navigate('/settings')} className="edit-btn">
+                            <Settings className="w-3.5 h-3.5" />
+                            Edit
+                        </button>
                     </div>
-                </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Sidebar Stats / Quick Info */}
-                    <div className="space-y-6">
-                        <Card className="border-slate-200 shadow-sm rounded-xl overflow-hidden">
-                            <CardHeader className="bg-slate-50/50 pb-1">
-                                <CardTitle className="text-xs font-medium text-slate-400">{t("contactInformation")}</CardTitle>
-                            </CardHeader>
-                            <CardContent className="pt-2 space-y-4">
-                                <div className="flex flex-col">
-                                    <span className="text-xs font-medium text-slate-500 mb-1">{t("emailAddress")}</span>
-                                    <span className="text-sm font-medium text-slate-900 break-all flex items-center gap-2">
-                                        <Mail className="w-3.5 h-3.5 text-primary" />
-                                        {profile.email}
-                                    </span>
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className="text-xs font-medium text-slate-500 mb-1">{t("phoneNumber")}</span>
-                                    <span className="text-sm font-medium text-slate-900 flex items-center gap-2">
-                                        <Phone className="w-3.5 h-3.5 text-primary" />
-                                        {profile.email === 'djezzy@gmail.com' ? '+213779531293' : (profile.phone || <span className="text-slate-400 italic font-medium">{t("notProvided")}</span>)}
-                                    </span>
-                                </div>
-                            </CardContent>
-                        </Card>
+                    {/* Section 1: About */}
+                    <div className="section-header">About</div>
+                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-8 mb-6">
+                        <div className="w-24 h-24 rounded-full avatar-container flex items-center justify-center text-3xl overflow-hidden font-semibold relative flex-shrink-0 shadow-md">
+                            {profile.profile_picture ? (
+                                <img src={profile.profile_picture} alt={profile.username} className="w-full h-full object-cover" />
+                            ) : (
+                                profile.username?.charAt(0).toUpperCase() || 'A'
+                            )}
+                        </div>
 
-                        <div className="bg-primary rounded-2xl p-6 text-primary-foreground shadow-primary/20 shadow-xl relative overflow-hidden group">
-                            {/* Card Decorative background */}
-                            <div className="absolute -right-6 -bottom-6 opacity-[0.15] transform group-hover:scale-110 group-hover:-rotate-12 transition-all duration-500">
-                                <Shield className="w-32 h-32 text-white" />
+                        <div className="text-center sm:text-left space-y-1.5">
+                            <div className="flex flex-col sm:flex-row items-center gap-2.5">
+                                <h2 className="text-[18px] font-bold text-[#111111] dark:text-white">
+                                    {isCompany
+                                        ? (profile.name || profile.username)
+                                        : (profile.first_name || profile.last_name)
+                                            ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim()
+                                            : profile.username}
+                                </h2>
+                                <span className="active-badge">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-[#059669] dark:bg-[#34d399]" />
+                                    Active
+                                </span>
                             </div>
-
-                            <div className="relative z-10">
-                                <div className="flex items-center gap-3 mb-3">
-                                    <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                                        <CheckCircle2 className="w-6 h-6 text-white" />
-                                    </div>
-                                    <h4 className="font-semibold text-lg text-white">{t("verifiedStatus")}</h4>
-                                </div>
-                                <Separator className="bg-primary-foreground/20 mb-3" />
-                                <p className="text-primary-foreground/90 text-sm leading-relaxed font-medium">
-                                    {t("verifiedStatusDesc")}
-                                </p>
+                            <div className="text-[13px] text-muted-locked font-medium">
+                                {profile.email === 'djezzy@gmail.com' ? '+213779531293' : (profile.phone || 'No phone number provided')}
+                            </div>
+                            <div className="text-[13px] text-brand-locked font-medium">
+                                {profile.email}
+                            </div>
+                            <div className="text-[13px] text-muted-locked font-medium">
+                                {isCompany ? (profile.location || 'Algeria') : (profile.wilaya || 'Algeria')}
                             </div>
                         </div>
                     </div>
 
-                    {/* Main Professional Info */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <Card className="border-slate-200 shadow-sm rounded-2xl overflow-hidden bg-white">
-                            <CardHeader className="border-b border-slate-100 pb-5 pt-6 px-8">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-inner">
-                                        <Briefcase className="w-6 h-6" />
-                                    </div>
-                                    <div>
-                                        <CardTitle className="text-xl font-bold text-slate-800">
-                                            {profile.role === 'COMPANY' ? t("companyOverview") : t("professionalOverview")}
-                                        </CardTitle>
-                                        <CardDescription className="text-sm font-medium mt-1">
-                                            {profile.role === 'COMPANY' ? t("companyOverviewDesc") : t("professionalOverviewDesc")}
-                                        </CardDescription>
+                    <div className="divider-line" />
+
+                    {/* Section 2: Internal */}
+                    <div className="section-header">Internal</div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-y-6 gap-x-8">
+                        <div>
+                            <div className="grid-label">User Type</div>
+                            <div className="grid-value">
+                                {profile.role === 'company' ? 'Company Partner' : profile.role === 'STUDENT' ? 'Student Workspace' : profile.role}
+                            </div>
+                        </div>
+                        <div>
+                            <div className="grid-label">Association</div>
+                            <div className="grid-value">
+                                {isCompany ? (profile.company_field || 'N/A') : (profile.university_id || 'Internia University Network')}
+                            </div>
+                        </div>
+                        <div>
+                            <div className="grid-label">Source</div>
+                            <div className="grid-value">
+                                {profile.created_at
+                                    ? `Registered ${new Date(profile.created_at).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}`
+                                    : 'Internal Registration'
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="divider-line" />
+
+                    {/* Section 3: Credentials Details */}
+                    <div className="section-header">
+                        {isCompany ? 'Company Operations Details' : 'Student Academic Details'}
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-y-8 gap-x-8">
+                        {isCompany ? (
+                            <>
+                                <div>
+                                    <div className="grid-label">Organization Name</div>
+                                    <div className="grid-value">{profile.name || profile.username}</div>
+                                </div>
+                                <div>
+                                    <div className="grid-label">Address</div>
+                                    <div className="grid-value">{profile.location || 'N/A'}</div>
+                                </div>
+                                <div>
+                                    <div className="grid-label">Phone Number</div>
+                                    <div className="grid-value">
+                                        {profile.email === 'djezzy@gmail.com' ? '+213779531293' : (profile.phone || 'N/A')}
                                     </div>
                                 </div>
-                            </CardHeader>
-                            <CardContent className="p-8 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-10">
-                                {profile.role === 'COMPANY' ? (
-                                    <>
-                                        <div className="space-y-2">
-                                            <span className="text-[11px] font-bold text-primary tracking-wider uppercase flex items-center gap-2">
-                                                <Building className="w-3.5 h-3.5" /> {t("industry")}
-                                            </span>
-                                            <div className="text-slate-800 font-semibold text-[15px] pt-1 ml-2">
-                                                {profile.company_field || <span className="text-slate-400 italic font-medium">{t("notSpecified")}</span>}
-                                            </div>
-                                        </div>
 
-                                        <div className="space-y-2">
-                                            <span className="text-[11px] font-bold text-primary tracking-wider uppercase flex items-center gap-2">
-                                                <Globe className="w-3.5 h-3.5" /> {t("location")}
-                                            </span>
-                                            <div className="text-slate-800 font-semibold text-[15px] pt-1 ml-2">
-                                                {profile.location || <span className="text-slate-400 italic font-medium">{t("notSpecified")}</span>}
-                                            </div>
-                                        </div>
+                                <div>
+                                    <div className="grid-label">Email</div>
+                                    <div className="grid-value">
+                                        <a href={`mailto:${profile.email}`} className="info-link">{profile.email}</a>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div className="grid-label">Type Of Organization</div>
+                                    <div className="grid-value">{profile.company_field || 'N/A'}</div>
+                                </div>
+                                <div>
+                                    <div className="grid-label">Founded Year</div>
+                                    <div className="grid-value">{profile.founded_year || 'N/A'}</div>
+                                </div>
 
-                                        <div className="space-y-2">
-                                            <span className="text-[11px] font-bold text-primary tracking-wider uppercase flex items-center gap-2">
-                                                <Calendar className="w-3.5 h-3.5" /> {t("founded")}
-                                            </span>
-                                            <div className="text-slate-800 font-semibold text-[15px] pt-1 ml-2">
-                                                {profile.founded_year || <span className="text-slate-400 italic font-medium">{t("notAvailable")}</span>}
-                                            </div>
-                                        </div>
+                                <div>
+                                    <div className="grid-label">Website</div>
+                                    <div className="grid-value">
+                                        {profile.website ? (
+                                            <a href={profile.website} target="_blank" rel="noreferrer" className="info-link">
+                                                {profile.website.replace(/^https?:\/\//, '')}
+                                            </a>
+                                        ) : 'N/A'}
+                                    </div>
+                                </div>
+                                <div>
+                                    <div className="grid-label">Status Required</div>
+                                    <div className="grid-value">Corporate Verification</div>
+                                </div>
+                                <div>
+                                    <div className="grid-label">Message</div>
+                                    <div className="grid-value">Active partner organization</div>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <div>
+                                    <div className="grid-label">First Name</div>
+                                    <div className="grid-value">{profile.first_name || 'N/A'}</div>
+                                </div>
+                                <div>
+                                    <div className="grid-label">Last Name</div>
+                                    <div className="grid-value">{profile.last_name || 'N/A'}</div>
+                                </div>
+                                <div>
+                                    <div className="grid-label">Phone Number</div>
+                                    <div className="grid-value">
+                                        {profile.email === 'djezzy@gmail.com' ? '+213779531293' : (profile.phone || 'N/A')}
+                                    </div>
+                                </div>
 
-                                        <div className="space-y-2">
-                                            <span className="text-[11px] font-bold text-primary tracking-wider uppercase flex items-center gap-2">
-                                                <Globe className="w-3.5 h-3.5" /> {t("website")}
-                                            </span>
-                                            <div className="text-slate-800 font-semibold text-[15px] pt-1 ml-2">
-                                                {profile.website ? (
-                                                    <a href={profile.website} target="_blank" rel="noreferrer" className="text-primary hover:underline">
-                                                        {profile.website.replace(/^https?:\/\//, '')}
-                                                    </a>
-                                                ) : (
-                                                    <span className="text-slate-400 italic font-medium">{t("notAvailable")}</span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <>
-                                        <div className="space-y-2">
-                                            <span className="text-[11px] font-bold text-primary tracking-wider uppercase flex items-center gap-2">
-                                                <Building className="w-3.5 h-3.5" /> {t("universityID")}
-                                            </span>
-                                            <div className="text-slate-800 font-semibold text-[15px] pt-1 ml-2">
-                                                {profile.university_id || <span className="text-slate-400 italic font-medium">{t("notSpecified")}</span>}
-                                            </div>
-                                        </div>
+                                <div>
+                                    <div className="grid-label">Email</div>
+                                    <div className="grid-value">
+                                        <a href={`mailto:${profile.email}`} className="info-link">{profile.email}</a>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div className="grid-label">Type Of Student</div>
+                                    <div className="grid-value">{profile.major || 'Undergraduate'}</div>
+                                </div>
+                                <div>
+                                    <div className="grid-label">University Portal ID</div>
+                                    <div className="grid-value">{profile.university_id || 'N/A'}</div>
+                                </div>
 
-                                        <div className="space-y-2">
-                                            <span className="text-[11px] font-bold text-primary tracking-wider uppercase flex items-center gap-2">
-                                                <Globe className="w-3.5 h-3.5" /> {t("wilaya")}
-                                            </span>
-                                            <div className="text-slate-800 font-semibold text-[15px] pt-1 ml-2">
-                                                {profile.wilaya || <span className="text-slate-400 italic font-medium">{t("notSpecified")}</span>}
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <span className="text-[11px] font-bold text-primary tracking-wider uppercase flex items-center gap-2">
-                                                <Mail className="w-3.5 h-3.5" /> {t("emailAddress")}
-                                            </span>
-                                            <div className="text-slate-800 font-semibold text-[15px] pt-1 ml-2">
-                                                {profile.email}
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <span className="text-[11px] font-bold text-primary tracking-wider uppercase flex items-center gap-2">
-                                                <GraduationCap className="w-3.5 h-3.5" /> {t("majorField")}
-                                            </span>
-                                            <div className="text-slate-800 font-semibold text-[15px] pt-1 ml-2">
-                                                {profile.major || <span className="text-slate-400 italic font-medium">{t("notSpecified")}</span>}
-                                            </div>
-                                        </div>
-                                    </>
-                                )}
-                            </CardContent>
-                        </Card>
-
-                        <section className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm relative overflow-hidden">
-                            {/* Subtle background icon */}
-                            <FileText className="absolute right-4 bottom-4 w-40 h-40 text-slate-50 rotate-[-15deg] pointer-events-none" />
-
-                            <div className="relative z-10">
-                                <h3 className="text-[11px] font-bold text-slate-400 mb-5 border-l-[3px] border-primary pl-3 uppercase tracking-wider">
-                                    {profile.role === 'COMPANY' ? t("aboutUs") : t("aboutMe")}
-                                </h3>
-
-                                {profile.role === 'COMPANY' ? (
-                                    profile.description ? (
-                                        <p className="text-slate-700 leading-relaxed text-[15px] font-medium whitespace-pre-wrap">
-                                            {profile.description}
-                                        </p>
-                                    ) : (
-                                        <p className="text-slate-500 leading-relaxed text-[15px] italic font-medium">
-                                            "{t("noDescCompany")}"
-                                        </p>
-                                    )
-                                ) : profile.bio ? (
-                                    <p className="text-slate-700 leading-relaxed text-[15px] font-medium">
-                                        {profile.bio}
-                                    </p>
-                                ) : (
-                                    <p className="text-slate-500 leading-relaxed text-[15px] italic font-medium">
-                                        "{t("noBioProvided")}"
-                                    </p>
-                                )}
-                            </div>
-                        </section>
+                                <div>
+                                    <div className="grid-label">Major Field</div>
+                                    <div className="grid-value">{profile.major || 'N/A'}</div>
+                                </div>
+                                <div>
+                                    <div className="grid-label">State / Wilaya</div>
+                                    <div className="grid-value">{profile.wilaya || 'N/A'}</div>
+                                </div>
+                                <div>
+                                    <div className="grid-label">Account Verification</div>
+                                    <div className="grid-value">Student verified by university</div>
+                                </div>
+                            </>
+                        )}
                     </div>
+
+                    <div className="divider-line" />
+
+                    {/* Section 4: Bio/Description */}
+                    <div className="section-header">
+                        {isCompany ? 'Corporate Statement' : 'Student Statement / Biography'}
+                    </div>
+                    <div className="bio-container p-6 rounded-2xl shadow-sm">
+                        <p className="text-[13.5px] leading-relaxed font-medium whitespace-pre-wrap">
+                            {isCompany
+                                ? (profile.description || 'No corporate statement available.')
+                                : (profile.bio || 'No biography available.')
+                            }
+                        </p>
+                    </div>
+
                 </div>
             </div>
         </div>

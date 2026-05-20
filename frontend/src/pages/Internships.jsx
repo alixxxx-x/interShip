@@ -1,673 +1,559 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Search, Building2, MapPin, Briefcase, X, Filter, Share2, Heart, Calendar, Users, Check, ChevronDown } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { Search, MapPin, Briefcase, X, Heart, ChevronDown, ChevronLeft, ChevronRight, ShieldCheck, Send, Headphones } from 'lucide-react';
 import api from '@/api/api';
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
 import { useLanguage } from '@/components/language-provider';
+import { useTheme } from '@/components/theme-provider';
+
+const PER_PAGE = 6;
+const WILAYAS = ["Adrar","Chlef","Laghouat","Oum El Bouaghi","Batna","Bejaia","Biskra","Bechar","Blida","Bouira","Tamanrasset","Tebessa","Tlemcen","Tiaret","Tizi Ouzou","Algiers","Djelfa","Jijel","Setif","Saida","Skikda","Sidi Bel Abbes","Annabba","Guelma","Constantine","Medea","Mostaganem","M'Sila","Mascara","Ouargla","Oran","El Bayadh","Illizi","Bordj Bou Arreridj","Boumerdes","El Tarf","Tindouf","Tissemsilt","El Oued","Khenchela","Souk Ahras","Tipaza","Mila","Ain Defla","Naama","Ain Temouchent","Ghardaia","Relizane"];
+const SKILLS = ["React","Node.js","Python","UI/UX Design","Marketing","Data Science","Java","C++","SQL","Graphic Design","Project Management","JavaScript","TypeScript","HTML/CSS","PHP","Laravel","Flutter","AWS","Docker","Machine Learning","Figma"];
+const F = "'SF Pro Display', 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 
 export default function Internships() {
   const { t } = useLanguage();
+  const { theme } = useTheme();
+  const dk = theme === "dark";
   const location = useLocation();
+  const navigate = useNavigate();
   const [internships, setInternships] = useState([]);
   const [loading, setLoading] = useState(true);
-  // `searchQuery` is what the user is currently typing.
-  // `submittedSearchQuery` is the query that is actually applied to filtering (set on Enter).
-  const [searchQuery, setSearchQuery] = useState(location.state?.searchQuery || "");
-  const [submittedSearchQuery, setSubmittedSearchQuery] = useState(location.state?.searchQuery || "");
-  const [isSearchActive, setIsSearchActive] = useState(location.state?.isSearchActive || false);
+  const [search, setSearch] = useState(location.state?.searchQuery || "");
+  const [type, setType] = useState("");
+  const [loc, setLoc] = useState("");
+  const [wilaya, setWilaya] = useState("");
+  const [skills, setSkills] = useState([]);
+  const [page, setPage] = useState(1);
+  const [liked, setLiked] = useState(new Set());
+  const [wSearch, setWSearch] = useState("");
+  const [wOpen, setWOpen] = useState(false);
+  const [minMonths, setMinMonths] = useState(1);
+  const [maxMonths, setMaxMonths] = useState(12);
+  const [sortBy, setSortBy] = useState("default");
+  const [sortOpen, setSortOpen] = useState(false);
 
-  // Filter States
-  const [selectedWilaya, setSelectedWilaya] = useState("");
-  const [selectedType, setSelectedType] = useState("");
-  const [selectedLocation, setSelectedLocation] = useState("");
-  const [selectedSkills, setSelectedSkills] = useState([]);
-  
-  // Popover Open States
-  const [isTypeOpen, setIsTypeOpen] = useState(false);
-  const [isLocationOpen, setIsLocationOpen] = useState(false);
-  const [isWilayaOpen, setIsWilayaOpen] = useState(false);
-  const [isSkillsOpen, setIsSkillsOpen] = useState(false);
-  const navigate = useNavigate();
-  const [likedItems, setLikedItems] = useState(new Set());
-
-  const toggleLike = (id) => {
-    setLikedItems(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const getInternshipStatusBadge = (status) => {
-    switch (status) {
-      case 'OPEN_FOR_APPLICATION': return 'success';
-      case 'CLOSED_FOR_APPLICATION': return 'destructive';
-      case 'ONGOING': return 'purple';
-      case 'FINISHED': return 'info';
-      default: return 'outline';
+  const getDurationMonths = (dStr) => {
+    if (!dStr) return 3;
+    const str = String(dStr).toLowerCase();
+    const match = str.match(/\d+/);
+    if (!match) return 3;
+    let num = parseInt(match[0], 10);
+    // Django timedelta serializes as "90 00:00:00" or "90 days". Convert days to months.
+    if (str.includes(':') || str.includes('day') || num > 12) {
+      num = Math.max(1, Math.round(num / 30));
     }
+    return num;
   };
 
-  const searchInputRef = useRef(null);
-
-  const fetchInternships = async () => {
-    try {
-      setLoading(true);
-      const res = await api.get('/internships/');
-
-      const rawData = res.data.results || res.data;
-      const mappedData = (Array.isArray(rawData) ? rawData : []).map(item => {
-        let skills = [];
-        if (item.internship_skills) {
-          try {
-            skills = JSON.parse(item.internship_skills);
-            if (!Array.isArray(skills)) skills = [skills];
-          } catch (e) {
-            skills = [item.internship_skills];
-          }
-        }
-        const formatDuration = (durationStr) => {
-          if (!durationStr) return "Flexible";
-          const parts = durationStr.split(' ');
-          if (parts.length > 1) {
-            const days = parts[0];
-            return `${days} ${parseInt(days) === 1 ? 'day' : 'days'}`;
-          }
-          const timeParts = durationStr.split(':');
-          if (timeParts.length >= 2) {
-            const hours = parseInt(timeParts[0]);
-            if (hours > 0) return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
-            return `${parseInt(timeParts[1])} mins`;
-          }
-          return durationStr;
-        };
-
-        return {
-          ...item,
-          company_name: item.company_name || `Company #${item.company}`,
-          wilaya: item.wilaya || item.internship_location,
-          required_skills: skills,
-          tech: skills,
-          banner_image: item.internship_image || null,
-          type: item.internship_type || "N/A",
-          internship_duration: formatDuration(item.internship_duration)
-        };
-      });
-
-      setInternships(mappedData);
-    } catch (err) {
-      console.error("Error fetching internships:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchInternships();
-  }, []);
-
-  // Safe data processing
-  const safeInternships = Array.isArray(internships) ? internships : [];
-
-  const ALGERIAN_WILAYAS = [
-    "Adrar", "Chlef", "Laghouat", "Oum El Bouaghi", "Batna", "Béjaïa", "Biskra", "Béchar", "Blida", "Bouira",
-    "Tamanrasset", "Tébessa", "Tlemcen", "Tiaret", "Tizi Ouzou", "Algiers", "Djelfa", "Jijel", "Sétif", "Saïda",
-    "Skikda", "Sidi Bel Abbès", "Annabba", "Guelma", "Constantine", "Médéa", "Mostaganem", "M'Sila", "Mascara", "Ouargla",
-    "Oran", "El Bayadh", "Illizi", "Bordj Bou Arréridj", "Boumerdès", "El Tarf", "Tindouf", "Tissemsilt", "El Oued", "Khenchela",
-    "Souk Ahras", "Tipaza", "Mila", "Aïn Defla", "Naâma", "Aïn Témouchent", "Ghardaïa", "Relizane", "Timimoun", "Bordj Badji Mokhtar",
-    "Ouled Djellal", "Béni Abbès", "In Salah", "In Guezzam", "Touggourt", "Djanet", "M'Ghair", "El Meniaa"
-  ];
-
-  const COMMON_SKILLS = [
-    "React", "Node.js", "Python", "UI/UX Design", "Marketing",
-    "Data Science", "Java", "C++", "SQL", "Graphic Design",
-    "Project Management", "Social Media", "SEO", "Excel",
-    "JavaScript", "TypeScript", "HTML/CSS", "PHP", "Laravel",
-    "Swift", "Kotlin", "Android", "iOS", "Flutter",
-    "AWS", "Docker", "Kubernetes", "DevOps", "Cybersecurity",
-    "Machine Learning", "Artificial Intelligence", "Blockchain",
-    "Financial Analysis", "Business Strategy", "Content Writing",
-    "Copywriting", "Video Editing", "Adobe Photoshop", "Adobe Illustrator",
-    "Figma", "Canva", "Sales", "Customer Support", "HR Management"
-  ];
-
-  // Extracted unique filter options with safety
-  const allWilayas = ALGERIAN_WILAYAS;
-  const allTypes = ["FULL_TIME", "PART_TIME"];
-  const allLocations = ["REMOTE", "ONSITE", "HYBRID"];
-  const allSkills = COMMON_SKILLS;
-
-  // Close search on escape key
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        setIsSearchActive(false);
-        searchInputRef.current?.blur();
+  const getPageNumbers = () => {
+    const range = [];
+    const maxVisible = 5;
+    if (pages <= maxVisible) {
+      for (let i = 1; i <= pages; i++) range.push(i);
+    } else {
+      if (page <= 3) {
+        range.push(1, 2, 3, '...', pages);
+      } else if (page >= pages - 2) {
+        range.push(1, '...', pages - 2, pages - 1, pages);
+      } else {
+        range.push(1, '...', page, '...', pages);
       }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+    return range;
+  };
+
+  useEffect(() => {
+    (async () => {
+      try { setLoading(true);
+        const res = await api.get('/internships/');
+        const raw = res.data.results || res.data;
+        setInternships((Array.isArray(raw) ? raw : []).map(item => {
+          let sk = []; if (item.internship_skills) { try { sk = JSON.parse(item.internship_skills); if (!Array.isArray(sk)) sk = [sk]; } catch { sk = [item.internship_skills]; } }
+          return { ...item, company_name: item.company_name || `Company #${item.company}`, wilaya: item.wilaya || "", required_skills: sk, banner_image: item.internship_image || null, type: item.internship_type || "N/A" };
+        }));
+      } catch (e) { console.error(e); } finally { setLoading(false); }
+    })();
   }, []);
 
-  const filteredInternships = safeInternships.filter((internship) => {
-    const title = internship.title?.toLowerCase() || "";
-    const company = internship.company_name?.toLowerCase() || "";
-
-    const q = (submittedSearchQuery || "").toLowerCase();
-    const matchesSearch = q === "" || title.includes(q) || company.includes(q);
-    const matchesWilaya = selectedWilaya === "" || internship.wilaya === selectedWilaya;
-    const matchesType = selectedType === "" || internship.internship_type === selectedType;
-    const matchesLocation = selectedLocation === "" || internship.internship_location === selectedLocation;
-    const matchesSkill = selectedSkills.length === 0 || (internship.required_skills && selectedSkills.some(s => internship.required_skills.includes(s)));
-
-    return matchesSearch && matchesWilaya && matchesType && matchesLocation && matchesSkill;
+  const filtered = (Array.isArray(internships) ? internships : []).filter(i => {
+    const q = search.toLowerCase();
+    const durationVal = getDurationMonths(i.internship_duration);
+    return (!q || i.title?.toLowerCase().includes(q) || i.company_name?.toLowerCase().includes(q))
+      && (!type || i.internship_type === type) && (!loc || i.internship_location === loc)
+      && (!wilaya || i.wilaya === wilaya) && (skills.length === 0 || (i.required_skills && skills.some(s => i.required_skills.includes(s))))
+      && (durationVal >= minMonths && durationVal <= maxMonths);
   });
 
-  const clearFilters = () => {
-    setSelectedWilaya("");
-    setSelectedType("");
-    setSelectedLocation("");
-    setSelectedSkills([]);
-  };
+  const sorted = [...filtered].sort((a, b) => {
+    if (sortBy === "alpha_asc") {
+      return (a.title || "").localeCompare(b.title || "");
+    }
+    if (sortBy === "alpha_desc") {
+      return (b.title || "").localeCompare(a.title || "");
+    }
+    if (sortBy === "newest") {
+      const dateA = a.created_at ? new Date(a.created_at).getTime() : a.id;
+      const dateB = b.created_at ? new Date(b.created_at).getTime() : b.id;
+      return dateB - dateA;
+    }
+    if (sortBy === "oldest") {
+      const dateA = a.created_at ? new Date(a.created_at).getTime() : a.id;
+      const dateB = b.created_at ? new Date(b.created_at).getTime() : b.id;
+      return dateA - dateB;
+    }
+    return 0; // Default sorting
+  });
 
-  const hasActiveFilters = selectedWilaya !== "" || selectedType !== "" || selectedLocation !== "" || selectedSkills.length > 0;
+  const pages = Math.max(1, Math.ceil(sorted.length / PER_PAGE));
+  const items = sorted.slice((page-1)*PER_PAGE, page*PER_PAGE);
+  useEffect(() => { setPage(1); }, [search, type, loc, wilaya, skills, minMonths, maxMonths, sortBy]);
+
+  const pills = [];
+  if (type) pills.push({ l: type.replace('_',' '), c: () => setType("") });
+  if (loc) pills.push({ l: loc, c: () => setLoc("") });
+  if (wilaya) pills.push({ l: wilaya, c: () => setWilaya("") });
+  if (minMonths > 1 || maxMonths < 12) pills.push({ l: `${minMonths} - ${maxMonths} Months`, c: () => { setMinMonths(1); setMaxMonths(12); } });
+  skills.forEach(s => pills.push({ l: s, c: () => setSkills(p => p.filter(x => x !== s)) }));
+  const clearAll = () => { setType(""); setLoc(""); setWilaya(""); setSkills([]); setSearch(""); setMinMonths(1); setMaxMonths(12); };
+
+  // Colors
+  const bg = dk ? "#161618" : "#fff";
+  const txt = dk ? "#fff" : "#111";
+  const txt2 = dk ? "rgba(255,255,255,0.5)" : "#888";
+  const bdr = dk ? "rgba(255,255,255,0.08)" : "#e8e8e8";
+  const pillBg = dk ? "#fff" : "#2a2a2a";
+  const pillTxt = dk ? "#111" : "#fff";
+  const accent = "#1d4ed8";
+  const hoverBg = dk ? "rgba(255,255,255,0.04)" : "#f9f9f9";
 
   return (
-    <div className="container mx-auto pt-6 pb-12 px-4 max-w-6xl relative min-h-[80vh]">
-
-      {/* Simple Background Overlay */}
-      <div
-        className={`fixed inset-0 z-40 bg-background/80  ${isSearchActive ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-          }`}
-        onClick={() => {
-          setIsSearchActive(false);
-          setSearchQuery("");
-          setSubmittedSearchQuery("");
-          clearFilters();
-        }}
-      />
-
-      <div className={`space-y-4 flex flex-col items-center text-center  ${isSearchActive ? 'opacity-0 h-0 overflow-hidden' : 'opacity-100 mb-8'
-        }`}>
-        <div className="flex flex-col items-center">
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">{t("exploreInternships")}</h1>
-          <p className="text-muted-foreground w-full max-w-xl mt-3">{t("exploreInternshipsDesc")}</p>
+    <>
+    <style>{`
+      .sidebar-scroll::-webkit-scrollbar { width: 6px; }
+      .sidebar-scroll::-webkit-scrollbar-track { background: transparent !important; }
+      .sidebar-scroll::-webkit-scrollbar-thumb { background: #86bbff; border-radius: 10px; min-height: 30px; }
+      .sidebar-scroll::-webkit-scrollbar-thumb:hover { background: #66a8ff; }
+      .sidebar-scroll::-webkit-scrollbar-button,
+      .sidebar-scroll::-webkit-scrollbar-button:single-button,
+      .sidebar-scroll::-webkit-scrollbar-button:start:decrement,
+      .sidebar-scroll::-webkit-scrollbar-button:end:increment { display: none !important; width: 0 !important; height: 0 !important; background: transparent !important; }
+      
+      .range-slider-input {
+        position: absolute;
+        width: 100%;
+        height: 2px;
+        top: 0;
+        left: 0;
+        margin: 0;
+        background: none;
+        pointer-events: none;
+        -webkit-appearance: none;
+        appearance: none;
+        outline: none;
+      }
+      .range-slider-input::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #1d4ed8;
+        cursor: pointer;
+        pointer-events: auto;
+        border: none;
+        transition: transform 0.1s;
+      }
+      .range-slider-input::-webkit-slider-thumb:hover {
+        transform: scale(1.2);
+      }
+      .range-slider-input::-moz-range-thumb {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #1d4ed8;
+        cursor: pointer;
+        pointer-events: auto;
+        border: none;
+        transition: transform 0.1s;
+      }
+      .range-slider-input::-moz-range-thumb:hover {
+        transform: scale(1.2);
+      }
+      
+      .pag-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: none;
+        background: none;
+        color: ${txt2};
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        font-family: ${F};
+        transition: all 0.2s;
+      }
+      .pag-btn:hover:not(:disabled):not(.active) {
+        color: ${txt};
+      }
+      .pag-btn.active {
+        background: ${accent} !important;
+        color: #fff !important;
+        font-weight: 600;
+        cursor: default;
+      }
+      .pag-btn:disabled {
+        color: ${dk ? "rgba(255,255,255,0.15)" : "#ccc"} !important;
+        cursor: default;
+      }
+      .pag-ellipsis {
+        color: ${txt2};
+        font-size: 14px;
+        padding: 0 4px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-family: ${F};
+      }
+    `}</style>
+    <div style={{ fontFamily: F, background: bg, minHeight: "100vh", color: txt, transition: "background 0.3s" }}>
+      {/* HEADER */}
+      <div style={{ textAlign: "center", padding: "48px 24px 36px" }}>
+        <h1 style={{ fontSize: 32, fontWeight: 700, margin: 0, letterSpacing: "-0.02em" }}>{t("exploreInternships")}</h1>
+        <div style={{ fontSize: 13, color: txt2, marginTop: 6 }}>
+          <Link to="/" style={{ color: txt2, textDecoration: "none" }}>Home</Link>
+          <span style={{ margin: "0 8px" }}>/</span>
+          <span style={{ color: txt, fontWeight: 500 }}>Internships</span>
         </div>
       </div>
 
-      {/* Unified Search Section: Simple positioning */}
-      <div
-        className={`relative flex flex-col items-center w-full  ${isSearchActive
-          ? 'max-w-4xl fixed top-8 left-1/2 -translate-x-1/2 px-4 z-50 max-h-[85vh] overflow-hidden'
-          : 'max-w-lg mt-2 mx-auto z-10'
-          }`}
-      >
-        {/* Search Input */}
-        <div className="relative w-full flex items-center shrink-0">
-          <Search className={`absolute text-muted-foreground  z-10 ${isSearchActive ? 'left-6 h-6 w-6' : 'left-4 h-5 w-5'}`} />
-          <Input
-            ref={searchInputRef}
-            placeholder={t("searchInternships")}
-            className={`transition-all duration-500 ease-in-out w-full bg-background relative z-0 ${isSearchActive
-              ? 'pl-16 pr-14 h-16 text-lg lg:text-xl shadow-2xl rounded-2xl border-primary/30 focus-visible:border-primary focus-visible:ring-primary/20 hover:border-primary/50'
-              : 'pl-11 h-12 text-base rounded-full shadow-sm hover:shadow-md'
-              }`}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onFocus={() => setIsSearchActive(true)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                setSubmittedSearchQuery(searchQuery.trim());
-              }
-            }}
-          />
-          {isSearchActive && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`absolute z-10 rounded-full transition-colors h-10 w-10 text-muted-foreground hover:text-foreground hover:bg-slate-100 dark:hover:bg-slate-800 ${isSearchActive ? 'right-4' : 'right-3'}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                setSearchQuery("");
-                setSubmittedSearchQuery("");
-                clearFilters();
-                if (!hasActiveFilters) {
-                  setIsSearchActive(false);
-                  searchInputRef.current?.blur();
-                } else {
-                  searchInputRef.current?.focus();
-                }
-              }}
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          )}
-        </div>
-
-        {/* Filters Row */}
-        {isSearchActive && (
-          <div className="w-full flex flex-wrap items-center gap-3 mt-4 animate-in fade-in slide-in-from-top-4 duration-500 bg-card p-3 rounded-2xl shadow-lg border shrink-0">
-            <div className="flex items-center gap-2 px-2 text-sm font-semibold text-muted-foreground">
-              <Filter className="h-4 w-4" />
-              {t("filters")}
-            </div>
-
-            {/* Skill Filter (Custom Multi-select with Checkmarks) */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  className="bg-muted hover:bg-muted/80 text-foreground border-0 rounded-xl px-4 py-2.5 h-10 font-medium flex items-center gap-2 w-[150px] justify-between shadow-sm"
+      <div style={{ maxWidth: 1240, margin: "0 auto", padding: "0 32px 80px" }}>
+        {/* TOP BAR — single line */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `1px solid ${bdr}`, paddingBottom: 16, marginBottom: 0 }}>
+          <span style={{ fontSize: 15, fontWeight: 700, color: txt, whiteSpace: "nowrap" }}>Filter Options</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+            <span style={{ fontSize: 13, color: txt2 }}>Showing {Math.min((page-1)*PER_PAGE+1, filtered.length)}-{Math.min(page*PER_PAGE, filtered.length)} of {filtered.length} results</span>
+              <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: txt2 }}>
+                <span>Sort by :</span>
+                
+                <div 
+                  onClick={() => setSortOpen(!sortOpen)}
+                  style={{ padding: "6px 28px 6px 14px", borderRadius: 20, background: dk?"rgba(255,255,255,0.04)":"#fff", color: txt, border: `1px solid ${dk?"rgba(255,255,255,0.1)":"#e5e7eb"}`, cursor: "pointer", fontWeight: 500, fontFamily: F, position: "relative", userSelect: "none" }}
                 >
-                  <span className="truncate text-xs">
-                    {selectedSkills.length === 0 
-                      ? t("bySkillAll") 
-                      : `${selectedSkills.length} ${t("skillsSelected")}`}
-                  </span>
-                  <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-1.5 rounded-xl shadow-2xl border-border bg-card" align="start">
-                <div className="max-h-64 overflow-y-auto custom-scrollbar space-y-0.5">
-                  {allSkills.map(skill => {
-                    const isSelected = selectedSkills.includes(skill);
-                    return (
-                      <button
-                        key={skill}
-                        className={cn(
-                          "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors",
-                          isSelected 
-                            ? "bg-primary/10 text-primary font-semibold" 
-                            : "hover:bg-muted text-foreground"
-                        )}
-                        onClick={() => {
-                          if (isSelected) {
-                            setSelectedSkills(selectedSkills.filter(s => s !== skill));
-                          } else {
-                            setSelectedSkills([...selectedSkills, skill]);
-                          }
-                        }}
-                      >
-                        {skill}
-                        {isSelected && <Check className="h-4 w-4" />}
-                      </button>
-                    );
-                  })}
+                  {sortBy === "alpha_asc" && "Alphabetical (A-Z)"}
+                  {sortBy === "alpha_desc" && "Alphabetical (Z-A)"}
+                  {sortBy === "newest" && "Newest First"}
+                  {sortBy === "oldest" && "Oldest First"}
+                  {sortBy === "default" && "Default Sorting"}
+                  <ChevronDown size={14} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: txt2 }} />
                 </div>
-                {selectedSkills.length > 0 && (
-                  <div className="pt-2 mt-2 border-t">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="w-full text-xs text-destructive hover:bg-destructive/10 rounded-lg"
-                      onClick={() => setSelectedSkills([])}
-                    >
-                      {t("clearSkills")}
-                    </Button>
-                  </div>
-                )}
-              </PopoverContent>
-            </Popover>
-
-            {/* Type Filter */}
-            <Popover open={isTypeOpen} onOpenChange={setIsTypeOpen}>
-              <PopoverTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  className="bg-muted hover:bg-muted/80 text-foreground border-0 rounded-xl px-4 py-2.5 h-10 font-medium flex items-center gap-2 w-[150px] justify-between shadow-sm"
-                >
-                  <span className="truncate text-xs">
-                    {selectedType === "" 
-                      ? t("byTypeAll") 
-                      : selectedType.replace('_', ' ')}
-                  </span>
-                  <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-1.5 rounded-xl shadow-2xl border-border bg-card" align="start">
-                <div className="max-h-64 overflow-y-auto custom-scrollbar space-y-0.5">
-                  <button
-                    className={cn(
-                      "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors text-left",
-                      selectedType === "" ? "bg-primary/10 text-primary font-semibold" : "hover:bg-muted text-foreground"
-                    )}
-                    onClick={() => {
-                      setSelectedType("");
-                      setIsTypeOpen(false);
-                    }}
-                  >
-                    {t("byTypeAll")}
-                    {selectedType === "" && <Check className="h-4 w-4" />}
-                  </button>
-                  {allTypes.map(type => {
-                    const isSelected = selectedType === type;
-                    return (
-                      <button
-                        key={type}
-                        className={cn(
-                          "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors text-left",
-                          isSelected 
-                            ? "bg-primary/10 text-primary font-semibold" 
-                            : "hover:bg-muted text-foreground"
-                        )}
-                        onClick={() => {
-                          setSelectedType(isSelected ? "" : type);
-                          setIsTypeOpen(false);
-                        }}
-                      >
-                        {type.replace('_', ' ')}
-                        {isSelected && <Check className="h-4 w-4" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              </PopoverContent>
-            </Popover>
-
-            {/* Location Type Filter */}
-            <Popover open={isLocationOpen} onOpenChange={setIsLocationOpen}>
-              <PopoverTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  className="bg-muted hover:bg-muted/80 text-foreground border-0 rounded-xl px-4 py-2.5 h-10 font-medium flex items-center gap-2 w-[150px] justify-between shadow-sm"
-                >
-                  <span className="truncate text-xs">
-                    {selectedLocation === "" 
-                      ? t("byLocationAll") 
-                      : selectedLocation}
-                  </span>
-                  <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-1.5 rounded-xl shadow-2xl border-border bg-card" align="start">
-                <div className="max-h-64 overflow-y-auto custom-scrollbar space-y-0.5">
-                  <button
-                    className={cn(
-                      "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors text-left",
-                      selectedLocation === "" ? "bg-primary/10 text-primary font-semibold" : "hover:bg-muted text-foreground"
-                    )}
-                    onClick={() => {
-                      setSelectedLocation("");
-                      setIsLocationOpen(false);
-                    }}
-                  >
-                    {t("byLocationAll")}
-                    {selectedLocation === "" && <Check className="h-4 w-4" />}
-                  </button>
-                  {allLocations.map(loc => {
-                    const isSelected = selectedLocation === loc;
-                    return (
-                      <button
-                        key={loc}
-                        className={cn(
-                          "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors text-left",
-                          isSelected 
-                            ? "bg-primary/10 text-primary font-semibold" 
-                            : "hover:bg-muted text-foreground"
-                        )}
-                        onClick={() => {
-                          setSelectedLocation(isSelected ? "" : loc);
-                          setIsLocationOpen(false);
-                        }}
-                      >
-                        {loc}
-                        {isSelected && <Check className="h-4 w-4" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              </PopoverContent>
-            </Popover>
-
-            {/* Wilaya Filter */}
-            <Popover open={isWilayaOpen} onOpenChange={setIsWilayaOpen}>
-              <PopoverTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  className="bg-muted hover:bg-muted/80 text-foreground border-0 rounded-xl px-4 py-2.5 h-10 font-medium flex items-center gap-2 w-[150px] justify-between shadow-sm"
-                >
-                  <span className="truncate text-xs">
-                    {selectedWilaya === "" 
-                      ? t("byWilayaAll") 
-                      : selectedWilaya}
-                  </span>
-                  <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-1.5 rounded-xl shadow-2xl border-border bg-card" align="start">
-                <div className="max-h-64 overflow-y-auto custom-scrollbar space-y-0.5">
-                  <button
-                    className={cn(
-                      "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors text-left",
-                      selectedWilaya === "" ? "bg-primary/10 text-primary font-semibold" : "hover:bg-muted text-foreground"
-                    )}
-                    onClick={() => {
-                      setSelectedWilaya("");
-                      setIsWilayaOpen(false);
-                    }}
-                  >
-                    {t("byWilayaAll")}
-                    {selectedWilaya === "" && <Check className="h-4 w-4" />}
-                  </button>
-                  {allWilayas.map(wilaya => {
-                    const isSelected = selectedWilaya === wilaya;
-                    return (
-                      <button
-                        key={wilaya}
-                        className={cn(
-                          "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors text-left",
-                          isSelected 
-                            ? "bg-primary/10 text-primary font-semibold" 
-                            : "hover:bg-muted text-foreground"
-                        )}
-                        onClick={() => {
-                          setSelectedWilaya(isSelected ? "" : wilaya);
-                          setIsWilayaOpen(false);
-                        }}
-                      >
-                        {wilaya}
-                        {isSelected && <Check className="h-4 w-4" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              </PopoverContent>
-            </Popover>
-
-            {/* Clear Filters Button */}
-          </div>
-        )}
-
-
-        {/* Interactive Search Overlay Results (Moved inside the main container!) */}
-        {isSearchActive && (
-          <div className="w-full mt-4 animate-in fade-in slide-in-from-top-4 duration-500 flex-1 overflow-hidden flex flex-col min-h-[60vh]">
-            <div className="bg-card text-card-foreground border rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[70vh] max-h-full">
-              <div className="flex-1 overflow-y-auto p-4 space-y-2 relative custom-scrollbar">
-                {submittedSearchQuery.trim() === "" && !hasActiveFilters ? (
-                  <div className="py-20 px-10 flex flex-col items-center justify-center text-center text-muted-foreground space-y-4">
-                    <Search className="h-12 w-12 opacity-20 mb-4" />
-                    <p className="text-xl font-medium">
-                      {searchQuery.trim() !== ""
-                        ? t("pressEnterToSearch")
-                        : t("typeAnything")}
-                    </p>
-                    <p className="text-sm">
-                      {searchQuery.trim() !== ""
-                        ? t("youCanRefine")
-                        : t("trySearchingFor")}
-                    </p>
-                  </div>
-                ) : filteredInternships.length > 0 ? (
-                  <div className="animate-in fade-in slide-in-from-top-4 duration-300">
-                    <h3 className="px-4 py-2 pt-0 pb-3 text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                      {filteredInternships.length} {t("resultsFound")}
-                      {hasActiveFilters && <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase font-bold">{t("filtered")}</span>}
-                    </h3>
-                    {filteredInternships.map((internship, index) => (
-                      <div
-                        key={internship.id}
-                        className="group flex flex-col sm:flex-row sm:items-center gap-4 p-4 hover:bg-muted/60 rounded-2xl cursor-pointer transition-all border border-transparent hover:border-border/50"
-                        style={{ animationDelay: `${index * 50}ms` }}
-                        onClick={() => navigate(`/internships/${internship.id}`, {
-                          state: { searchQuery: submittedSearchQuery, isSearchActive, selectedWilaya, selectedType, selectedSkills }
-                        })}
-                      >
-                        <div className="h-14 w-14 rounded-xl shrink-0 group-hover:scale-105 transition-transform overflow-hidden">
-                          {internship.banner_image ? (
-                            <img src={internship.banner_image} alt={internship.title} className="h-full w-full object-cover" />
-                          ) : (
-                            <div className="h-full w-full bg-primary/10 text-primary flex items-center justify-center">
-                              <Briefcase className="h-7 w-7" />
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-lg truncate group-hover:text-primary transition-colors">{internship.title}</h4>
-                          <div className="flex flex-wrap items-center text-sm text-muted-foreground gap-x-4 gap-y-2 mt-1">
-                            <span className="flex items-center gap-1.5"><Building2 className="h-4 w-4 shrink-0" />{internship.company}</span>
-                            <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4 shrink-0" />{internship.wilaya}</span>
-                            <span className="flex items-center gap-1.5 bg-muted px-2 py-0.5 rounded-md text-xs font-medium text-foreground"><Briefcase className="h-3 w-3 shrink-0" />{internship.type}</span>
-                          </div>
-                          <div className="flex flex-wrap gap-2 mt-3">
-                            {internship.tech.map(t => (
-                              <span key={t} className="text-[10px] uppercase font-bold bg-primary/10 text-primary px-2 py-1 rounded-md">
-                                {t}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                        <Button variant="default" className="shrink-0 rounded-xl sm:opacity-0 sm:group-hover:opacity-100 transition-opacity mt-4 sm:mt-0">
-                          {t("viewDetails")}
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="p-12 text-center text-muted-foreground flex flex-col items-center justify-center space-y-4">
-                    <div className="h-12 w-12 rounded-full bg-muted/50 flex items-center justify-center">
-                      <X className="h-6 w-6 opacity-50" />
-                    </div>
-                    <p className="text-lg">{t("noInternshipsCriteria")}</p>
-                  </div>
-                )}
-              </div>
-
-              <div className="bg-muted px-6 py-4 border-t text-sm text-muted-foreground flex items-center justify-between shrink-0">
-                <span>{t("pressToClose").split("ESC")[0]}<kbd className="bg-background px-2 py-1 rounded-md border text-xs font-semibold shadow-sm ml-1 hidden sm:inline-block">ESC</kbd>{t("pressToClose").split("ESC")[1]}</span>
-                <span>{t("searchResultsAdvanced")}</span>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-      {/* Internships List - Normal View */}
-      <div
-        className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mt-6 ${isSearchActive ? 'opacity-0 pointer-events-none' : 'opacity-100'
-          }`}
-      >
-        {loading ? (
-          Array(6).fill(0).map((_, i) => (
-            <div key={i} className="h-[350px] w-full rounded-2xl bg-muted" />
-          ))
-        ) : filteredInternships.length > 0 ? (
-          filteredInternships.map((internship) => (
-            <div
-              key={internship.id}
-              className="border rounded-2xl bg-card text-card-foreground shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col group"
-            >
-              {/* Photo Placeholder / Banner */}
-              <div className="w-full h-48 bg-slate-100 dark:bg-slate-800 flex items-center justify-center border-b relative overflow-hidden">
-                {internship.banner_image ? (
-                  <img src={internship.banner_image} className="w-full h-full object-cover" alt="Banner" />
-                ) : (
+                
+                {sortOpen && (
                   <>
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-primary/5"></div>
-                    <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-black/20 dark:from-black/50 to-transparent"></div>
+                    <div onClick={() => setSortOpen(false)} style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 90 }} />
+                    <div style={{ position: "absolute", top: "100%", right: 0, marginTop: 4, width: 180, background: dk ? "#1c1c1e" : "#fff", border: `1px solid ${bdr}`, borderRadius: 12, boxShadow: "0 10px 25px rgba(0,0,0,0.05)", zIndex: 100, overflow: "hidden", display: "flex", flexDirection: "column", padding: 4 }}>
+                      {[
+                        { l: "Default Sorting", v: "default" },
+                        { l: "Alphabetical (A-Z)", v: "alpha_asc" },
+                        { l: "Alphabetical (Z-A)", v: "alpha_desc" },
+                        { l: "Newest First", v: "newest" },
+                        { l: "Oldest First", v: "oldest" }
+                      ].map(o => (
+                        <div
+                          key={o.v}
+                          onClick={() => {
+                            setSortBy(o.v);
+                            setSortOpen(false);
+                          }}
+                          style={{
+                            padding: "8px 12px",
+                            fontSize: 13,
+                            fontWeight: 500,
+                            color: txt,
+                            cursor: "pointer",
+                            borderRadius: 8,
+                            background: sortBy === o.v ? (dk ? "rgba(255,255,255,0.05)" : "#f1f5f9") : "transparent"
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = dk ? "rgba(255,255,255,0.05)" : "#f1f5f9"}
+                          onMouseLeave={(e) => e.currentTarget.style.background = sortBy === o.v ? (dk ? "rgba(255,255,255,0.05)" : "#f1f5f9") : "transparent"}
+                        >
+                          {o.l}
+                        </div>
+                      ))}
+                    </div>
                   </>
                 )}
               </div>
-
-              <div className="p-6 flex flex-col flex-1">
-                <div className="mb-4">
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <h3 className="font-bold text-xl leading-tight line-clamp-2">{internship.title}</h3>
-                    <Badge variant={getInternshipStatusBadge(internship.status)} className="capitalize whitespace-nowrap mt-1">
-                      {internship.status ? internship.status.replace(/_/g, ' ').toLowerCase() : 'N/A'}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center text-sm font-semibold text-primary/80 gap-1.5 mb-3">
-                    <Building2 className="h-4 w-4" />
-                    {internship.company_name || "Company"} - {internship.wilaya || "N/A"}
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {(internship.required_skills || []).slice(0, 3).map(t => (
-                      <span key={t} className="text-[10px] uppercase font-bold bg-primary/10 text-primary px-2 py-1 rounded-md">
-                        {t}
-                      </span>
-                    ))}
-                    {internship.required_skills?.length > 3 && (
-                      <span className="text-[10px] uppercase font-bold bg-primary/10 text-primary px-2 py-1 rounded-md">
-                        +{internship.required_skills.length - 3}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="mt-auto pt-4 flex gap-2 border-t items-center">
-                  <Button
-                    variant="outline"
-                    className="flex-1 font-bold rounded-xl hover:bg-primary hover:text-white transition-all duration-300"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/internships/${internship.id}`, {
-                          state: { searchQuery: submittedSearchQuery, isSearchActive, selectedWilaya, selectedType, selectedSkills }
-                      });
-                    }}
-                  >
-                    {t("viewDetails")}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={`h-12 w-12 rounded-xl transition-all duration-300 hover:bg-transparent ${likedItems.has(internship.id) ? 'text-destructive' : 'hover:text-destructive'}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleLike(internship.id);
-                    }}
-                  >
-                    <Heart className={`h-6 w-6 ${likedItems.has(internship.id) ? 'fill-destructive text-destructive' : ''}`} />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-12 w-12 rounded-xl hover:text-primary hover:bg-transparent transition-all duration-300"
-                  >
-                    <Share2 className="h-6 w-6" />
-                  </Button>
-                </div>
-              </div>
             </div>
-          ))
-        ) : (
-          <div className="col-span-full flex flex-col items-center justify-center py-24 text-center">
-            <div className="h-16 w-16 bg-muted/50 rounded-full flex items-center justify-center mb-6">
-              <Search className="h-8 w-8 text-muted-foreground/40" />
-            </div>
-            <h3 className="text-xl font-bold tracking-tight text-foreground mb-2">{t("noInternshipsFound")}</h3>
-            <p className="text-muted-foreground max-w-xs mx-auto">
-              {t("couldntFindInternships")}
-            </p>
+          </div>
+
+        {/* ACTIVE FILTERS ROW */}
+        {pills.length > 0 && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "14px 0", flexWrap: "wrap" }}>
+            <span style={{ fontSize: 13, color: txt2, marginRight: 4 }}>Active Filter</span>
+            {pills.map((p, i) => (
+              <button key={i} onClick={p.c} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", background: pillBg, color: pillTxt, border: "none", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: F, transition: "opacity 0.2s" }}
+                onMouseEnter={e => e.currentTarget.style.opacity = "0.8"} onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
+                {p.l} <X size={12} />
+              </button>
+            ))}
+            <button onClick={clearAll} style={{ background: "none", border: "none", color: accent, fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: F, textDecoration: "underline", textUnderlineOffset: 3 }}>Clear All</button>
           </div>
         )}
+
+        {/* MAIN TWO-COLUMN LAYOUT */}
+        <div style={{ display: "flex", gap: 48, paddingTop: 24 }}>
+
+          {/* LEFT SIDEBAR */}
+          <aside style={{ width: 180, flexShrink: 0 }}>
+            {/* Search */}
+            <div style={{ position: "relative", marginBottom: 28 }}>
+              <Search size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: txt2 }} />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..." style={{ width: "100%", padding: "8px 10px 8px 30px", border: `1px solid ${bdr}`, borderRadius: 8, background: "transparent", color: txt, fontSize: 13, outline: "none", boxSizing: "border-box", fontFamily: F }} />
+            </div>
+
+            {/* By Type */}
+            <div style={{ marginBottom: 28 }}>
+              <h4 style={{ fontSize: 14, fontWeight: 700, color: txt, marginBottom: 12 }}>By Type</h4>
+              {[{l:"All Types",v:""},{l:"Full Time",v:"FULL_TIME"},{l:"Part Time",v:"PART_TIME"}].map(o => (
+                <button key={o.v} onClick={() => setType(o.v)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0", background: "none", border: "none", cursor: "pointer", width: "100%" }}>
+                  <div style={{ width: 14, height: 14, borderRadius: "50%", border: `1.5px solid ${type===o.v ? accent : (dk?"rgba(255,255,255,0.25)":"#ccc")}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {type===o.v && <div style={{ width: 7, height: 7, borderRadius: "50%", background: accent }} />}
+                  </div>
+                  <span style={{ fontSize: 13, color: type===o.v ? txt : txt2 }}>{o.l}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* By Location */}
+            <div style={{ marginBottom: 28 }}>
+              <h4 style={{ fontSize: 14, fontWeight: 700, color: txt, marginBottom: 12 }}>By Location</h4>
+              {[{l:"All",v:""},{l:"Remote",v:"REMOTE"},{l:"Onsite",v:"ONSITE"},{l:"Hybrid",v:"HYBRID"}].map(o => (
+                <button key={o.v} onClick={() => setLoc(o.v)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0", background: "none", border: "none", cursor: "pointer", width: "100%" }}>
+                  <div style={{ width: 14, height: 14, borderRadius: "50%", border: `1.5px solid ${loc===o.v ? accent : (dk?"rgba(255,255,255,0.25)":"#ccc")}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {loc===o.v && <div style={{ width: 7, height: 7, borderRadius: "50%", background: accent }} />}
+                  </div>
+                  <span style={{ fontSize: 13, color: loc===o.v ? txt : txt2 }}>{o.l}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* By Time Frame */}
+            <div style={{ marginBottom: 28 }}>
+              <h4 style={{ fontSize: 14, fontWeight: 600, color: txt, marginBottom: 4, fontFamily: F }}>Time Frame</h4>
+              <div style={{ fontSize: 13, color: txt2, marginBottom: 12, fontWeight: 400, fontFamily: F }}>
+                {minMonths === maxMonths ? `${minMonths} Month${minMonths > 1 ? 's' : ''}` : `${minMonths} Month${minMonths > 1 ? 's' : ''} - ${maxMonths} Month${maxMonths > 1 ? 's' : ''}`}
+              </div>
+              <div style={{ position: "relative", width: "100%", height: 2, margin: "12px 0 16px" }}>
+                {/* Background track */}
+                <div style={{
+                  position: "absolute",
+                  left: 0,
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                  background: dk ? "rgba(255,255,255,0.08)" : "#e2e8f0",
+                  borderRadius: 999
+                }} />
+                
+                {/* Active track segment */}
+                <div style={{
+                  position: "absolute",
+                  left: `${((minMonths - 1) / 11) * 100}%`,
+                  right: `${100 - ((maxMonths - 1) / 11) * 100}%`,
+                  top: 0,
+                  bottom: 0,
+                  background: accent,
+                  borderRadius: 999
+                }} />
+                
+                {/* Overlay Inputs */}
+                <input
+                  type="range"
+                  min="1"
+                  max="12"
+                  value={minMonths}
+                  onChange={e => {
+                    const val = Math.min(parseInt(e.target.value, 10), maxMonths);
+                    setMinMonths(val);
+                  }}
+                  className="range-slider-input"
+                />
+                <input
+                  type="range"
+                  min="1"
+                  max="12"
+                  value={maxMonths}
+                  onChange={e => {
+                    const val = Math.max(parseInt(e.target.value, 10), minMonths);
+                    setMaxMonths(val);
+                  }}
+                  className="range-slider-input"
+                />
+              </div>
+            </div>
+
+            {/* By Wilaya */}
+            <div style={{ marginBottom: 28, position: "relative" }}>
+              <h4 style={{ fontSize: 14, fontWeight: 700, color: txt, marginBottom: 12 }}>By Wilaya</h4>
+              <button onClick={() => setWOpen(!wOpen)} style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 10px", background: "transparent", border: `1px solid ${bdr}`, borderRadius: 8, color: wilaya ? txt : txt2, fontSize: 13, cursor: "pointer", fontFamily: F }}>
+                {wilaya || "All Wilayas"} <ChevronDown size={13} />
+              </button>
+              {wOpen && (
+                <div style={{ position: "absolute", top: "100%", left: 0, right: 0, marginTop: 4, background: dk?"#1c1c1e":"#fff", border: `1px solid ${bdr}`, borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.12)", zIndex: 50, maxHeight: 220, display: "flex", flexDirection: "column" }}>
+                  <div style={{ padding: 6 }}><input value={wSearch} onChange={e => setWSearch(e.target.value)} placeholder="Search..." style={{ width: "100%", padding: "6px 8px", border: `1px solid ${bdr}`, borderRadius: 6, background: "transparent", color: txt, fontSize: 12, outline: "none", boxSizing: "border-box", fontFamily: F }} /></div>
+                  <div className="sidebar-scroll" style={{ overflowY: "auto", maxHeight: 170, padding: "0 4px 4px" }}>
+                    <button onClick={() => { setWilaya(""); setWOpen(false); setWSearch(""); }} style={{ width: "100%", textAlign: "left", padding: "6px 8px", background: !wilaya ? hoverBg : "none", border: "none", borderRadius: 6, fontSize: 12, color: txt, cursor: "pointer", fontFamily: F }}>All Wilayas</button>
+                    {WILAYAS.filter(w => w.toLowerCase().includes(wSearch.toLowerCase())).map(w => (
+                      <button key={w} onClick={() => { setWilaya(w); setWOpen(false); setWSearch(""); }} style={{ width: "100%", textAlign: "left", padding: "6px 8px", background: wilaya===w ? hoverBg : "none", border: "none", borderRadius: 6, fontSize: 12, color: txt, cursor: "pointer", fontFamily: F }}>{w}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* By Skills */}
+            <div style={{ marginBottom: 28 }}>
+              <h4 style={{ fontSize: 14, fontWeight: 700, color: txt, marginBottom: 12 }}>By Skills</h4>
+              <div className="sidebar-scroll" style={{ maxHeight: 220, overflowY: "auto" }}>
+                {SKILLS.map(s => { const on = skills.includes(s); return (
+                  <button key={s} onClick={() => setSkills(p => on ? p.filter(x=>x!==s) : [...p,s])} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0", background: "none", border: "none", cursor: "pointer", width: "100%" }}>
+                    <div style={{ width: 14, height: 14, borderRadius: 3, border: `1.5px solid ${on ? accent : (dk?"rgba(255,255,255,0.25)":"#ccc")}`, background: on ? accent : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      {on && <svg width="9" height="9" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                    </div>
+                    <span style={{ fontSize: 13, color: on ? txt : txt2 }}>{s}</span>
+                  </button>
+                ); })}
+              </div>
+            </div>
+          </aside>
+
+          {/* RIGHT CONTENT — GRID */}
+          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", minHeight: 640 }}>
+            <div style={{ flex: 1 }}>
+              {loading ? (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
+                  {Array(6).fill(0).map((_,i) => <div key={i} style={{ height: 300, borderRadius: 16, background: dk?"rgba(255,255,255,0.04)":"#f5f5f5" }} />)}
+                </div>
+              ) : items.length > 0 ? (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
+                  {items.map(n => {
+                    const spotsLeft = Math.max(0, n.number_of_places - (n.accepted_count || 0));
+                    return (
+                      <div key={n.id} onClick={() => navigate(`/internships/${n.id}`)} style={{ cursor: "pointer", transition: "transform 0.3s", borderRadius: 0 }}
+                        onMouseEnter={e => e.currentTarget.style.transform="translateY(-3px)"} onMouseLeave={e => e.currentTarget.style.transform="translateY(0)"}>
+                        {/* Image */}
+                        <div style={{ width: "100%", aspectRatio: "1/1", borderRadius: 16, overflow: "hidden", background: dk?"#222":"#f3f0eb", position: "relative", marginBottom: 12 }}>
+                          {n.banner_image ? <img src={n.banner_image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                           : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.15 }}><Briefcase size={48} /></div>}
+                          {n.status === "OPEN_FOR_APPLICATION" && (
+                            <div style={{ position: "absolute", top: 12, left: 12, background: spotsLeft > 0 ? accent : "#7f8c8d", color: "#fff", fontSize: 10, fontWeight: 700, padding: "4px 10px", borderRadius: 20 }}>
+                              {spotsLeft > 0 ? "Open" : "Full"}
+                            </div>
+                          )}
+                          <button onClick={e => { e.stopPropagation(); setLiked(p => { const n2 = new Set(p); n2.has(n.id)?n2.delete(n.id):n2.add(n.id); return n2; }); }}
+                            style={{ position: "absolute", top: 12, right: 12, width: 30, height: 30, borderRadius: "50%", background: "rgba(255,255,255,0.9)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                            <Heart size={14} style={{ color: liked.has(n.id)?"#e53e3e":"#666", fill: liked.has(n.id)?"#e53e3e":"none" }} />
+                          </button>
+                        </div>
+                        {/* Info */}
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                          <span style={{ fontSize: 12, color: txt2 }}>{n.company_name}</span>
+                          <span style={{ fontSize: 12, color: txt2 }}>{(n.type||"").replace("_"," ")}</span>
+                        </div>
+                        <h3 style={{ fontSize: 15, fontWeight: 600, color: txt, margin: "0 0 6px", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n.title}</h3>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, color: txt2 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                            <MapPin size={12} /> 
+                            {n.wilaya ? `${n.wilaya} • ` : ""}
+                            {n.internship_location ? (n.internship_location.charAt(0).toUpperCase() + n.internship_location.slice(1).toLowerCase()) : "N/A"}
+                          </div>
+                          <span style={{ fontWeight: 500, color: spotsLeft > 0 ? (spotsLeft <= 2 ? "#e53e3e" : accent) : "#888" }}>
+                            {n.accepted_count || 0}/{n.number_of_places} spots
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div style={{ textAlign: "center", padding: "80px 24px", color: txt2 }}>
+                  <div style={{ width: 64, height: 64, borderRadius: "50%", background: dk ? "rgba(255,255,255,0.04)" : "#f5f5f5", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
+                    <Briefcase size={28} style={{ opacity: 0.3, color: txt }} />
+                  </div>
+                  <h3 style={{ fontSize: 18, fontWeight: 700, color: txt, marginBottom: 8 }}>{t("noInternshipsFound")}</h3>
+                  <p style={{ fontSize: 14 }}>{t("couldntFindInternships")}</p>
+                </div>
+              )}
+            </div>
+
+            {/* PAGINATION */}
+            {pages >= 1 && (
+              <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, marginTop: 48 }}>
+                <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="pag-btn">
+                  <ChevronLeft size={16} />
+                </button>
+                
+                {getPageNumbers().map((p, idx) => {
+                  if (p === '...') {
+                    return <span key={`ell-${idx}`} className="pag-ellipsis">...</span>;
+                  }
+                  return (
+                    <button key={p} onClick={() => setPage(p)} className={`pag-btn ${page === p ? 'active' : ''}`}>
+                      {p}
+                    </button>
+                  );
+                })}
+
+                <button onClick={() => setPage(p => Math.min(pages, p + 1))} disabled={page === pages} className="pag-btn">
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            )}
+
+          </div>
+        </div>
+
+        {/* PLATFORM FEATURES */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 24, marginTop: 72, borderTop: `1px solid ${bdr}`, paddingTop: 48, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 16, flex: "1 1 250px" }}>
+            <div style={{ position: "relative", zIndex: 1, display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 44, flexShrink: 0 }}>
+              <div style={{ position: "absolute", bottom: -2, right: -2, width: 32, height: 32, borderRadius: "40% 60% 60% 40% / 40% 40% 60% 60%", background: "rgba(29, 78, 216, 0.12)", zIndex: -1 }} />
+              <ShieldCheck size={24} style={{ color: accent }} />
+            </div>
+            <div>
+              <h4 style={{ fontSize: 14, fontWeight: 700, color: txt, margin: "0 0 3px", fontFamily: F }}>Verified Offers</h4>
+              <p style={{ fontSize: 12, color: txt2, margin: 0, lineHeight: 1.4, fontFamily: F }}>100% verified listings from registered companies.</p>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 16, flex: "1 1 250px" }}>
+            <div style={{ position: "relative", zIndex: 1, display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 44, flexShrink: 0 }}>
+              <div style={{ position: "absolute", bottom: -2, right: -2, width: 32, height: 32, borderRadius: "30% 70% 70% 30% / 40% 40% 60% 60%", background: "rgba(29, 78, 216, 0.12)", zIndex: -1 }} />
+              <Send size={20} style={{ color: accent }} />
+            </div>
+            <div>
+              <h4 style={{ fontSize: 14, fontWeight: 700, color: txt, margin: "0 0 3px", fontFamily: F }}>Direct Application</h4>
+              <p style={{ fontSize: 12, color: txt2, margin: 0, lineHeight: 1.4, fontFamily: F }}>Apply directly to top recruiters with your digital CV.</p>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 16, flex: "1 1 250px" }}>
+            <div style={{ position: "relative", zIndex: 1, display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 44, flexShrink: 0 }}>
+              <div style={{ position: "absolute", bottom: -2, right: -2, width: 32, height: 32, borderRadius: "60% 40% 40% 60% / 40% 40% 60% 60%", background: "rgba(29, 78, 216, 0.12)", zIndex: -1 }} />
+              <Headphones size={22} style={{ color: accent }} />
+            </div>
+            <div>
+              <h4 style={{ fontSize: 14, fontWeight: 700, color: txt, margin: "0 0 3px", fontFamily: F }}>Dedicated Support</h4>
+              <p style={{ fontSize: 12, color: txt2, margin: 0, lineHeight: 1.4, fontFamily: F }}>Our team is here to assist you at every single step.</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
+    </>
   );
 }

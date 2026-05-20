@@ -31,7 +31,7 @@ import api from "@/api/api"
 import { ACCESS_TOKEN } from "@/constants"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import logoGif from "@/assets/logo.gif"
+import logoPng from "@/assets/internia-logo.png"
 import { useLanguage } from "@/components/language-provider"
 
 const data = {
@@ -347,8 +347,8 @@ export function AppSidebar({ ...props }) {
     <Sidebar variant="inset" collapsible="icon" {...props}>
       <SidebarHeader>
         <TeamSwitcher 
-          logoSrc={logoGif}
-          name="Stag.Io"
+          logoSrc={logoPng}
+          name="Internia."
           subtitle={getSubtitle}
         />
       </SidebarHeader>

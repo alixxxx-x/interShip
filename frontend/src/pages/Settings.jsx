@@ -1,12 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { User, Lock, Palette, Camera, Loader2, CheckCircle2, AlertCircle, Languages, LogOut, Globe, ShieldCheck, HelpCircle, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "@/api/api";
@@ -21,6 +13,7 @@ export default function Settings() {
   const [fetching, setFetching] = useState(true);
   const [message, setMessage] = useState({ type: "", text: "" });
   const [langDialog, setLangDialog] = useState({ open: false, target: null });
+  const [activeTab, setActiveTab] = useState("account");
 
   const fileInputRef = useRef(null);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -163,112 +156,219 @@ export default function Settings() {
   };
 
   if (fetching) return (
-    <div className="flex items-center justify-center min-h-[400px]">
+    <div className="flex items-center justify-center min-h-[60vh] bg-white dark:bg-background transition-colors duration-300">
       <Loader2 className="h-8 w-8 animate-spin text-primary" />
     </div>
   );
 
   const currentLangName = langNameMap[language] || "English";
 
+  const getTabClass = (tabName) => {
+    const isActive = activeTab === tabName;
+    return `w-full flex items-center justify-start py-3 px-4 gap-3 font-bold transition-all ${isActive
+        ? "text-[#1a3a6b] bg-[#f0f4fa] dark:bg-[rgba(255,255,255,0.08)] dark:text-[#f8fafc] border-l-4 border-[#1a3a6b] dark:border-[#93c5fd] rounded-r-lg"
+        : "text-[#5f6c80] hover:bg-[#f0f4fa]/50 hover:text-[#1a3a6b] dark:text-slate-400 dark:hover:text-[#f8fafc] dark:hover:bg-[rgba(255,255,255,0.03)] rounded-lg"
+      }`;
+  };
+
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-8 animate-in fade-in duration-500">
-      <div className="flex items-start gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="mt-1 shrink-0 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
-          <ArrowLeft className="h-6 w-6 rtl:rotate-180 text-slate-600" />
-        </Button>
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold tracking-tight">{t("settings")}</h1>
-          <p className="text-muted-foreground text-lg">{t("settingsDesc")}</p>
+    <div className="bg-white dark:bg-background text-foreground min-h-screen py-8 px-4 md:px-6 transition-colors duration-300">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        .settings-container {
+            font-family: 'Inter', -apple-system, sans-serif;
+        }
+        
+        .settings-card {
+            background-color: #f0f4fa;
+            border: 1px solid rgba(26, 58, 107, 0.05);
+            border-radius: 28px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.02);
+            padding: 32px;
+        }
+        
+        .dark .settings-card {
+            background-color: #132237;
+            border: 1px solid rgba(59, 130, 246, 0.15);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+        }
+
+        .settings-input {
+            width: 100%;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            background-color: #ffffff;
+            padding: 10px 16px;
+            font-size: 14px;
+            color: #111111;
+            transition: all 0.2s;
+        }
+        
+        .dark .settings-input {
+            background-color: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #f8fafc;
+        }
+        
+        .settings-input:focus {
+            outline: none;
+            border-color: #1a3a6b;
+            box-shadow: 0 0 0 3px rgba(26, 58, 107, 0.1);
+        }
+        
+        .dark .settings-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        
+        .settings-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 500;
+            color: #334155;
+            margin-bottom: 6px;
+            letter-spacing: -0.01em;
+        }
+        
+        .dark .settings-label {
+            color: #94a3b8;
+        }
+
+        .settings-btn-primary {
+            background-color: #1a3a6b;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 10px 24px;
+            border-radius: 12px;
+            transition: opacity 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .dark .settings-btn-primary {
+            background-color: #3b82f6;
+            color: #ffffff;
+        }
+
+        .settings-btn-primary:hover {
+            opacity: 0.9;
+        }
+        
+        .settings-btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .avatar-box {
+            background-color: #ffffff;
+            border: 4px solid #ffffff;
+            color: #1a3a6b;
+        }
+        .dark .avatar-box {
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 4px solid #132237;
+            color: #93c5fd;
+        }
+        
+        .glass-btn {
+            background-color: #ffffff;
+            border-color: #e2e8f0;
+        }
+        .dark .glass-btn {
+            background-color: rgba(255, 255, 255, 0.03);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+        .dark .glass-btn:hover {
+            background-color: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+      `}</style>
+
+      <div className="max-w-5xl mx-auto settings-container space-y-8 animate-in fade-in duration-500">
+        {/* Header */}
+        <div className="flex items-start gap-4">
+          <button onClick={() => navigate(-1)} className="mt-1 p-2 shrink-0 rounded-full hover:bg-slate-100 dark:hover:bg-[#1c2e4a] transition-colors">
+            <ArrowLeft className="h-6 w-6 rtl:rotate-180 text-slate-600 dark:text-[#93c5fd]" />
+          </button>
+          <div className="flex flex-col gap-2">
+            <h1 className="text-3xl font-bold tracking-tight text-[#111111] dark:text-white">{t("settings")}</h1>
+            <p className="text-slate-500 dark:text-slate-400 text-lg">{t("settingsDesc")}</p>
+          </div>
         </div>
-      </div>
 
-      <Separator />
+        <div className="h-[1px] bg-slate-100 dark:bg-slate-800/50 w-full" />
 
-      <Tabs defaultValue="account" className="flex flex-col md:flex-row gap-8">
-        {/* Sidebar Navigation */}
-        <div className="w-full md:w-64 shrink-0">
-          <TabsList className="flex flex-row md:flex-col h-auto w-full bg-transparent p-0 gap-1 overflow-x-auto md:overflow-visible">
-            <TabsTrigger
-              value="account"
-              className="w-full justify-start py-3 px-4 gap-3 text-muted-foreground data-[state=active]:text-primary data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800/50 data-[state=active]:border-l-4 data-[state=active]:border-primary transition-all font-bold rounded-r-lg rounded-l-none"
-            >
-              <User className="h-4 w-4" /> {t("account")}
-            </TabsTrigger>
-            <TabsTrigger
-              value="security"
-              className="w-full justify-start py-3 px-4 gap-3 text-muted-foreground data-[state=active]:text-primary data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800/50 data-[state=active]:border-l-4 data-[state=active]:border-primary transition-all font-bold rounded-r-lg rounded-l-none"
-            >
-              <Lock className="h-4 w-4" /> {t("security")}
-            </TabsTrigger>
-            <TabsTrigger
-              value="appearance"
-              className="w-full justify-start py-3 px-4 gap-3 text-muted-foreground data-[state=active]:text-primary data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800/50 data-[state=active]:border-l-4 data-[state=active]:border-primary transition-all font-bold rounded-r-lg rounded-l-none"
-            >
-              <Palette className="h-4 w-4" /> {t("appearance")}
-            </TabsTrigger>
-            <TabsTrigger
-              value="language"
-              className="w-full justify-start py-3 px-4 gap-3 text-muted-foreground data-[state=active]:text-primary data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800/50 data-[state=active]:border-l-4 data-[state=active]:border-primary transition-all font-bold rounded-r-lg rounded-l-none"
-            >
-              <Languages className="h-4 w-4" /> {t("language")}
-            </TabsTrigger>
-            <TabsTrigger
-              value="privacy"
-              className="w-full justify-start py-3 px-4 gap-3 text-muted-foreground data-[state=active]:text-primary data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800/50 data-[state=active]:border-l-4 data-[state=active]:border-primary transition-all font-bold rounded-r-lg rounded-l-none"
-            >
-              <ShieldCheck className="h-4 w-4" /> {t("privacyPolicy")}
-            </TabsTrigger>
-            <TabsTrigger
-              value="support"
-              className="w-full justify-start py-3 px-4 gap-3 text-muted-foreground data-[state=active]:text-primary data-[state=active]:bg-slate-100 dark:data-[state=active]:bg-slate-800/50 data-[state=active]:border-l-4 data-[state=active]:border-primary transition-all font-bold rounded-r-lg rounded-l-none"
-            >
-              <HelpCircle className="h-4 w-4" /> {t("supportCenter")}
-            </TabsTrigger>
-
-            <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 space-y-1">
-              <button
-                onClick={() => navigate("/logout")}
-                className="w-full flex items-center justify-start py-3 px-4 gap-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all font-bold rounded-lg"
-              >
-                <LogOut className="h-4 w-4" /> {t("logout")}
+        <div className="flex flex-col md:flex-row gap-8">
+          {/* Sidebar Navigation */}
+          <div className="w-full md:w-64 shrink-0">
+            <div className="flex flex-row md:flex-col gap-1 overflow-x-auto md:overflow-visible pb-4 md:pb-0">
+              <button onClick={() => setActiveTab('account')} className={getTabClass('account')}>
+                <User className="h-4 w-4" /> {t("account")}
               </button>
-            </div>
-          </TabsList>
-        </div>
+              <button onClick={() => setActiveTab('security')} className={getTabClass('security')}>
+                <Lock className="h-4 w-4" /> {t("security")}
+              </button>
+              <button onClick={() => setActiveTab('appearance')} className={getTabClass('appearance')}>
+                <Palette className="h-4 w-4" /> {t("appearance")}
+              </button>
+              <button onClick={() => setActiveTab('language')} className={getTabClass('language')}>
+                <Languages className="h-4 w-4" /> {t("language")}
+              </button>
+              <button onClick={() => setActiveTab('privacy')} className={getTabClass('privacy')}>
+                <ShieldCheck className="h-4 w-4" /> {t("privacyPolicy")}
+              </button>
+              <button onClick={() => setActiveTab('support')} className={getTabClass('support')}>
+                <HelpCircle className="h-4 w-4" /> {t("supportCenter")}
+              </button>
 
-        {/* Content Area */}
-        <div className="flex-1 space-y-6">
-          {message.text && (
-            <div className={`p-4 rounded-xl flex items-center gap-3 animate-in slide-in-from-top-2 ${message.type === "success" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-red-50 text-red-700 border border-red-200"
-              }`}>
-              {message.type === "success" ? <CheckCircle2 className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
-              <span className="text-sm font-medium">{message.text}</span>
+              <div className="mt-4 pt-4 border-t border-slate-100 dark:border-white/10">
+                <button
+                  onClick={() => navigate("/logout")}
+                  className="w-full flex items-center justify-start py-3 px-4 gap-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all font-bold rounded-lg"
+                >
+                  <LogOut className="h-4 w-4" /> {t("logout")}
+                </button>
+              </div>
             </div>
-          )}
+          </div>
 
-          <TabsContent value="account" className="mt-0">
-            <Card className="border-none shadow-lg bg-card/50 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle>{t("publicProfile")}</CardTitle>
-                <CardDescription>{t("publicProfileDesc")}</CardDescription>
-              </CardHeader>
-              <CardContent>
+          {/* Content Area */}
+          <div className="flex-1 space-y-6">
+            {message.text && (
+              <div className={`p-4 rounded-xl flex items-center gap-3 animate-in slide-in-from-top-2 ${message.type === "success" ? "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20" : "bg-red-50 text-red-700 border border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20"}`}>
+                {message.type === "success" ? <CheckCircle2 className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
+                <span className="text-sm font-medium">{message.text}</span>
+              </div>
+            )}
+
+            {/* Account Tab */}
+            {activeTab === 'account' && (
+              <div className="settings-card">
+                <div className="mb-6">
+                  <h2 className="text-[18px] font-bold text-[#111111] dark:text-white tracking-tight">{t("publicProfile")}</h2>
+                  <p className="text-[13px] text-[#334155] dark:text-[#94a3b8] font-medium mt-1">{t("publicProfileDesc")}</p>
+                </div>
+
                 <form onSubmit={handleProfileUpdate} className="space-y-8">
                   <div className="flex items-center gap-6 pb-4">
                     <div
-                      className="relative group cursor-pointer h-24 w-24 rounded-full"
+                      className="relative group cursor-pointer h-24 w-24 rounded-full flex-shrink-0"
                       onClick={() => fileInputRef.current?.click()}
                     >
-                      <Avatar className="h-full w-full border-4 border-background shadow-xl">
-                        <AvatarImage src={profileData.profile_picture} className="object-cover" />
-                        <AvatarFallback className="text-2xl bg-primary text-white">
-                          {profileData.username?.charAt(0).toUpperCase() || profileData.name?.charAt(0).toUpperCase() || "U"}
-                        </AvatarFallback>
-                      </Avatar>
+                      <div className="h-full w-full rounded-full overflow-hidden avatar-box shadow-md flex items-center justify-center text-2xl font-bold">
+                        {profileData.profile_picture ? (
+                          <img src={profileData.profile_picture} alt="Profile" className="h-full w-full object-cover" />
+                        ) : (
+                          profileData.username?.charAt(0).toUpperCase() || profileData.name?.charAt(0).toUpperCase() || "U"
+                        )}
+                      </div>
 
-                      {/* Hover Overlay */}
-                      <div className="absolute inset-0 bg-black/60 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer">
-                        <Camera className="h-10 w-10 text-white" />
+                      <div className="absolute inset-0 bg-black/50 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200">
+                        <Camera className="h-8 w-8 text-white" />
                       </div>
                     </div>
 
@@ -280,61 +380,61 @@ export default function Settings() {
                         onChange={handleFileChange}
                         className="hidden"
                       />
-                      <p className="text-sm text-muted-foreground italic max-w-[200px] leading-snug">{t("photoHint")}</p>
+                      <p className="text-sm text-[#334155] dark:text-[#94a3b8] font-medium italic max-w-[200px] leading-snug">{t("photoHint")}</p>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {profileData.role === "COMPANY" ? (
                       <>
-                        <div className="space-y-2">
-                          <Label htmlFor="companyName">{t("companyName") || "Company Name"}</Label>
-                          <Input
+                        <div>
+                          <label className="settings-label" htmlFor="companyName">{t("companyName") || "Company Name"}</label>
+                          <input
                             id="companyName"
                             value={profileData.name}
                             onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-                            className="bg-background/50"
+                            className="settings-input"
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="email">{t("emailAddress")}</Label>
-                          <Input id="email" value={profileData.email} disabled className="bg-muted/50 cursor-not-allowed" />
+                        <div>
+                          <label className="settings-label" htmlFor="email">{t("emailAddress")}</label>
+                          <input id="email" value={profileData.email} disabled className="settings-input opacity-70 cursor-not-allowed" />
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="location">{t("companyLocation") || "Location"}</Label>
-                          <Input
+                        <div>
+                          <label className="settings-label" htmlFor="location">{t("companyLocation") || "Location"}</label>
+                          <input
                             id="location"
                             value={profileData.location}
                             onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
-                            className="bg-background/50"
+                            className="settings-input"
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="companyField">{t("companyField") || "Industry / Field"}</Label>
-                          <Input
+                        <div>
+                          <label className="settings-label" htmlFor="companyField">{t("companyField") || "Industry / Field"}</label>
+                          <input
                             id="companyField"
                             value={profileData.company_field}
                             onChange={(e) => setProfileData({ ...profileData, company_field: e.target.value })}
-                            className="bg-background/50"
+                            className="settings-input"
                           />
                         </div>
-                        <div className="space-y-2 md:col-span-2">
-                          <Label htmlFor="website">{t("companyWebsite") || "Website"}</Label>
-                          <Input
+                        <div className="md:col-span-2">
+                          <label className="settings-label" htmlFor="website">{t("companyWebsite") || "Website"}</label>
+                          <input
                             id="website"
                             type="url"
                             value={profileData.website}
                             onChange={(e) => setProfileData({ ...profileData, website: e.target.value })}
-                            className="bg-background/50"
+                            className="settings-input"
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="foundedYear">{t("founded") || "Founded Year"}</Label>
+                        <div>
+                          <label className="settings-label" htmlFor="foundedYear">{t("founded") || "Founded Year"}</label>
                           <select
                             id="foundedYear"
                             value={profileData.founded_year}
                             onChange={(e) => setProfileData({ ...profileData, founded_year: e.target.value })}
-                            className="flex h-10 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            className="settings-input"
                           >
                             <option value="">{t("selectYear") || "Select Year"}</option>
                             {Array.from({ length: new Date().getFullYear() - 1900 + 1 }, (_, i) => new Date().getFullYear() - i).map(year => (
@@ -342,76 +442,76 @@ export default function Settings() {
                             ))}
                           </select>
                         </div>
-                        <div className="space-y-2 md:col-span-2">
-                          <Label htmlFor="description">{t("companyDescription") || "Description"}</Label>
+                        <div className="md:col-span-2">
+                          <label className="settings-label" htmlFor="description">{t("companyDescription") || "Description"}</label>
                           <textarea
                             id="description"
                             rows={3}
                             value={profileData.description}
                             onChange={(e) => setProfileData({ ...profileData, description: e.target.value })}
-                            className="flex min-h-[80px] w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            className="settings-input min-h-[80px]"
                           />
                         </div>
                       </>
                     ) : (
                       <>
-                        <div className="space-y-2">
-                          <Label htmlFor="firstName">{t("firstName")}</Label>
-                          <Input
+                        <div>
+                          <label className="settings-label" htmlFor="firstName">{t("firstName")}</label>
+                          <input
                             id="firstName"
                             value={profileData.first_name}
                             onChange={(e) => setProfileData({ ...profileData, first_name: e.target.value })}
-                            className="bg-background/50"
+                            className="settings-input"
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="lastName">{t("lastName")}</Label>
-                          <Input
+                        <div>
+                          <label className="settings-label" htmlFor="lastName">{t("lastName")}</label>
+                          <input
                             id="lastName"
                             value={profileData.last_name}
                             onChange={(e) => setProfileData({ ...profileData, last_name: e.target.value })}
-                            className="bg-background/50"
+                            className="settings-input"
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="email">{t("emailAddress")}</Label>
-                          <Input id="email" value={profileData.email} disabled className="bg-muted/50 cursor-not-allowed" />
+                        <div>
+                          <label className="settings-label" htmlFor="email">{t("emailAddress")}</label>
+                          <input id="email" value={profileData.email} disabled className="settings-input opacity-70 cursor-not-allowed" />
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="phone">{t("phoneNumber")}</Label>
-                          <Input
+                        <div>
+                          <label className="settings-label" htmlFor="phone">{t("phoneNumber")}</label>
+                          <input
                             id="phone"
                             value={profileData.phone}
                             onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
-                            className="bg-background/50"
+                            className="settings-input"
                             placeholder="05 / 06 / 07 ..."
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="wilaya">{t("wilaya")}</Label>
-                          <Input
+                        <div>
+                          <label className="settings-label" htmlFor="wilaya">{t("wilaya")}</label>
+                          <input
                             id="wilaya"
                             value={profileData.wilaya}
                             onChange={(e) => setProfileData({ ...profileData, wilaya: e.target.value })}
-                            className="bg-background/50"
+                            className="settings-input"
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="universityID">{t("universityID")}</Label>
-                          <Input
+                        <div>
+                          <label className="settings-label" htmlFor="universityID">{t("universityID")}</label>
+                          <input
                             id="universityID"
                             value={profileData.university_id}
                             onChange={(e) => setProfileData({ ...profileData, university_id: e.target.value })}
-                            className="bg-background/50"
+                            className="settings-input"
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="major">{t("majorField")}</Label>
-                          <Input
+                        <div>
+                          <label className="settings-label" htmlFor="major">{t("majorField")}</label>
+                          <input
                             id="major"
                             value={profileData.major}
                             onChange={(e) => setProfileData({ ...profileData, major: e.target.value })}
-                            className="bg-background/50"
+                            className="settings-input"
                             placeholder="Computer Science, Finance, etc."
                           />
                         </div>
@@ -419,148 +519,152 @@ export default function Settings() {
                     )}
                   </div>
 
-                  <div className="flex justify-end">
-                    <Button type="submit" disabled={loading} className="px-8 shadow-lg shadow-primary/20">
-                      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  <div className="flex justify-end pt-2">
+                    <button type="submit" disabled={loading} className="settings-btn-primary shadow-lg shadow-[#1a3a6b]/20 dark:shadow-none">
+                      {loading && <Loader2 className="h-4 w-4 animate-spin" />}
                       {t("updateProfile")}
-                    </Button>
+                    </button>
                   </div>
                 </form>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              </div>
+            )}
 
-          <TabsContent value="security" className="mt-0">
-            <Card className="border-none shadow-lg bg-card/50 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle>{t("securitySettings")}</CardTitle>
-                <CardDescription>{t("securityDesc")}</CardDescription>
-              </CardHeader>
-              <CardContent>
+            {/* Security Tab */}
+            {activeTab === 'security' && (
+              <div className="settings-card">
+                <div className="mb-6">
+                  <h2 className="text-[18px] font-bold text-[#111111] dark:text-white tracking-tight">{t("securitySettings")}</h2>
+                  <p className="text-[13px] text-[#334155] dark:text-[#94a3b8] font-medium mt-1">{t("securityDesc")}</p>
+                </div>
+
                 <form onSubmit={handleChangePassword} className="space-y-6 max-w-md">
-                  <div className="space-y-2">
-                    <Label htmlFor="oldPass">{t("currentPassword")}</Label>
+                  <div>
+                    <label className="settings-label" htmlFor="oldPass">{t("currentPassword")}</label>
                     <div className="relative">
-                      <Input
+                      <input
                         id="oldPass"
                         type={showOldPassword ? "text" : "password"}
                         value={passwordData.old_password}
                         onChange={(e) => setPasswordData({ ...passwordData, old_password: e.target.value })}
-                        className="bg-background/50 pr-10"
+                        className="settings-input pr-10"
                         required
                       />
                       <button
                         type="button"
                         onClick={() => setShowOldPassword(!showOldPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors focus:outline-none"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#334155] dark:text-slate-400 hover:text-[#1a3a6b] dark:hover:text-white transition-colors focus:outline-none"
                       >
                         {showOldPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
                   </div>
-                  <Separator />
-                  <div className="space-y-2">
-                    <Label htmlFor="newPass">{t("newPassword")}</Label>
+
+                  <div className="h-[1px] bg-[rgba(26,58,107,0.08)] dark:bg-[rgba(255,255,255,0.1)] w-full my-4" />
+
+                  <div>
+                    <label className="settings-label" htmlFor="newPass">{t("newPassword")}</label>
                     <div className="relative">
-                      <Input
+                      <input
                         id="newPass"
                         type={showNewPassword ? "text" : "password"}
                         value={passwordData.new_password}
                         onChange={(e) => setPasswordData({ ...passwordData, new_password: e.target.value })}
-                        className="bg-background/50 pr-10"
+                        className="settings-input pr-10"
                         required
                       />
                       <button
                         type="button"
                         onClick={() => setShowNewPassword(!showNewPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors focus:outline-none"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#334155] dark:text-slate-400 hover:text-[#1a3a6b] dark:hover:text-white transition-colors focus:outline-none"
                       >
                         {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPass">{t("confirmPassword")}</Label>
+
+                  <div>
+                    <label className="settings-label" htmlFor="confirmPass">{t("confirmPassword")}</label>
                     <div className="relative">
-                      <Input
+                      <input
                         id="confirmPass"
                         type={showConfirmPassword ? "text" : "password"}
                         value={passwordData.confirm_password}
                         onChange={(e) => setPasswordData({ ...passwordData, confirm_password: e.target.value })}
-                        className="bg-background/50 pr-10"
+                        className="settings-input pr-10"
                         required
                       />
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors focus:outline-none"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#334155] dark:text-slate-400 hover:text-[#1a3a6b] dark:hover:text-white transition-colors focus:outline-none"
                       >
                         {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
                   </div>
-                  <div className="pt-4 flex justify-end">
-                    <Button type="submit" disabled={loading} className="px-8 shadow-lg shadow-primary/20">
-                      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+
+                  <div className="pt-4 flex justify-start">
+                    <button type="submit" disabled={loading} className="settings-btn-primary shadow-lg shadow-[#1a3a6b]/20 dark:shadow-none">
+                      {loading && <Loader2 className="h-4 w-4 animate-spin" />}
                       {t("changePassword")}
-                    </Button>
+                    </button>
                   </div>
                 </form>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              </div>
+            )}
 
-          <TabsContent value="appearance" className="mt-0">
-            <Card className="border-none shadow-lg bg-card/50 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle>{t("appearanceSettings")}</CardTitle>
-                <CardDescription>{t("appearanceDesc")}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
+            {/* Appearance Tab */}
+            {activeTab === 'appearance' && (
+              <div className="settings-card">
+                <div className="mb-6">
+                  <h2 className="text-[18px] font-bold text-[#111111] dark:text-white tracking-tight">{t("appearanceSettings")}</h2>
+                  <p className="text-[13px] text-[#334155] dark:text-[#94a3b8] font-medium mt-1">{t("appearanceDesc")}</p>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <button
                     onClick={() => setTheme("light")}
-                    className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-4 ${theme === "light" ? "border-primary bg-primary/5 ring-4 ring-primary/10" : "border-border hover:border-primary/50"
+                    className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-4 glass-btn ${theme === "light" ? "border-[#1a3a6b] dark:border-[#3b82f6] ring-4 ring-[#1a3a6b]/10 dark:ring-[#3b82f6]/20" : ""
                       }`}
                   >
-                    <div className="w-full h-32 rounded-xl bg-white border border-slate-200 p-2 space-y-2">
-                      <div className="w-full h-4 bg-slate-100 rounded" />
+                    <div className="w-full h-32 rounded-xl bg-white border border-[#e2e8f0] p-2 space-y-2 shadow-sm">
+                      <div className="w-full h-4 bg-[#f0f4fa] rounded" />
                       <div className="w-2/3 h-4 bg-slate-50 rounded" />
                       <div className="grid grid-cols-2 gap-2">
-                        <div className="h-8 bg-purple-100 rounded" />
+                        <div className="h-8 bg-[#f0f4fa] rounded" />
                         <div className="h-8 bg-slate-50 rounded" />
                       </div>
                     </div>
-                    <span className="font-bold text-sm">{t("lightMode")}</span>
+                    <span className="font-bold text-sm text-[#111111] dark:text-white">{t("lightMode")}</span>
                   </button>
 
                   <button
                     onClick={() => setTheme("dark")}
-                    className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-4 ${theme === "dark" ? "border-primary bg-primary/5 ring-4 ring-primary/10" : "border-border hover:border-primary/50"
+                    className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-4 glass-btn ${theme === "dark" ? "border-[#1a3a6b] dark:border-[#3b82f6] ring-4 ring-[#1a3a6b]/10 dark:ring-[#3b82f6]/20" : ""
                       }`}
                   >
-                    <div className="w-full h-32 rounded-xl bg-slate-900 border border-slate-800 p-2 space-y-2">
+                    <div className="w-full h-32 rounded-xl bg-[#132237] border border-[rgba(59,130,246,0.15)] p-2 space-y-2 shadow-sm">
                       <div className="w-full h-4 bg-slate-800 rounded" />
                       <div className="w-2/3 h-4 bg-slate-800/50 rounded" />
                       <div className="grid grid-cols-2 gap-3 pt-4">
-                        <div className="h-8 bg-purple-900/50 rounded" />
+                        <div className="h-8 bg-white/10 rounded" />
                         <div className="h-8 bg-slate-800 rounded" />
                       </div>
                     </div>
-                    <span className="font-bold text-sm">{t("darkMode")}</span>
+                    <span className="font-bold text-sm text-[#111111] dark:text-white">{t("darkMode")}</span>
                   </button>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              </div>
+            )}
 
-          <TabsContent value="language" className="mt-0">
-            <Card className="border-none shadow-lg bg-card/50 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle>{t("languageSettings")}</CardTitle>
-                <CardDescription>{t("languageDesc")}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
+            {/* Language Tab */}
+            {activeTab === 'language' && (
+              <div className="settings-card">
+                <div className="mb-6">
+                  <h2 className="text-[18px] font-bold text-[#111111] dark:text-white tracking-tight">{t("languageSettings")}</h2>
+                  <p className="text-[13px] text-[#334155] dark:text-[#94a3b8] font-medium mt-1">{t("languageDesc")}</p>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {["English", "Français", "العربية"].map((lang) => {
                     const langCode = { English: "en", Français: "fr", العربية: "ar" }[lang];
@@ -569,106 +673,116 @@ export default function Settings() {
                       <button
                         key={lang}
                         onClick={() => handleLanguageClick(lang)}
-                        className={`p-4 rounded-xl border-2 flex items-center justify-between transition-all ${isActive ? "border-primary bg-primary/5 ring-2 ring-primary/10" : "border-border hover:border-primary/50"
+                        className={`p-4 rounded-xl border-2 flex items-center justify-between transition-all glass-btn ${isActive ? "border-[#1a3a6b] dark:border-[#3b82f6] ring-2 ring-[#1a3a6b]/10 dark:ring-[#3b82f6]/20" : ""
                           }`}
                       >
                         <div className="flex items-center gap-3">
-                          <Globe className="h-5 w-5 text-muted-foreground" />
-                          <span className="font-bold">{lang}</span>
+                          <Globe className="h-5 w-5 text-[#334155] dark:text-[#94a3b8]" />
+                          <span className={`font-bold ${isActive ? "text-[#1a3a6b] dark:text-[#3b82f6]" : "text-[#111111] dark:text-white"}`}>{lang}</span>
                         </div>
-                        {isActive && <CheckCircle2 className="h-5 w-5 text-primary" />}
+                        {isActive && <CheckCircle2 className="h-5 w-5 text-[#1a3a6b] dark:text-[#3b82f6]" />}
                       </button>
                     );
                   })}
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              </div>
+            )}
 
-          <TabsContent value="privacy" className="mt-0">
-            <Card className="border-none shadow-lg bg-card/50 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle>{t("privacyPolicy")}</CardTitle>
-                <CardDescription>{t("privacyDesc")}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <section className="space-y-2">
-                    <h4 className="font-bold text-slate-900 dark:text-white">{t("infoCollect")}</h4>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{t("infoCollectDesc")}</p>
-                  </section>
-                  <section className="space-y-2">
-                    <h4 className="font-bold text-slate-900 dark:text-white">{t("howWeUse")}</h4>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{t("howWeUseDesc")}</p>
-                  </section>
-                  <section className="space-y-2">
-                    <h4 className="font-bold text-slate-900 dark:text-white">{t("dataSecurity")}</h4>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{t("dataSecurityDesc")}</p>
-                  </section>
-                  <section className="space-y-2">
-                    <h4 className="font-bold text-slate-900 dark:text-white">{t("yourRights")}</h4>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{t("yourRightsDesc")}</p>
-                  </section>
+            {/* Privacy Tab */}
+            {activeTab === 'privacy' && (
+              <div className="settings-card">
+                <div className="mb-6">
+                  <h2 className="text-[18px] font-bold text-[#111111] dark:text-white tracking-tight">{t("privacyPolicy")}</h2>
+                  <p className="text-[13px] text-[#334155] dark:text-[#94a3b8] font-medium mt-1">{t("privacyDesc")}</p>
                 </div>
-                <div className="pt-4 border-t border-slate-100 dark:border-slate-800 text-xs text-muted-foreground">
-                  {t("lastUpdated")}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
-          <TabsContent value="support" className="mt-0">
-            <Card className="border-none shadow-lg bg-card/50 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle>{t("supportCenter")}</CardTitle>
-                <CardDescription>{t("supportDesc")}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
+                <div className="space-y-6">
+                  <div className="space-y-4">
+                    <section className="space-y-2">
+                      <h4 className="font-bold text-[#111111] dark:text-white">{t("infoCollect")}</h4>
+                      <p className="text-[13.5px] text-[#334155] dark:text-[#94a3b8] font-medium leading-relaxed">{t("infoCollectDesc")}</p>
+                    </section>
+                    <section className="space-y-2">
+                      <h4 className="font-bold text-[#111111] dark:text-white">{t("howWeUse")}</h4>
+                      <p className="text-[13.5px] text-[#334155] dark:text-[#94a3b8] font-medium leading-relaxed">{t("howWeUseDesc")}</p>
+                    </section>
+                    <section className="space-y-2">
+                      <h4 className="font-bold text-[#111111] dark:text-white">{t("dataSecurity")}</h4>
+                      <p className="text-[13.5px] text-[#334155] dark:text-[#94a3b8] font-medium leading-relaxed">{t("dataSecurityDesc")}</p>
+                    </section>
+                    <section className="space-y-2">
+                      <h4 className="font-bold text-[#111111] dark:text-white">{t("yourRights")}</h4>
+                      <p className="text-[13.5px] text-[#334155] dark:text-[#94a3b8] font-medium leading-relaxed">{t("yourRightsDesc")}</p>
+                    </section>
+                  </div>
+                  <div className="pt-4 border-t border-[rgba(26,58,107,0.08)] dark:border-white/10 text-xs text-[#5f6c80] dark:text-slate-500">
+                    {t("lastUpdated")}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Support Tab */}
+            {activeTab === 'support' && (
+              <div className="settings-card">
+                <div className="mb-6">
+                  <h2 className="text-[18px] font-bold text-[#111111] dark:text-white tracking-tight">{t("supportCenter")}</h2>
+                  <p className="text-[13px] text-[#334155] dark:text-[#94a3b8] font-medium mt-1">{t("supportDesc")}</p>
+                </div>
+
                 <div className="grid grid-cols-1 gap-4">
-                  <div className="p-4 rounded-xl border border-slate-100 dark:border-slate-800 flex items-center justify-between hover:bg-slate-50 transition-all cursor-pointer">
+                  <div className="p-4 rounded-xl border transition-all cursor-pointer shadow-sm glass-btn flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <HelpCircle className="h-5 w-5 text-primary" />
+                      <HelpCircle className="h-5 w-5 text-[#1a3a6b] dark:text-[#3b82f6]" />
                       <div>
-                        <p className="font-bold">{t("contactSupport")}</p>
-                        <p className="text-xs text-muted-foreground">{t("contactSupportDesc")}</p>
+                        <p className="font-bold text-[#111111] dark:text-white">{t("contactSupport")}</p>
+                        <p className="text-[13px] font-medium text-[#334155] dark:text-[#94a3b8]">{t("contactSupportDesc")}</p>
                       </div>
                     </div>
                   </div>
-                  <div className="p-4 rounded-xl border border-slate-100 dark:border-slate-800 flex items-center justify-between hover:bg-slate-50 transition-all cursor-pointer">
+                  <div className="p-4 rounded-xl border transition-all cursor-pointer shadow-sm glass-btn flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <Globe className="h-5 w-5 text-primary" />
+                      <Globe className="h-5 w-5 text-[#1a3a6b] dark:text-[#3b82f6]" />
                       <div>
-                        <p className="font-bold">{t("helpDocs")}</p>
-                        <p className="text-xs text-muted-foreground">{t("helpDocsDesc")}</p>
+                        <p className="font-bold text-[#111111] dark:text-white">{t("helpDocs")}</p>
+                        <p className="text-[13px] font-medium text-[#334155] dark:text-[#94a3b8]">{t("helpDocsDesc")}</p>
                       </div>
                     </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              </div>
+            )}
+          </div>
         </div>
-      </Tabs>
 
-      {/* Language Confirmation Dialog */}
-      <Dialog open={langDialog.open} onOpenChange={(open) => setLangDialog({ ...langDialog, open })}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t("confirmLanguageChange")}</DialogTitle>
-            <DialogDescription>
-              {t("confirmLanguageMsg")} <strong>{langDialog.target}</strong>?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setLangDialog({ open: false, target: null })}>
-              {t("cancel")}
-            </Button>
-            <Button onClick={confirmLanguageChange}>
-              {t("yes")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        {/* Custom Language Confirmation Dialog */}
+        {langDialog.open && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-[#f0f4fa] dark:bg-[#132237] rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 border border-[rgba(26,58,107,0.05)] dark:border-[rgba(59,130,246,0.15)]">
+              <div className="p-6 space-y-4 bg-[#f0f4fa] dark:bg-[#132237]">
+                <h3 className="text-xl font-bold text-[#111111] dark:text-white">{t("confirmLanguageChange")}</h3>
+                <p className="text-[#334155] dark:text-[#94a3b8] font-medium">
+                  {t("confirmLanguageMsg")} <strong className="text-[#111111] dark:text-white">{langDialog.target}</strong>?
+                </p>
+              </div>
+              <div className="px-6 py-4 bg-[#ffffff] dark:bg-[rgba(0,0,0,0.2)] flex justify-end gap-3 border-t border-[rgba(26,58,107,0.08)] dark:border-[rgba(59,130,246,0.15)]">
+                <button
+                  onClick={() => setLangDialog({ open: false, target: null })}
+                  className="px-4 py-2 rounded-xl text-[#334155] dark:text-[#94a3b8] font-semibold hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+                >
+                  {t("cancel")}
+                </button>
+                <button
+                  onClick={confirmLanguageChange}
+                  className="settings-btn-primary"
+                >
+                  {t("yes")}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

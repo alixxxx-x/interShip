@@ -21,6 +21,7 @@ urlpatterns = [
     path('internships/', InternshipListView.as_view(), name='internship-list'),
     path('internships/company/', CompanyInternshipListView.as_view(), name='company-internship-list'),
     path('internships/<int:pk>/', InternshipRetrieveView.as_view(), name='internship-retrieve'),
+    path('internships/<int:pk>/similar/', SimilarInternshipsView.as_view(), name='internship-similar'),
     path('internships/<int:pk>/update/', InternshipUpdateDestroyView.as_view(), name='internship-update'),
     path('internships/<int:pk>/delete/', InternshipUpdateDestroyView.as_view(), name='internship-delete'),
 

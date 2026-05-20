@@ -239,6 +239,69 @@ class InternshipListView(generics.ListAPIView):
             ]
         )
 
+class SimilarInternshipsView(generics.ListAPIView):
+    serializer_class = InternshipSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        pk = self.kwargs.get('pk')
+        current = get_object_or_404(InternshipOffer, pk=pk)
+        
+        # Get all other open internships
+        base_qs = InternshipOffer.objects.filter(
+            status=InternshipOffer.Status.OPEN_FOR_APPLICATION
+        ).exclude(id=pk)
+        
+        # Parse current skills for overlap checking
+        current_skills = set()
+        if current.internship_skills:
+            try:
+                import json
+                parsed = json.loads(current.internship_skills)
+                if isinstance(parsed, list):
+                    current_skills = set(str(s).lower().strip() for s in parsed)
+            except Exception:
+                current_skills = set([current.internship_skills.lower().strip()])
+
+        # Rank suggestions in memory based on structured metrics
+        scored_offers = []
+        for offer in base_qs:
+            score = 0
+            
+            # Metric 1: Role Type Match (Full Time / Part Time)
+            if offer.internship_type == current.internship_type:
+                score += 5
+                
+            # Metric 2: Location Model Match (Remote / Onsite / Hybrid)
+            if offer.internship_location == current.internship_location:
+                score += 4
+                
+            # Metric 3: Geographical Wilaya Match
+            if offer.wilaya and current.wilaya and offer.wilaya.strip().lower() == current.wilaya.strip().lower():
+                score += 3
+                
+            # Metric 4: Shared Skills Overlap
+            if offer.internship_skills:
+                try:
+                    import json
+                    offer_skills = json.loads(offer.internship_skills)
+                    if isinstance(offer_skills, list):
+                        overlap = len(current_skills.intersection(set(str(s).lower().strip() for s in offer_skills)))
+                        score += overlap * 2  # 2 points per matching skill
+                except Exception:
+                    if offer.internship_skills.lower().strip() in current_skills:
+                        score += 2
+            
+            scored_offers.append((score, offer.id))
+            
+        # Sort by score descending
+        scored_offers.sort(key=lambda x: x[0], reverse=True)
+        top_ids = [item[1] for item in scored_offers[:3]]
+        
+        # Keep exact queryset sequence or return sorted queryset list
+        preserved_order = sorted(base_qs.filter(id__in=top_ids), key=lambda x: top_ids.index(x.id) if x.id in top_ids else 999)
+        return preserved_order
+
 class CompanyInternshipListView(generics.ListAPIView):
     queryset = InternshipOffer.objects.all()
     serializer_class = InternshipSerializer

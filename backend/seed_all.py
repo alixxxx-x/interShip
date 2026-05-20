@@ -4,13 +4,13 @@ import random
 from datetime import date, timedelta
 
 # Setup Django environment
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'interShip.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
 from apis.models import User, Student, Company, Administrator, InternshipOffer, Application, DigitalCV, Notification, Message
 
 def seed_database():
-    print("🚀 Starting full database seeding...")
+    print("Starting full database seeding...")
 
     # 1. Create Admin
     admin_email = 'admin@stag.io'
@@ -22,10 +22,10 @@ def seed_database():
             role=User.Role.ADMIN,
             department='Information Technology'
         )
-        print(f"✅ Admin created: {admin_email}")
+        print(f"Admin created: {admin_email}")
     else:
         admin = User.objects.get(email=admin_email)
-        print(f"ℹ️ Admin already exists: {admin_email}")
+        print(f"Admin already exists: {admin_email}")
 
     # 2. Create Companies
     companies_data = [
@@ -51,7 +51,7 @@ def seed_database():
                 website=f"https://www.{c_data['name'].lower()}.dz"
             )
             companies.append(company)
-            print(f"✅ Company created: {c_data['name']}")
+            print(f"Company created: {c_data['name']}")
         else:
             companies.append(Company.objects.get(email=c_data['email']))
 
@@ -96,21 +96,28 @@ def seed_database():
             )
             
             students.append(student)
-            print(f"✅ Student created: {s_data['first']} {s_data['last']}")
+            print(f"Student created: {s_data['first']} {s_data['last']}")
         else:
             students.append(Student.objects.get(email=s_data['email']))
 
     # 4. Create Internship Offers
-    titles = [
-        "Web Developer Intern", "AI Research Intern", "Network Security Assistant", 
-        "Data Analyst Intern", "Mobile App Developer", "Cloud Engineering Intern",
-        "UI/UX Design Intern", "Embedded Systems Intern"
-    ]
+    titles_skills = {
+        "Web Developer Intern": ["React", "JavaScript", "HTML", "CSS", "Git"],
+        "AI Research Intern": ["Python", "PyTorch", "TensorFlow", "Data Science"],
+        "Network Security Assistant": ["Linux", "Cyber Security", "Networking", "Git"],
+        "Data Analyst Intern": ["Python", "SQL", "Excel", "Data Science", "Tableau"],
+        "Mobile App Developer": ["React Native", "JavaScript", "Mobile", "Git"],
+        "Cloud Engineering Intern": ["AWS", "Docker", "Kubernetes", "Linux"],
+        "UI/UX Design Intern": ["Figma", "UI/UX", "Design", "Research"],
+        "Embedded Systems Intern": ["C", "C++", "Embedded", "Linux"]
+    }
     
     internships = []
+    import json
     for company in companies:
         for i in range(2):
-            title = random.choice(titles)
+            title = random.choice(list(titles_skills.keys()))
+            skills_list = titles_skills[title]
             internship = InternshipOffer.objects.create(
                 title=f"{title} at {company.name}",
                 description=f"Join {company.name} as a {title}. You will work on real-world projects and gain valuable experience in the {company.company_field} industry.",
@@ -124,10 +131,11 @@ def seed_database():
                 number_of_places=random.randint(2, 5),
                 internship_duration=timedelta(days=random.randint(30, 120)),
                 internship_salary=random.randint(5000, 20000),
+                internship_skills=json.dumps(skills_list),
                 wilaya=company.location
             )
             internships.append(internship)
-            print(f"✅ Internship created: {internship.title}")
+            print(f"Internship created: {internship.title}")
 
     # 5. Create Applications
     for student in students:
@@ -146,7 +154,7 @@ def seed_database():
                 app.admin_validation_date = django.utils.timezone.now()
                 app.save()
             
-            print(f"✅ Application created: {student.first_name} -> {internship.title}")
+            print(f"Application created: {student.first_name} -> {internship.title}")
 
     # 6. Create some Notifications
     for user in User.objects.all():
@@ -169,7 +177,7 @@ def seed_database():
             content="Hello Ahmed! Sure, please check the description or visit our website for more info."
         )
 
-    print("\n✨ Database seeding completed successfully!")
+    print("\nDatabase seeding completed successfully!")
 
 if __name__ == "__main__":
     seed_database()

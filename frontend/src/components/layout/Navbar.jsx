@@ -1,306 +1,289 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import logoGif from "@/assets/logo.gif";
-import {
-    Menu, X, User, Settings, LogOut,
-    ChevronDown, LayoutDashboard, Sun, Moon,
-    Bell
-} from "lucide-react";
+import logoPng from "@/assets/internia-logo.png";
+import { Sun, Moon, Bell, LayoutDashboard, User, Settings, LogOut } from "lucide-react";
 import { useTheme } from "@/components/theme-provider";
 import { useLanguage } from "@/components/language-provider";
 import api from "@/api/api";
 import { ACCESS_TOKEN } from "@/constants";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTitle, DialogHeader, DialogDescription } from "@/components/ui/dialog";
 import Notifications from "@/features/dashboards/Notifications";
 
 export default function Navbar({ children }) {
-    const [menuOpen, setMenuOpen] = useState(false);
     const [userInfo, setUserInfo] = useState(null);
+    const [dropdownOpen, setDropdownOpen] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
+    const [scrolled, setScrolled] = useState(false);
+    const dropdownRef = useRef(null);
     const navigate = useNavigate();
     const location = useLocation();
     const { theme, setTheme } = useTheme();
     const { t } = useLanguage();
-    const [isVisible, setIsVisible] = useState(true);
-    const [lastScrollY, setLastScrollY] = useState(0);
 
     useEffect(() => {
-        const handleScroll = () => {
-            const currentScrollY = window.scrollY;
-            if (currentScrollY > lastScrollY && currentScrollY > 50) {
-                setIsVisible(false); // Hide on scroll down
-            } else {
-                setIsVisible(true);  // Show on scroll up
-            }
-            setLastScrollY(currentScrollY);
-        };
-
-        window.addEventListener('scroll', handleScroll, { passive: true });
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, [lastScrollY]);
-
-    useEffect(() => {
-        const fetchProfile = async () => {
-            try {
-                const token = localStorage.getItem(ACCESS_TOKEN);
-                if (token) {
-                    const res = await api.get('/auth/profile/');
-                    setUserInfo(res.data);
-                } else {
-                    setUserInfo(null);
-                }
-            } catch (error) {
-                console.error("Failed to fetch profile:", error);
-                setUserInfo(null);
-            }
-        };
-        const fetchUnreadCount = async () => {
-            try {
-                const token = localStorage.getItem(ACCESS_TOKEN);
-                if (token) {
-                    const res = await api.get('/notifications/');
-                    setUnreadCount(res.data.unreadCount || 0);
-                }
-            } catch (error) {
-                console.error("Failed to fetch unread count:", error);
-            }
-        };
-
-        fetchProfile();
-        fetchUnreadCount();
-    }, [location.pathname]);
-
-    // Listen for real-time notification updates
-    useEffect(() => {
-        const handleUpdate = (event) => {
-            if (event.detail && typeof event.detail.unreadCount === 'number') {
-                setUnreadCount(event.detail.unreadCount);
-            }
-        };
-        window.addEventListener('notificationsUpdated', handleUpdate);
-        return () => window.removeEventListener('notificationsUpdated', handleUpdate);
+        const onScroll = () => setScrolled(window.scrollY > 10);
+        window.addEventListener("scroll", onScroll, { passive: true });
+        return () => window.removeEventListener("scroll", onScroll);
     }, []);
 
-    const handleLogout = () => {
-        localStorage.clear();
-        setUserInfo(null);
-        navigate("/login");
+    useEffect(() => {
+        const onOutside = (e) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target))
+                setDropdownOpen(false);
+        };
+        document.addEventListener("mousedown", onOutside);
+        return () => document.removeEventListener("mousedown", onOutside);
+    }, []);
+
+    useEffect(() => {
+        const run = async () => {
+            try {
+                const token = localStorage.getItem(ACCESS_TOKEN);
+                if (token) {
+                    const [profile, notif] = await Promise.all([
+                        api.get("/auth/profile/"),
+                        api.get("/notifications/"),
+                    ]);
+                    setUserInfo(profile.data);
+                    setUnreadCount(notif.data.unreadCount || 0);
+                } else setUserInfo(null);
+            } catch { setUserInfo(null); }
+        };
+        run();
+    }, [location.pathname]);
+
+    useEffect(() => {
+        const h = (e) => { if (typeof e.detail?.unreadCount === "number") setUnreadCount(e.detail.unreadCount); };
+        window.addEventListener("notificationsUpdated", h);
+        return () => window.removeEventListener("notificationsUpdated", h);
+    }, []);
+
+    const handleLogout = () => { localStorage.clear(); setUserInfo(null); navigate("/login"); };
+
+    const displayName = userInfo
+        ? userInfo.role === "COMPANY"
+            ? userInfo.name || userInfo.username
+            : (userInfo.first_name || userInfo.last_name)
+                ? `${userInfo.first_name || ""} ${userInfo.last_name || ""}`.trim()
+                : userInfo.username
+        : "";
+
+    const avatarSrc = userInfo
+        ? userInfo.role === "COMPANY" ? (userInfo.logo || userInfo.profile_picture) : userInfo.profile_picture
+        : null;
+
+    const avatarInitial = displayName?.charAt(0)?.toUpperCase() || "A";
+
+    // Determine colors based on route/scroll/theme
+    const isHome = location.pathname === "/";
+    const isDarkTheme = isHome && !scrolled ? true : theme === "dark";
+
+    const textColor = isDarkTheme ? "#fff" : "#111";
+    const textHoverBg = isDarkTheme ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)";
+
+    const ls = (active) => ({
+        fontSize: 14, fontWeight: 500, color: textColor, textDecoration: "none", whiteSpace: "nowrap",
+        transition: "background 0.2s, color 0.2s",
+        padding: "8px 20px",
+        borderRadius: 9999,
+        background: active ? (isDarkTheme ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.08)") : "transparent"
+    });
+
+    const ib = { background: "none", border: "none", cursor: "pointer", padding: "8px", borderRadius: "50%", display: "flex", alignItems: "center", color: textColor, transition: "background 0.2s" };
+
+
+    const liquidGlassStyle = isDarkTheme ? {
+        background: "rgba(255,255,255,0.05)",
+        backdropFilter: "blur(8px)",
+        WebkitBackdropFilter: "blur(8px)",
+        borderTop: "1px solid rgba(255,255,255,0.3)",
+        borderLeft: "1px solid rgba(255,255,255,0.2)",
+        borderRight: "1px solid rgba(255,255,255,0.05)",
+        borderBottom: "1px solid rgba(255,255,255,0.05)",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.15)"
+    } : {
+        background: "rgba(255,255,255,0.5)",
+        backdropFilter: "saturate(200%) blur(28px)",
+        WebkitBackdropFilter: "saturate(200%) blur(28px)",
+        border: "1px solid rgba(0,0,0,0.08)",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.08)"
     };
 
-    const getNotificationsPath = () => {
-        return userInfo?.role === "STUDENT"
-            ? "/studentdashboard/notifications"
-            : "/companydashboard/notifications";
+    const dropdownGlassStyle = isDarkTheme ? {
+        background: "rgba(22, 22, 24, 0.75)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        borderTop: "1px solid rgba(255, 255, 255, 0.15)",
+        borderLeft: "1px solid rgba(255, 255, 255, 0.1)",
+        borderRight: "1px solid rgba(255, 255, 255, 0.05)",
+        borderBottom: "1px solid rgba(255, 255, 255, 0.05)",
+        boxShadow: "0 12px 40px rgba(0, 0, 0, 0.3)"
+    } : {
+        background: "rgba(255, 255, 255, 0.75)",
+        backdropFilter: "saturate(200%) blur(30px)",
+        WebkitBackdropFilter: "saturate(200%) blur(30px)",
+        border: "1px solid rgba(0, 0, 0, 0.08)",
+        boxShadow: "0 12px 40px rgba(0, 0, 0, 0.08)"
     };
-
-    const navLinks = [
-        { name: t("navHome"), path: "/" },
-        { name: t("navInternships"), path: "/internships" },
-        { name: t("navCompanies"), path: "/companies" },
-        { name: t("navAbout"), path: "/about" },
-    ];
 
     return (
-        <div className="flex flex-col min-h-screen bg-background text-foreground font-sans antialiased tracking-tight">
-            <Dialog open={showNotifications} onOpenChange={setShowNotifications}>
-                <DialogContent className="sm:max-w-[900px] w-[95%] h-[85vh] overflow-y-auto p-0 border-none shadow-2xl flex flex-col">
-                    <DialogTitle className="sr-only">Notifications</DialogTitle>
-                    <Notifications />
-                </DialogContent>
-            </Dialog>
-            <nav className={`fixed top-0 left-0 right-0 z-[100] bg-background border-b border-border ${(!isVisible || showNotifications) ? 'hidden' : 'block'}`}>
-                <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-                    <Link to="/" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                        <img src={logoGif} alt="Stag.Io" className="w-8 h-8 rounded-md" />
-                        <span className="text-xl font-bold tracking-tight text-purple-600 font-['Poppins',sans-serif]">
-                            Stag<span className="text-purple-400">.Io</span>
-                        </span>
-                    </Link>
+        <div style={{
+            display: "flex",
+            flexDirection: "column",
+            minHeight: "100vh",
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+        }}>
 
-                    {/* Desktop Menu */}
-                    <div className="hidden md:flex items-center gap-2">
-                        {navLinks.map((link) => (
-                            <Link
-                                key={link.path}
-                                to={link.path}
-                                className={`px-3 py-2 rounded-md font-bold text-[13px] transition-colors ${location.pathname === link.path ? "text-primary bg-slate-50/50" : "text-slate-600 hover:text-primary"
-                                    }`}
-                            >
-                                {link.name}
-                            </Link>
-                        ))}
-
-                        <div className="h-4 w-px bg-border mx-1"></div>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                            className="rounded-full w-9 h-9 text-muted-foreground hover:text-primary hover:bg-accent transition-all shadow-none"
-                        >
-                            {theme === "dark" ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
-                            <span className="sr-only">Toggle theme</span>
-                        </Button>
-                        <div className="h-4 w-px bg-border mx-1"></div>
-                        {userInfo ? (
-                            <DropdownMenu>
-                                <DropdownMenuTrigger className="relative h-10 w-auto flex items-center gap-2.5 pl-1 pr-3.5 hover:bg-accent rounded-full group transition-all duration-200 outline-none border border-transparent hover:border-border bg-transparent">
-                                    <div className="relative">
-                                         <Avatar className="h-8 w-8 border border-border shadow-sm ring-1 ring-border group-hover:ring-primary/20 transition-all shrink-0">
-                                            <AvatarImage src={userInfo.role === 'COMPANY' ? (userInfo.logo || userInfo.profile_picture) : userInfo.profile_picture} alt={userInfo.username} className="object-cover" />
-                                            <AvatarFallback className="bg-primary text-white text-[10px] font-medium uppercase">
-                                                {(userInfo.role === 'COMPANY' ? (userInfo.name || userInfo.username) : userInfo.username)?.charAt(0).toUpperCase() || 'A'}
-                                            </AvatarFallback>
-                                        </Avatar>
-                                        {unreadCount > 0 && (
-                                            <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-primary rounded-full border-2 border-background"></span>
-                                        )}
-                                    </div>
-                                    <div className="text-left hidden lg:block pr-1 overflow-hidden">
-                                        <p className="text-xs font-semibold text-slate-900 leading-none mb-1 truncate">
-                                            {userInfo.role === 'COMPANY'
-                                                ? (userInfo.name || userInfo.username)
-                                                : userInfo.role === 'STUDENT' && (userInfo.first_name || userInfo.last_name)
-                                                    ? `${userInfo.first_name || ''} ${userInfo.last_name || ''}`.trim()
-                                                    : userInfo.username}
-                                        </p>
-                                        <p className="text-[10px] text-primary font-medium">
-                                            {userInfo.role === 'COMPANY' ? t('company') : t(userInfo.role?.toLowerCase()) || userInfo.role}
-                                        </p>
-                                    </div>
-                                    <ChevronDown className="h-3 w-3 text-slate-400 group-hover:text-primary transition-colors" />
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-56 mt-2 rounded-2xl p-2 shadow-2xl border border-border bg-popover text-popover-foreground" align="end">
-                                    <div className="font-normal px-3 py-3">
-                                        <div className="flex flex-col space-y-1">
-                                            <p className="text-sm font-bold text-foreground leading-none">
-                                                {userInfo.role === 'STUDENT' && (userInfo.first_name || userInfo.last_name)
-                                                    ? `${userInfo.first_name || ''} ${userInfo.last_name || ''}`.trim()
-                                                    : userInfo.username}
-                                            </p>
-                                            <p className="text-xs text-muted-foreground truncate">{userInfo.email}</p>
-                                        </div>
-                                    </div>
-                                    <DropdownMenuSeparator className="bg-border" />
-                                    <DropdownMenuItem onClick={() => navigate('/dashboard')} className="cursor-pointer font-medium text-sm text-slate-700 dark:text-slate-200 p-2.5 rounded-xl flex items-center hover:bg-accent transition-colors w-full">
-                                        <LayoutDashboard className="mr-3 h-4 w-4 text-primary" />
-                                        {t("navDashboard")}
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => navigate('/profile')} className="cursor-pointer font-medium text-sm text-slate-700 dark:text-slate-200 p-2.5 rounded-xl flex items-center hover:bg-accent transition-colors w-full">
-                                        <User className="mr-3 h-4 w-4 text-primary" />
-                                        {t("navProfile")}
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setShowNotifications(true)} className="cursor-pointer font-medium text-sm text-slate-700 dark:text-slate-200 p-2.5 rounded-xl flex items-center hover:bg-accent transition-colors w-full">
-                                        <div className="flex items-center flex-1">
-                                            <Bell className="mr-3 h-4 w-4 text-primary" />
-                                            {t("navNotifications")}
-                                        </div>
-                                        {unreadCount > 0 && (
-                                            <span className="w-5 h-5 bg-primary/10 text-primary text-[10px] flex items-center justify-center rounded-full font-bold">
-                                                {unreadCount}
-                                            </span>
-                                        )}
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => navigate('/settings')} className="cursor-pointer font-medium text-sm text-slate-700 dark:text-slate-200 p-2.5 rounded-xl flex items-center hover:bg-accent transition-colors w-full">
-                                        <Settings className="mr-3 h-4 w-4 text-primary" />
-                                        {t("navSettings")}
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator className="bg-border" />
-                                    <DropdownMenuItem onClick={handleLogout} className="cursor-pointer font-semibold text-sm text-red-600 dark:text-red-400 p-2.5 rounded-xl flex items-center hover:bg-red-50 dark:hover:bg-red-500/10 focus:bg-red-50 dark:focus:bg-red-500/10 transition-colors w-full">
-                                        <LogOut className="mr-3 h-4 w-4" />
-                                        {t("logout")}
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        ) : (
-                            <div className="flex items-center gap-4">
-                                <Link to="/login">
-                                    <Button variant="ghost" className="text-[13px] font-medium text-slate-600 hover:text-primary transition-colors px-4 h-9 shadow-none">
-                                        {t("navLogin")}
-                                    </Button>
-                                </Link>
-                                <Link to="/register">
-                                    <Button className="bg-primary hover:bg-primary/90 text-white text-[13px] font-bold rounded-full px-6 h-9 shadow-lg shadow-primary/20 active:scale-95 transition-all border-none">
-                                        {t("navRegister")}
-                                    </Button>
-                                </Link>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Mobile Menu Button */}
-                    <button
-                        className="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-                        onClick={() => setMenuOpen(!menuOpen)}
+            {showNotifications && (
+                <div
+                    style={{ position: "fixed", inset: 0, zIndex: 400, background: "rgba(0,0,0,0.32)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center" }}
+                    onClick={() => setShowNotifications(false)}
+                >
+                    <div
+                        style={{ 
+                            background: theme === "dark" ? "#161618" : "#fff", 
+                            border: theme === "dark" ? "1px solid rgba(255, 255, 255, 0.08)" : "1px solid rgba(0, 0, 0, 0.08)",
+                            borderRadius: 18, 
+                            width: "min(900px,95vw)", 
+                            height: "85vh", 
+                            overflow: "hidden", 
+                            boxShadow: theme === "dark" ? "0 24px 64px rgba(0,0,0,0.4)" : "0 24px 64px rgba(0,0,0,0.16)" 
+                        }}
+                        onClick={e => e.stopPropagation()}
                     >
-                        {menuOpen ? <X size={24} /> : <Menu size={24} />}
-                    </button>
+                        <Notifications isNavbarModal={true} isDarkNavbar={theme === "dark"} />
+                    </div>
+                </div>
+            )}
+
+            {/* Floating Navbar */}
+            <nav style={{
+                position: "fixed", top: scrolled ? "12px" : "24px", left: "50%", transform: "translateX(-50%)",
+                width: scrolled ? "calc(100% - 24px)" : "calc(100% - 80px)", maxWidth: "1400px",
+                padding: "12px 24px", display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", zIndex: 100,
+                borderRadius: "9999px",
+                background: scrolled ? (isDarkTheme ? "rgba(22, 22, 24, 0.85)" : "rgba(255, 255, 255, 0.85)") : "transparent",
+                backdropFilter: scrolled ? "blur(24px)" : "none",
+                WebkitBackdropFilter: scrolled ? "blur(24px)" : "none",
+                border: scrolled ? (isDarkTheme ? "1px solid rgba(255,255,255,0.1)" : "1px solid rgba(0,0,0,0.08)") : "1px solid transparent",
+                boxShadow: scrolled ? (isDarkTheme ? "0 16px 40px rgba(0,0,0,0.2)" : "0 16px 40px rgba(0,0,0,0.08)") : "none",
+                transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+            }}>
+                {/* LEFT Logo */}
+                <Link to="/" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
+                    <img src={logoPng} alt="Internia" style={{ height: 26, width: "auto", filter: isDarkTheme ? "brightness(0) invert(1)" : "none", transition: "filter 0.3s" }} />
+                    <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.01em", color: textColor, transition: "color 0.3s" }}>Internia<span style={{ color: "#e53e3e" }}>.</span></span>
+                </Link>
+
+                {/* CENTER Pill Links */}
+                <div style={{
+                    display: "flex", alignItems: "center", gap: 4,
+                    ...liquidGlassStyle,
+                    padding: "6px", borderRadius: 9999,
+                    transition: "all 0.3s ease"
+                }}>
+                    {[
+                        { name: t("navHome"), path: "/" },
+                        { name: t("navInternships"), path: "/internships" },
+                        { name: t("navCompanies"), path: "/companies" },
+                        { name: t("navAbout"), path: "/about" },
+                    ].map(l => (
+                        <Link key={l.path} to={l.path} style={ls(location.pathname === l.path)}
+                            onMouseEnter={e => !(location.pathname === l.path) && (e.currentTarget.style.background = textHoverBg)}
+                            onMouseLeave={e => !(location.pathname === l.path) && (e.currentTarget.style.background = "transparent")}
+                        >{l.name}</Link>
+                    ))}
                 </div>
 
-                {/* Mobile Menu */}
-                {menuOpen && (
-                    <div className="md:hidden absolute top-16 left-0 right-0 bg-white border-b border-slate-100 p-6 space-y-4 shadow-xl animate-in fade-in slide-in-from-top-4">
-                        {navLinks.map((link) => (
-                            <Link
-                                key={link.path}
-                                to={link.path}
-                                className={`block py-3.5 px-4 rounded-xl text-[13px] font-bold transition-all ${location.pathname === link.path ? "bg-primary/10 text-primary" : "text-slate-600 hover:bg-slate-50"
-                                    }`}
-                                onClick={() => setMenuOpen(false)}
-                            >
-                                {link.name}
-                            </Link>
-                        ))}
+                {/* RIGHT Controls */}
+                <div style={{ display: "flex", alignItems: "center", justifySelf: "end", gap: 16 }}>
+                    <button style={ib} onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                        onMouseEnter={e => e.currentTarget.style.background = textHoverBg} onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                        {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+                    </button>
 
-                        <div className="h-px bg-slate-100 my-4"></div>
-
-                        {userInfo ? (
-                            <div className="space-y-4 px-2">
-                                <div className="flex items-center gap-4 py-2">
-                                    <Avatar className="h-10 w-10">
-                                        {(userInfo.logo || userInfo.profile_picture) ? (
-                                            <img src={userInfo.role === 'COMPANY' ? (userInfo.logo || userInfo.profile_picture) : userInfo.profile_picture} alt={userInfo.username} className="h-full w-full object-cover" />
-                                        ) : null}
-                                        <AvatarFallback className="bg-primary text-white font-medium">
-                                            {(userInfo.role === 'COMPANY' ? (userInfo.name || userInfo.username) : userInfo.username)?.charAt(0).toUpperCase() || 'A'}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <div>
-                                        <p className="text-sm font-semibold text-slate-900">
-                                            {userInfo.role === 'STUDENT' && (userInfo.first_name || userInfo.last_name)
-                                                ? `${userInfo.first_name || ''} ${userInfo.last_name || ''}`.trim()
-                                                : userInfo.username}
-                                        </p>
-                                        <p className="text-xs text-primary font-medium">{userInfo.role?.replace('_', ' ')}</p>
+                    {userInfo ? (
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                            <button style={{ ...ib, position: "relative" }} onClick={() => setShowNotifications(true)}
+                                onMouseEnter={e => e.currentTarget.style.background = textHoverBg} onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                                <Bell size={18} />
+                                {unreadCount > 0 && (
+                                    <span style={{ position: "absolute", top: 5, right: 5, width: 8, height: 8, background: "#e53e3e", borderRadius: "50%", border: `1.5px solid ${isDarkTheme ? "#222" : "#fff"}` }} />
+                                )}
+                            </button>
+                            <div style={{ position: "relative" }} ref={dropdownRef}>
+                                <button onClick={() => setDropdownOpen(o => !o)}
+                                    style={{ display: "flex", alignItems: "center", gap: 8, ...liquidGlassStyle, cursor: "pointer", padding: "4px 16px 4px 4px", borderRadius: 9999, transition: "all 0.3s ease" }}>
+                                    <div style={{ width: 32, height: 32, borderRadius: "50%", background: avatarSrc ? "transparent" : (isDarkTheme ? "#fff" : "#1a3a6b"), display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", fontSize: 13, fontWeight: 700, color: isDarkTheme ? "#111" : "#fff" }}>
+                                        {avatarSrc ? <img src={avatarSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : avatarInitial}
                                     </div>
-                                </div>
-                                <Link to="/dashboard" className="block py-3.5 px-2 text-[13px] font-bold text-primary" onClick={() => setMenuOpen(false)}>{t("navDashboard")}</Link>
-                                <button onClick={handleLogout} className="block w-full text-left py-3.5 px-2 text-[13px] font-bold text-red-600">{t("logout")}</button>
+                                    <span style={{ fontSize: 14, fontWeight: 500, color: textColor, maxWidth: 90, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{displayName}</span>
+                                </button>
+                                {dropdownOpen && (
+                                     <div 
+                                         className="absolute top-[calc(100%+10px)] right-0 min-w-[220px] p-1.5 z-[200] rounded-[16px]"
+                                         style={dropdownGlassStyle}
+                                     >
+                                         <div className="px-3.5 pt-2.5 pb-2">
+                                             <div style={{ fontSize: 14, fontWeight: 700, color: isDarkTheme ? "#fff" : "#111" }}>{displayName}</div>
+                                             <div style={{ fontSize: 12, color: isDarkTheme ? "rgba(255,255,255,0.6)" : "#666", marginTop: 2 }}>{userInfo.email}</div>
+                                         </div>
+                                         <div style={{ height: 1, background: isDarkTheme ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)", margin: "4px 0" }} />
+                                         {[
+                                             { icon: <LayoutDashboard size={15} />, label: t("navDashboard"), action: () => navigate("/dashboard") },
+                                             { icon: <User size={15} />, label: t("navProfile"), action: () => navigate("/profile") },
+                                             { icon: <Settings size={15} />, label: t("navSettings"), action: () => navigate("/settings") },
+                                         ].map((item, i) => (
+                                             <button
+                                                 key={i}
+                                                 onClick={() => { setDropdownOpen(false); item.action(); }}
+                                                 className="flex items-center gap-2.5 w-full px-3.5 py-2.5 bg-transparent border-none cursor-pointer text-[14px] font-semibold text-left rounded-[9px] transition-colors duration-150"
+                                                 style={{ color: isDarkTheme ? "#e2e8f0" : "#333" }}
+                                                 onMouseEnter={e => e.currentTarget.style.background = isDarkTheme ? "rgba(255,255,255,0.06)" : "#f4f4f5"}
+                                                 onMouseLeave={e => e.currentTarget.style.background = "none"}
+                                             >
+                                                 <span style={{ display: "flex", alignItems: "center", color: isDarkTheme ? "#93c5fd" : "#1a3a6b" }}>{item.icon}</span> {item.label}
+                                             </button>
+                                         ))}
+                                         <div style={{ height: 1, background: isDarkTheme ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)", margin: "4px 0" }} />
+                                         <button
+                                             onClick={handleLogout}
+                                             className="flex items-center gap-2.5 w-full px-3.5 py-2.5 bg-transparent border-none cursor-pointer text-[14px] font-semibold text-left rounded-[9px] transition-colors duration-150"
+                                             style={{ color: isDarkTheme ? "#f87171" : "#dc2626" }}
+                                             onMouseEnter={e => e.currentTarget.style.background = isDarkTheme ? "rgba(239,68,68,0.12)" : "#fef2f2"}
+                                             onMouseLeave={e => e.currentTarget.style.background = "none"}
+                                         >
+                                             <LogOut size={15} /> {t("logout")}
+                                         </button>
+                                     </div>
+                                 )}
                             </div>
-                        ) : (
-                            <div className="space-y-3 pt-2">
-                                <Link to="/login" className="block w-full text-center py-3.5 border border-slate-100 hover:bg-slate-50 rounded-xl font-medium text-[13px] text-slate-900 transition-all" onClick={() => setMenuOpen(false)}>{t("navLogin")}</Link>
-                                <Link to="/register" className="block w-full text-center py-3.5 bg-primary hover:bg-primary/95 rounded-xl font-bold text-[13px] text-white shadow-xl shadow-primary/10 transition-all" onClick={() => setMenuOpen(false)}>{t("navRegister")}</Link>
-                            </div>
-                        )}
-                    </div>
-                )}
+                        </div>
+                    ) : (
+                        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                            <Link to="/login" style={{ textDecoration: "none", color: textColor, fontSize: 14, fontWeight: 500, padding: "8px 16px", transition: "opacity 0.2s" }}
+                                onMouseEnter={e => e.currentTarget.style.opacity = "0.7"} onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+                            >{t("navLogin")}</Link>
+                            <Link to="/register" style={{ textDecoration: "none" }}>
+                                <button style={{
+                                    fontSize: 14, fontWeight: 600, background: isDarkTheme ? "#fff" : "#111", color: isDarkTheme ? "#111" : "#fff",
+                                    border: "none", borderRadius: 9999, padding: "10px 24px", cursor: "pointer",
+                                    transition: "opacity 0.2s",
+                                }}
+                                    onMouseEnter={e => e.currentTarget.style.opacity = "0.9"}
+                                    onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+                                >{t("navRegister")}</button>
+                            </Link>
+                        </div>
+                    )}
+                </div>
             </nav>
 
-            {/* Spacer for fixed navbar */}
-            <div className="h-16"></div>
+            {/* Spacer for fixed nav on non-home pages */}
+            {!isHome && <div style={{ height: 100 }} />}
 
             {children}
         </div>
     );
-
 }
+

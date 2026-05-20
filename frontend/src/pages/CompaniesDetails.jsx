@@ -1,102 +1,56 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { AlertCircle, Award, Briefcase, Building2, Calendar, ChevronLeft, ChevronRight, ExternalLink, Globe, Heart, Mail, MapPin, Share2, Users } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  AlertCircle,
+  Award,
+  Briefcase,
+  Building2,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  ExternalLink,
+  Globe,
+  Heart,
+  Mail,
+  MapPin,
+  Share2,
+  Users,
+  Loader2,
+  Star,
+  MessageSquare,
+  FileText,
+  Download,
+  Clock,
+  ArrowUpRight,
+  CheckCircle,
+  Plus,
+  Check
+} from 'lucide-react';
 import api from '@/api/api';
 import { useLanguage } from '@/components/language-provider';
-
-// Using the same mock data as in Companies.jsx
-const MOCK_COMPANIES = [
-  {
-    id: 1,
-    name: "TechNova Solutions",
-    industry: "Software Development",
-    location: "San Francisco, CA",
-    description: "Leading provider of innovative software solutions for enterprise businesses. TechNova Solutions focuses on delivering cutting-edge digital transformation services to help businesses scale seamlessly. With over 10 years of experience, we specialize in cloud computing, AI, and enterprise resource planning.",
-    logo: "https://ui-avatars.com/api/?name=TechNova&background=0D8ABC&color=fff",
-    openPositions: 5,
-    website: "https://technova.example.com",
-    foundedYear: 2012,
-    size: "50-200 Employees",
-    benefits: ["Health Insurance", "Remote Work", "Gym Membership", "Stock Options"],
-  },
-  {
-    id: 2,
-    name: "EcoLogistics",
-    industry: "Supply Chain",
-    location: "Seattle, WA",
-    description: "Sustainable and eco-friendly logistics and supply chain management. We pride ourselves on reducing carbon footprints while maintaining high efficiency in global logistics operations. Our fleet is 100% electric and our warehouses use renewable energy.",
-    logo: "https://ui-avatars.com/api/?name=Eco&background=22C55E&color=fff",
-    openPositions: 2,
-    website: "https://ecologistics.example.com",
-    foundedYear: 2015,
-    size: "201-500 Employees",
-    benefits: ["Eco-friendly commuting allowance", "Health Insurance", "Flexible Hours"],
-  },
-  {
-    id: 3,
-    name: "HealthCore",
-    industry: "Healthcare Tech",
-    location: "Boston, MA",
-    description: "Modernizing healthcare through advanced data analytics and patient platforms. Our mission is to improve patient outcomes by providing doctors and hospitals with real-time, AI-driven insights.",
-    logo: "https://ui-avatars.com/api/?name=Health&background=EF4444&color=fff",
-    openPositions: 8,
-    website: "https://healthcore.example.com",
-    foundedYear: 2018,
-    size: "51-200 Employees",
-    benefits: ["Comprehensive Medical", "Dental", "Vision", "401(k) Match"],
-  },
-  {
-    id: 4,
-    name: "FinFlow",
-    industry: "Financial Services",
-    location: "New York, NY",
-    description: "Disrupting traditional banking with seamless digital finance solutions. FinFlow offers a suite of tools for personal finance management, peer-to-peer lending, and automated investing.",
-    logo: "https://ui-avatars.com/api/?name=FinFlow&background=F59E0B&color=fff",
-    openPositions: 3,
-    website: "https://finflow.example.com",
-    foundedYear: 2020,
-    size: "11-50 Employees",
-    benefits: ["Stock Options", "Flexible Hours", "Annual Retreat"],
-  },
-  {
-    id: 5,
-    name: "CreativePulse",
-    industry: "Marketing & Design",
-    location: "Austin, TX",
-    description: "A full-service creative agency specializing in brand identity and digital marketing. We help brands tell their stories in visually compelling and emotionally resonant ways.",
-    logo: "https://ui-avatars.com/api/?name=Creative&background=8B5CF6&color=fff",
-    openPositions: 1,
-    website: "https://creativepulse.example.com",
-    foundedYear: 2010,
-    size: "11-50 Employees",
-    benefits: ["Unlimited PTO", "MacBook Pro", "Creative Workshops"],
-  },
-  {
-    id: 6,
-    name: "AeroDynamics",
-    industry: "Aerospace",
-    location: "Denver, CO",
-    description: "Pioneering next-generation aerospace technologies and space exploration. AeroDynamics works with both public and private sectors to develop advanced propulsion systems and satellite tech.",
-    logo: "https://ui-avatars.com/api/?name=Aero&background=3B82F6&color=fff",
-    openPositions: 12,
-    website: "https://aerodynamics.example.com",
-    foundedYear: 2005,
-    size: "501-1000 Employees",
-    benefits: ["Health Insurance", "Relocation Package", "Continued Education Stipend"],
-  }
-];
+import { useTheme } from '@/components/theme-provider';
+import ChatModal from '@/features/dashboards/ChatModal';
 
 export default function CompaniesDetails() {
   const { t } = useLanguage();
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { theme } = useTheme();
+  const dk = theme === "dark";
+
   const [company, setCompany] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isFollowing, setIsFollowing] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`followed_company_${id}`);
+      return saved === "true";
+    } catch {
+      return false;
+    }
+  });
 
   useEffect(() => {
     const fetchCompanyDetails = async () => {
@@ -122,276 +76,925 @@ export default function CompaniesDetails() {
     fetchCompanyDetails();
   }, [id]);
 
+  const toggleFollow = () => {
+    setIsFollowing(p => {
+      const next = !p;
+      try {
+        localStorage.setItem(`followed_company_${id}`, String(next));
+      } catch (e) {
+        console.error(e);
+      }
+      return next;
+    });
+  };
+
+  // Premium Typography & Theme Constants
+  const F = "'Inter', -apple-system, BlinkMacSystemFont, sans-serif";
+  const cardBg = dk ? "#121214" : "#ffffff";
+  const txt = dk ? "#ffffff" : "#1a1a1a";
+  const txt2 = dk ? "#a1a1aa" : "#555555";
+  const bdr = dk ? "rgba(255,255,255,0.08)" : "#e5e7eb";
+  const pillBg = dk ? "rgba(255,255,255,0.04)" : "#f3f4f6";
+  const hoverBg = dk ? "rgba(255,255,255,0.03)" : "#f9fafb";
+  const accentColor = "#2563eb"; // Premium slate blue
+  
+  // Calculate mockup values
+  const mockRating = (4.5 + (parseInt(id || "1") % 6) * 0.1).toFixed(1);
+  const mockReviewsCount = 30 + (parseInt(id || "1") * 17) % 150;
+  const companyAge = company?.founded_year ? (new Date().getFullYear() - company.founded_year) : 5 + (parseInt(id || "1") % 10);
+
+  const getCompanyCover = (field, idVal) => {
+    const f = (field || "").toLowerCase();
+    if (f.includes("tech") || f.includes("software") || f.includes("develop") || f.includes("informatique")) {
+      return "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=1200&auto=format&fit=cover";
+    }
+    if (f.includes("design") || f.includes("art") || f.includes("creative") || f.includes("media")) {
+      return "https://images.unsplash.com/photo-1558655146-d09347e92766?q=80&w=1200&auto=format&fit=cover";
+    }
+    if (f.includes("market") || f.includes("sale") || f.includes("pub") || f.includes("commerce")) {
+      return "https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=1200&auto=format&fit=cover";
+    }
+    if (f.includes("finance") || f.includes("bank") || f.includes("invest") || f.includes("assur")) {
+      return "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?q=80&w=1200&auto=format&fit=cover";
+    }
+    if (f.includes("educ") || f.includes("school") || f.includes("univers")) {
+      return "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=1200&auto=format&fit=cover";
+    }
+    const defaultBanners = [
+      "https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=1200&auto=format&fit=cover",
+      "https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=1200&auto=format&fit=cover",
+      "https://images.unsplash.com/photo-1497366811353-6870744d04b2?q=80&w=1200&auto=format&fit=cover"
+    ];
+    return defaultBanners[idVal % defaultBanners.length];
+  };
+
   if (loading) {
     return (
-      <div className="container mx-auto py-24 px-4 max-w-4xl flex flex-col items-center text-center">
-        <div className="h-16 w-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-6"></div>
-        <p className="text-xl font-bold text-gray-800 dark:text-gray-200 animate-pulse">{t("loadingCompanyDetails")}</p>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "80vh", gap: 16, fontFamily: F }}>
+        <Loader2 size={36} className="animate-spin" style={{ color: txt }} />
+        <p style={{ fontSize: 16, color: txt2, fontWeight: 500 }}>{t("loadingCompanyDetails")}</p>
       </div>
     );
   }
 
   if (error || !company) {
     return (
-      <div className="container mx-auto py-24 px-4 max-w-4xl text-center">
-        <div className="bg-red-50 dark:bg-red-900/20 rounded-full h-20 w-20 flex items-center justify-center mx-auto mb-6">
-          <AlertCircle className="h-10 w-10 text-red-500" />
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "80vh", padding: 24, textAlign: "center", fontFamily: F }}>
+        <div style={{ width: 72, height: 72, borderRadius: "50%", background: dk ? "rgba(255,255,255,0.02)" : "#f8f9fa", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 24, border: `1px solid ${bdr}` }}>
+          <AlertCircle size={32} style={{ color: "#ef4444" }} />
         </div>
-        <h2 className="text-3xl font-bold mb-4 tracking-tight text-gray-900 dark:text-white">Not Found</h2>
-        <p className="text-gray-500 mb-10 max-w-md mx-auto">{t("companyNotFound")}</p>
-        <Button onClick={() => navigate('/companies', { state: location.state })} size="lg" className="rounded-2xl px-8 bg-gray-900 text-white hover:bg-gray-800">
-          <ChevronLeft className="mr-2 h-4 w-4" /> {t("backToCompanies")}
-        </Button>
+        <h2 style={{ fontSize: 26, fontWeight: 700, color: txt, margin: "0 0 8px" }}>Not Found</h2>
+        <p style={{ fontSize: 15, color: txt2, margin: "0 0 32px", maxWidth: 400 }}>{t("companyNotFound")}</p>
+        <button
+          onClick={() => navigate('/companies', { state: location.state })}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            padding: "10px 24px",
+            background: txt,
+            color: dk ? "#1c1c1e" : "#ffffff",
+            border: "none",
+            borderRadius: 20,
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: "pointer",
+            fontFamily: F
+          }}
+        >
+          <ChevronLeft size={16} style={{ marginRight: 6 }} /> {t("backToCompanies")}
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50/50 dark:bg-slate-950 pb-20">
-      {/* Top Simple Nav */}
-      <div className="bg-white/80 dark:bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="container mx-auto max-w-6xl h-16 flex items-center justify-between px-4 border-b border-gray-100 dark:border-slate-800/50">
-          <button
-            onClick={() => navigate('/companies', { state: location.state })}
-            className="flex items-center gap-1.5 text-sm font-bold text-gray-500 hover:text-indigo-600 transition-all group"
-          >
-            <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-            <span className="group-hover:underline underline-offset-4">{t("backToCompanies")}</span>
-          </button>
-          <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`h-12 w-12 rounded-xl transition-all duration-300 hover:bg-transparent ${isFollowing ? 'text-pink-500' : 'text-gray-500 hover:text-pink-500'}`}
-              onClick={() => setIsFollowing(!isFollowing)}
+    <>
+      <style>{`
+        .company-layout-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 32px;
+        }
+        @media(min-width: 1024px) {
+          .company-layout-grid {
+            grid-template-columns: 8.2fr 3.8fr;
+          }
+        }
+        .premium-card {
+          background: ${cardBg};
+          border: 1px solid ${bdr};
+          border-radius: 20px;
+          padding: 28px;
+          box-shadow: 0 4px 20px rgba(0,0,0,${dk ? "0.15" : "0.02"});
+          transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .stat-card {
+          background: ${cardBg};
+          border: 1px solid ${bdr};
+          border-radius: 16px;
+          padding: 20px;
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          flex: 1;
+          min-width: 200px;
+          box-shadow: 0 2px 12px rgba(0,0,0,${dk ? "0.1" : "0.01"});
+        }
+        .avatar-outline {
+          border: 4px solid ${cardBg};
+          box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+        .hero-profile-header {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 16px;
+          margin-top: -50px;
+          margin-bottom: 20px;
+          position: relative;
+          z-index: 5;
+          width: 100%;
+        }
+        @media(min-width: 640px) {
+          .hero-profile-header {
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: flex-end;
+          }
+        }
+        .btn-premium-primary {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          height: 38px;
+          padding: 0 22px;
+          border-radius: 12px;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          border: 1px solid rgba(255,255,255,0.08);
+          background: ${dk ? "#1e2130" : "#1e2130"};
+          color: #e2e8f0;
+          font-family: ${F};
+          transition: all 0.2s ease;
+          box-sizing: border-box;
+        }
+        .btn-premium-primary:hover {
+          background: #252b3b;
+          transform: translateY(-1px);
+        }
+        .btn-premium-outline {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          height: 38px;
+          padding: 0 22px;
+          border-radius: 12px;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          border: 1px solid rgba(255,255,255,0.08);
+          background: ${dk ? "#1e2130" : "#1e2130"};
+          color: #e2e8f0;
+          font-family: ${F};
+          transition: all 0.2s ease;
+          box-sizing: border-box;
+        }
+        .btn-premium-outline:hover {
+          background: #252b3b;
+          transform: translateY(-1px);
+        }
+        .intern-feedback-row {
+          padding: 18px;
+          border-radius: 16px;
+          background: ${dk ? "rgba(255,255,255,0.02)" : "#f9fafb"};
+          border: 1px solid ${bdr};
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .download-resource-card {
+          border: 1px solid ${bdr};
+          border-radius: 16px;
+          padding: 16px;
+          background: ${dk ? "rgba(255,255,255,0.01)" : "#fafafa"};
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          transition: border-color 0.2s;
+        }
+        .download-resource-card:hover {
+          border-color: ${dk ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)"};
+        }
+        .internship-row-premium {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          padding: 16px;
+          border-radius: 16px;
+          background: ${dk ? "rgba(255,255,255,0.01)" : "#ffffff"};
+          border: 1px solid ${bdr};
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .internship-row-premium:hover {
+          transform: translateY(-1.5px);
+          border-color: ${dk ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)"};
+          box-shadow: 0 6px 18px rgba(0,0,0,${dk ? "0.2" : "0.03"});
+        }
+        .card-grid-overlay {
+          position: absolute;
+          inset: 0;
+          background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                            linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+          background-size: 16px 16px;
+          opacity: 0.8;
+          pointer-events: none;
+          z-index: 1;
+        }
+        .card-glow-overlay {
+          position: absolute;
+          top: -20%;
+          right: -20%;
+          width: 70%;
+          height: 70%;
+          background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+          pointer-events: none;
+          z-index: 1;
+        }
+      `}</style>
+
+      <div style={{ minHeight: "100vh", background: "transparent", color: txt, fontFamily: F, paddingBottom: 80, paddingTop: 20 }}>
+        <div style={{ maxWidth: 1140, margin: "0 auto", padding: "0 24px" }}>
+          
+          {/* Breadcrumb Back Navigation */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+            <button
+              onClick={() => navigate('/companies', { state: location.state })}
+              style={{ background: "none", border: "none", display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, color: txt2, cursor: "pointer", transition: "color 0.2s", fontFamily: F }}
+              onMouseEnter={e => e.currentTarget.style.color = txt}
+              onMouseLeave={e => e.currentTarget.style.color = txt2}
             >
-              <Heart className={`h-6 w-6 ${isFollowing ? 'fill-pink-500 text-pink-500' : ''}`} />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-12 w-12 rounded-xl text-gray-500 hover:text-indigo-600 hover:bg-transparent transition-all duration-300"
-            >
-              <Share2 className="h-6 w-6" />
-            </Button>
+              <ChevronLeft size={16} /> {t("backToCompanies")}
+            </button>
+
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={toggleFollow}
+                style={{ width: 36, height: 36, borderRadius: "50%", background: dk ? "rgba(255,255,255,0.04)" : "#fff", border: `1px solid ${bdr}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: isFollowing ? "#e53e3e" : txt2, transition: "all 0.2s" }}
+              >
+                <Heart size={16} style={{ fill: isFollowing ? "#e53e3e" : "none" }} />
+              </button>
+              <button style={{ width: 36, height: 36, borderRadius: "50%", background: dk ? "rgba(255,255,255,0.04)" : "#fff", border: `1px solid ${bdr}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: txt2 }}>
+                <Share2 size={16} />
+              </button>
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* Main Container */}
-      <div className="container mx-auto px-4 max-w-6xl pt-6">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* 1. HERO HEADER PROFILE PANEL */}
+          <div className="premium-card" style={{ padding: 0, overflow: "hidden", marginBottom: 32 }}>
+            <div style={{ height: 220, width: "100%", position: "relative", overflow: "hidden", background: dk ? "#222" : "#f5f5f7" }}>
+              <img
+                src={getCompanyCover(company.company_field, company.id)}
+                alt=""
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.4))" }} />
+            </div>
 
-          {/* Left Column (Content) */}
-          <div className="lg:col-span-8 space-y-6">
-
-            {/* Header Card */}
-            <div className="bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-gray-100 dark:border-slate-800 shadow-sm">
-              <div className="h-32 sm:h-48 w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 relative"></div>
-
-              <div className="p-6 sm:p-8 pt-0 relative">
-                {/* Logo Overlapping Header */}
-                <div className="flex justify-between items-end -mt-12 sm:-mt-16 mb-6 relative z-10">
-                  <div className="h-24 w-24 sm:h-32 sm:w-32 bg-white dark:bg-slate-800 rounded-2xl p-2 border-4 border-white dark:border-slate-900 shadow-lg">
-                    <img src={company.logo} alt={`${company.name} logo`} className="w-full h-full object-contain rounded-xl" />
-                  </div>
-                  <Button
-                    className={`rounded-xl px-6 font-bold shadow-sm ${isFollowing ? 'bg-gray-100 text-gray-900 hover:bg-gray-200' : 'bg-gray-900 text-white hover:bg-gray-800'}`}
-                    onClick={() => setIsFollowing(!isFollowing)}
-                  >
-                    {isFollowing ? t("following") : t("followCompany")}
-                  </Button>
+            <div style={{ padding: "0 28px 28px", position: "relative" }}>
+              <div className="hero-profile-header">
+                <div className="avatar-outline" style={{
+                  width: 100,
+                  height: 100,
+                  borderRadius: 22,
+                  padding: 8,
+                  background: "#ffffff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  overflow: "hidden"
+                }}>
+                  {company.logo ? (
+                    <img src={company.logo} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                  ) : (
+                    <Building2 size={44} style={{ color: "#1a1a1a" }} />
+                  )}
                 </div>
 
-                <div className="space-y-4">
+                <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                  <button
+                    onClick={() => setIsChatOpen(true)}
+                    className="btn-premium-primary"
+                    style={{ gap: 8 }}
+                  >
+                    <MessageSquare size={16} />
+                    Get in Touch
+                  </button>
+                  
+                  <a
+                    href={company.website ? (company.website.startsWith('http') ? company.website : `https://${company.website}`) : "https://internia.com"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-premium-primary"
+                    style={{ gap: 8, textDecoration: "none" }}
+                  >
+                    <Globe size={16} />
+                    Visit Website
+                  </a>
+                  <button
+                    onClick={toggleFollow}
+                    className="btn-premium-outline"
+                    style={{
+                      background: isFollowing 
+                        ? (dk ? "rgba(16, 185, 129, 0.12)" : "#ecfdf5")
+                        : (dk ? "rgba(37, 99, 235, 0.12)" : "#eff6ff"),
+                      color: isFollowing 
+                        ? (dk ? "#34d399" : "#047857")
+                        : (dk ? "#60a5fa" : "#2563eb"),
+                      borderColor: isFollowing
+                        ? (dk ? "rgba(16, 185, 129, 0.3)" : "rgba(16, 185, 129, 0.2)")
+                        : (dk ? "rgba(37, 99, 235, 0.3)" : "rgba(37, 99, 235, 0.2)"),
+                      gap: 6
+                    }}
+                  >
+                    {isFollowing ? <Check size={14} /> : <Plus size={14} />}
+                    {isFollowing ? t("following") : t("followCompany")}
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0, color: txt, letterSpacing: "-0.02em" }}>
+                  {company.name}
+                </h1>
+                <p style={{ fontSize: 15, fontWeight: 500, color: txt2, margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+                  <span>{company.company_field || t("corporatePartner")}</span>
+                  <span>•</span>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                    <MapPin size={14} /> {company.location || "Algeria"}
+                  </span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 2. DYNAMIC HORIZONTAL STATS BAR */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginBottom: 32 }}>
+            <div className="stat-card">
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: dk ? "rgba(234,179,8,0.15)" : "#fef9c3", display: "flex", alignItems: "center", justifyContent: "center", color: "#ca8a04" }}>
+                <Star size={20} style={{ fill: "#ca8a04" }} />
+              </div>
+              <div>
+                <p style={{ fontSize: 11, fontWeight: 700, color: txt2, textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 2px" }}>Rating</p>
+                <p style={{ fontSize: 15, fontWeight: 800, color: txt, margin: 0 }}>
+                  {mockRating} <span style={{ fontSize: 12, fontWeight: 500, color: txt2 }}>/ 5.0</span>
+                </p>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: dk ? "rgba(37,99,235,0.15)" : "#dbeafe", display: "flex", alignItems: "center", justifyContent: "center", color: accentColor }}>
+                <Briefcase size={20} />
+              </div>
+              <div>
+                <p style={{ fontSize: 11, fontWeight: 700, color: txt2, textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 2px" }}>Open Roles</p>
+                <p style={{ fontSize: 15, fontWeight: 800, color: txt, margin: 0 }}>
+                  {company.total_internships_count || 0} <span style={{ fontSize: 12, fontWeight: 500, color: txt2 }}>Active</span>
+                </p>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: dk ? "rgba(16,185,129,0.15)" : "#d1fae5", display: "flex", alignItems: "center", justifyContent: "center", color: "#059669" }}>
+                <MessageSquare size={20} />
+              </div>
+              <div>
+                <p style={{ fontSize: 11, fontWeight: 700, color: txt2, textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 2px" }}>Reviews</p>
+                <p style={{ fontSize: 15, fontWeight: 800, color: txt, margin: 0 }}>
+                  {mockReviewsCount} <span style={{ fontSize: 12, fontWeight: 500, color: txt2 }}>Feedback</span>
+                </p>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: dk ? "rgba(139,92,246,0.15)" : "#f3e8ff", display: "flex", alignItems: "center", justifyContent: "center", color: "#7c3aed" }}>
+                <Clock size={20} />
+              </div>
+              <div>
+                <p style={{ fontSize: 11, fontWeight: 700, color: txt2, textTransform: "uppercase", letterSpacing: "0.05em", margin: "0 0 2px" }}>Hiring History</p>
+                <p style={{ fontSize: 15, fontWeight: 800, color: txt, margin: 0 }}>
+                  {companyAge} <span style={{ fontSize: 12, fontWeight: 500, color: txt2 }}>Years Active</span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 3. TWO COLUMN GRID LAYOUT */}
+          <div className="company-layout-grid">
+            
+            {/* LEFT COLUMN - MAIN DETAILS */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+              
+              {/* Card A: About Company */}
+              <div className="premium-card">
+                <h2 style={{ fontSize: 18, fontWeight: 800, margin: "0 0 16px", display: "flex", alignItems: "center", gap: 10, color: txt, letterSpacing: "-0.01em" }}>
+                  <Building2 size={20} style={{ color: txt2 }} />
+                  {t("aboutUs")}
+                </h2>
+                <div style={{ fontSize: 14.5, color: txt2, lineHeight: 1.7, display: "flex", flexDirection: "column", gap: 16 }}>
+                  {company.description ? company.description.split('\n').map((para, i) => (
+                    <p key={i} style={{ margin: 0 }}>{para}</p>
+                  )) : (
+                    <p style={{ margin: 0 }}>{t("noDescCompany")}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Card B: Recruitment Timeline & Progress Bar */}
+              <div className="premium-card">
+                <h2 style={{ fontSize: 18, fontWeight: 800, margin: "0 0 8px", display: "flex", alignItems: "center", gap: 10, color: txt, letterSpacing: "-0.01em" }}>
+                  <Clock size={20} style={{ color: txt2 }} />
+                  Hiring & Recruitment Cycle
+                </h2>
+                <p style={{ fontSize: 13, color: txt2, margin: "0 0 24px" }}>
+                  Deadline: <span style={{ fontWeight: 600, color: txt }}>Start: March 15, 2026 | End: May 30, 2026</span>
+                </p>
+                
+                <div style={{ position: "relative", marginBottom: 12 }}>
+                  {/* Colorful Multi-segment Progress Bar */}
+                  <div style={{ height: 8, width: "100%", borderRadius: 4, background: bdr, display: "flex", overflow: "hidden" }}>
+                    <div style={{ width: "40%", background: "#10b981" }} /> {/* Applications Open (Green) */}
+                    <div style={{ width: "35%", background: "#f59e0b" }} /> {/* Screening & Interviews (Yellow) */}
+                    <div style={{ width: "15%", background: "#ef4444" }} /> {/* Offer Extensions (Red) */}
+                    <div style={{ width: "10%", background: bdr }} />
+                  </div>
+                </div>
+                
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, fontSize: 12, fontWeight: 600, color: txt2 }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "#10b981" }} />Applications (Open)</span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "#f59e0b" }} />Interviews (Active)</span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: "50%", background: "#ef4444" }} />Final Selection</span>
+                </div>
+              </div>
+
+              {/* Card C: Document Downloads */}
+              <div className="premium-card">
+                <h2 style={{ fontSize: 18, fontWeight: 800, margin: "0 0 20px", display: "flex", alignItems: "center", gap: 10, color: txt, letterSpacing: "-0.01em" }}>
+                  <FileText size={20} style={{ color: txt2 }} />
+                  Program Resources & Downloads
+                </h2>
+                
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  <div className="download-resource-card">
+                    <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                      <div style={{ width: 40, height: 40, borderRadius: 10, background: dk ? "rgba(255,255,255,0.03)" : "#f3f4f6", display: "flex", alignItems: "center", justifySelf: "center", justifyContent: "center", color: accentColor }}>
+                        <FileText size={18} />
+                      </div>
+                      <div>
+                        <h4 style={{ fontSize: 14, fontWeight: 700, color: txt, margin: "0 0 2px" }}>Internship Guidelines handbook</h4>
+                        <p style={{ fontSize: 11, color: txt2, margin: 0 }}>PDF (2.4 MB) • Updated 2 weeks ago</p>
+                      </div>
+                    </div>
+                    <button className="btn-premium-outline" style={{ height: 36, padding: "0 14px", display: "flex", gap: 6, borderRadius: 12 }}>
+                      <Download size={14} />
+                      Download
+                    </button>
+                  </div>
+
+                  <div className="download-resource-card">
+                    <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                      <div style={{ width: 40, height: 40, borderRadius: 10, background: dk ? "rgba(255,255,255,0.03)" : "#f3f4f6", display: "flex", alignItems: "center", justifySelf: "center", justifyContent: "center", color: accentColor }}>
+                        <FileText size={18} />
+                      </div>
+                      <div>
+                        <h4 style={{ fontSize: 14, fontWeight: 700, color: txt, margin: "0 0 2px" }}>Standard Internship Agreement Template</h4>
+                        <p style={{ fontSize: 11, color: txt2, margin: 0 }}>PDF (1.1 MB) • Official template</p>
+                      </div>
+                    </div>
+                    <button className="btn-premium-outline" style={{ height: 36, padding: "0 14px", display: "flex", gap: 6, borderRadius: 12 }}>
+                      <Download size={14} />
+                      Download
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card D: Focus Categories & Perks */}
+              <div className="premium-card">
+                <div style={{ display: "grid", gridTemplateColumns: "1fr", mdGridTemplateColumns: "1fr 1fr", gap: 28 }}>
                   <div>
-                    <h1 className="text-3xl sm:text-4xl font-black text-gray-900 dark:text-white tracking-tight leading-tight">
-                      {company.name}
-                    </h1>
-                    <p className="text-lg text-gray-500 dark:text-gray-400 font-medium mt-1">
-                      {company.company_field || t("corporatePartner")}
+                    <h3 style={{ fontSize: 16, fontWeight: 800, margin: "0 0 16px", color: txt, display: "flex", alignItems: "center", gap: 8 }}>
+                      <Award size={18} style={{ color: txt2 }} />
+                      Focus Categories
+                    </h3>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                      {["Technical Design", "Software Engineering", "Data Infrastructure", "Quality Assurance"].map((cat) => (
+                        <span key={cat} style={{ fontSize: 12, fontWeight: 600, padding: "5px 12px", borderRadius: 10, background: pillBg, color: txt2, border: `1px solid ${bdr}` }}>
+                          {cat}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div style={{ borderTop: `1px solid ${bdr}`, paddingTop: 20, mdBorderTop: "none", mdPaddingTop: 0 }}>
+                    <h3 style={{ fontSize: 16, fontWeight: 800, margin: "0 0 16px", color: txt, display: "flex", alignItems: "center", gap: 8 }}>
+                      <CheckCircle size={18} style={{ color: txt2 }} />
+                      {t("benefitsPerks")}
+                    </h3>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                      {(company.benefits || ["Health Insurance", "Flexible Hours", "Professional Development"]).map((benefit, index) => (
+                        <span key={index} style={{ fontSize: 12, fontWeight: 600, padding: "5px 12px", borderRadius: 10, background: pillBg, color: txt, border: `1px solid ${bdr}` }}>
+                          {benefit}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card E: Intern Feedback / Testimonials */}
+              <div className="premium-card">
+                <h2 style={{ fontSize: 18, fontWeight: 800, margin: "0 0 20px", display: "flex", alignItems: "center", gap: 10, color: txt, letterSpacing: "-0.01em" }}>
+                  <MessageSquare size={20} style={{ color: txt2 }} />
+                  Testimonials from Past Interns
+                </h2>
+                
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  <div className="intern-feedback-row">
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <div style={{ width: 36, height: 36, borderRadius: "50%", background: accentColor, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700 }}>
+                          JB
+                        </div>
+                        <div>
+                          <h4 style={{ fontSize: 13.5, fontWeight: 700, color: txt, margin: 0 }}>Jack Brady</h4>
+                          <p style={{ fontSize: 11, color: txt2, margin: 0 }}>Software Engineering Intern • 2025</p>
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 4, color: "#eab308", fontSize: 12, fontWeight: 700 }}>
+                        <Star size={13} style={{ fill: "#eab308" }} />
+                        5.0
+                      </div>
+                    </div>
+                    <p style={{ fontSize: 13, color: txt2, lineHeight: 1.6, margin: 0 }}>
+                      "I got to collaborate on real-world projects and build modern React dashboards under great mentorship. The company's work environment is truly innovative and supportive."
                     </p>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-gray-600 dark:text-gray-400 font-semibold text-sm">
-                    <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-lg bg-gray-50 dark:bg-slate-800 border flex items-center justify-center">
-                        <MapPin className="h-4 w-4 text-indigo-500" />
-                      </div>
-                      {company.location}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-lg bg-gray-50 dark:bg-slate-800 border flex items-center justify-center">
-                        <Users className="h-4 w-4 text-indigo-500" />
-                      </div>
-                      {company.size}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-lg bg-gray-50 dark:bg-slate-800 border flex items-center justify-center">
-                        <Globe className="h-4 w-4 text-indigo-500" />
-                      </div>
-                      <a href={company.website} target="_blank" rel="noreferrer" className="hover:text-indigo-600 hover:underline transition-all">
-                        {t("website")}
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* About Card */}
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-gray-100 dark:border-slate-800 shadow-sm space-y-8">
-              <section>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-                  <Building2 className="h-5 w-5 text-indigo-500" />
-                  {t("aboutUs")}
-                </h2>
-                <div className="text-gray-600 dark:text-gray-400 leading-relaxed text-base space-y-4">
-                  {company.description ? company.description.split('\n').map((para, i) => (
-                    <p key={i}>{para}</p>
-                  )) : (
-                    <p>{t("noDescCompany")}</p>
-                  )}
-                </div>
-              </section>
-
-              <section className="pt-8 border-t border-gray-100 dark:border-slate-800">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-                  <Award className="h-5 w-5 text-indigo-500" />
-                  {t("benefitsPerks")}
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {(company.benefits || ["Health Insurance", "Flexible Hours", "Professional Development"]).map((benefit, index) => (
-                    <div key={index} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-slate-800/50 border border-gray-100 dark:border-slate-700/50">
-                      <div className="h-2 w-2 rounded-full bg-indigo-500"></div>
-                      <span className="font-medium text-gray-700 dark:text-gray-300">{benefit}</span>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            </div>
-
-            {/* Total Internships Section */}
-            <div id="internships-section" className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-gray-100 dark:border-slate-800 shadow-sm space-y-6 scroll-mt-20">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                <Briefcase className="h-5 w-5 text-indigo-500" />
-                {t("totalInternships") || "Total Internships"}
-                <span className="ml-auto bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs py-1 px-3 rounded-full font-black">
-                  {company.total_internships_count}
-                </span>
-              </h2>
-
-              <div className="space-y-4">
-                {company.internships && company.internships.length > 0 ? (
-                  company.internships.map((internship) => (
-                    <div
-                      key={internship.id}
-                      onClick={() => navigate(`/internships/${internship.id}`)}
-                      className="group flex items-center gap-4 p-4 rounded-2xl bg-gray-50 dark:bg-slate-800/50 border border-gray-100 dark:border-slate-700/50 hover:border-indigo-200 dark:hover:border-indigo-800 transition-all cursor-pointer hover:shadow-md"
-                    >
-                      <div className="h-12 w-12 rounded-xl overflow-hidden bg-white dark:bg-slate-700 border border-gray-100 dark:border-slate-600 shrink-0 shadow-sm">
-                        {internship.image ? (
-                          <img src={internship.image} alt="" className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-300" />
-                        ) : (
-                          <div className="h-full w-full flex items-center justify-center bg-indigo-50 dark:bg-indigo-900/20">
-                            <Briefcase className="h-5 w-5 text-indigo-400" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-bold text-gray-900 dark:text-white truncate group-hover:text-indigo-600 transition-colors">
-                          {internship.title}
-                        </h4>
-                        <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
-                          <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {internship.location}</span>
-                          <span className="h-1 w-1 rounded-full bg-gray-300"></span>
-                          <span className="uppercase font-bold tracking-tighter text-indigo-500/80">{internship.type}</span>
+                  <div className="intern-feedback-row">
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#8b5cf6", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700 }}>
+                          SA
+                        </div>
+                        <div>
+                          <h4 style={{ fontSize: 13.5, fontWeight: 700, color: txt, margin: 0 }}>Samy Amir</h4>
+                          <p style={{ fontSize: 11, color: txt2, margin: 0 }}>AI Research Assistant • 2025</p>
                         </div>
                       </div>
-                      <div className={`text-[10px] font-black px-2 py-1 rounded-md uppercase tracking-tighter ${internship.status === 'OPEN_FOR_APPLICATION'
-                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                          : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
-                        }`}>
-                        {internship.status === 'OPEN_FOR_APPLICATION' ? t('open') || 'Open' : t('closed') || 'Closed'}
+                      <div style={{ display: "flex", alignItems: "center", gap: 4, color: "#eab308", fontSize: 12, fontWeight: 700 }}>
+                        <Star size={13} style={{ fill: "#eab308" }} />
+                        4.8
                       </div>
-                      <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-indigo-500 transition-all group-hover:translate-x-1" />
                     </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-gray-500 italic text-center py-4">{t("noInternshipsFound") || "No internships posted yet."}</p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column (Sidebar) */}
-          <div className="lg:col-span-4 space-y-6">
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-gray-100 dark:border-slate-800 shadow-sm">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-8">{t("companySnapshot")}</h3>
-              <div className="space-y-6">
-                <SidebarItem icon={Calendar} label={t("founded")} value={company.founded_year?.toString() || t("notAvailable")} />
-                <SidebarItem icon={Briefcase} label={t("field")} value={company.company_field || t("notAvailable")} />
-                <SidebarItem icon={Users} label={t("companySize")} value={company.size || "10-50 Employees"} />
-                <SidebarItem icon={Building2} label={t("headquarters")} value={company.location || t("notAvailable")} />
-              </div>
-
-              <div className="mt-8 pt-8 border-t border-gray-100 dark:border-slate-800">
-                <a href={company.website} target="_blank" rel="noreferrer" className="w-full">
-                  <Button variant="outline" className="w-full h-12 rounded-xl text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300 transition-all font-bold group">
-                    {t("visitWebsite")}
-                    <ExternalLink className="ml-2 h-4 w-4 group-hover:scale-110 transition-transform" />
-                  </Button>
-                </a>
-                <Button className="w-full h-12 mt-3 rounded-xl bg-gray-900 hover:bg-gray-800 text-white font-bold group shadow-md shadow-gray-900/10">
-                  <Mail className="mr-2 h-4 w-4" /> {t("contactUs")}
-                </Button>
-              </div>
-            </div>
-
-            {/* Open Positions Summary */}
-            <div className="bg-indigo-600 dark:bg-indigo-900 rounded-3xl p-6 sm:p-8 shadow-lg text-white relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-8 opacity-10">
-                <Briefcase className="h-32 w-32" />
-              </div>
-              <div className="relative z-10">
-                <h3 className="text-lg font-bold mb-2">{t("weAreHiring")}</h3>
-                <p className="text-indigo-100 mb-6 text-sm">{t("joinOurTeam")}</p>
-                <div className="flex items-center justify-between bg-white/10 rounded-2xl p-4 backdrop-blur-sm border border-white/20 mb-6">
-                  <div>
-                    <p className="text-3xl font-black">{company.total_internships_count || 0}</p>
-                    <p className="text-indigo-200 text-xs font-semibold uppercase tracking-wider">{t("totalInternships")}</p>
+                    <p style={{ fontSize: 13, color: txt2, lineHeight: 1.6, margin: 0 }}>
+                      "An outstanding place to grow. I worked with the core data science team to optimize training models. Highly recommend this internship to anyone looking for deep technical exposure."
+                    </p>
                   </div>
                 </div>
-                <Button
-                  onClick={() => {
-                    const element = document.getElementById('internships-section');
-                    if (element) {
-                      element.scrollIntoView({ behavior: 'smooth' });
-                    }
-                  }}
-                  className="w-full h-11 bg-white text-indigo-600 hover:bg-gray-50 rounded-xl font-bold shadow-sm"
-                >
-                  {t("viewOpportunities")}
-                </Button>
               </div>
-            </div>
-          </div>
 
+              {/* Card F: Active Internships */}
+              <div id="internships-section" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <h2 style={{ fontSize: 18, fontWeight: 800, margin: 0, display: "flex", alignItems: "center", gap: 10, color: txt, letterSpacing: "-0.01em" }}>
+                    <Briefcase size={20} style={{ color: txt2 }} />
+                    Available Opportunities
+                  </h2>
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 12, background: pillBg, border: `1px solid ${bdr}`, color: txt }}>
+                    {company.total_internships_count || 0} Openings
+                  </span>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {company.internships && company.internships.length > 0 ? (
+                    company.internships.map((internship) => (
+                      <div
+                        key={internship.id}
+                        onClick={() => navigate(`/internships/${internship.id}`)}
+                        className="internship-row-premium"
+                      >
+                        <div style={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: 12,
+                          overflow: "hidden",
+                          background: "#ffffff",
+                          border: `1.5px solid ${bdr}`,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0
+                        }}>
+                          {internship.image ? (
+                            <img src={internship.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          ) : (
+                            <Briefcase size={18} style={{ color: txt2 }} />
+                          )}
+                        </div>
+
+                        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+                          <h4 style={{ fontSize: 14.5, fontWeight: 700, color: txt, margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                            {internship.title}
+                          </h4>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11.5, color: txt2 }}>
+                            <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                              <MapPin size={11} /> {internship.location}
+                            </span>
+                            <span>•</span>
+                            <span style={{ fontWeight: 600 }}>
+                              {(internship.type || "").replace("_", " ")}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <span style={{
+                            fontSize: 9.5,
+                            fontWeight: 700,
+                            padding: "4px 8px",
+                            borderRadius: 6,
+                            textTransform: "uppercase",
+                            background: internship.status === 'OPEN_FOR_APPLICATION' ? (dk ? "rgba(16,185,129,0.12)" : "#ecfdf5") : pillBg,
+                            color: internship.status === 'OPEN_FOR_APPLICATION' ? (dk ? "#34d399" : "#047857") : txt2
+                          }}>
+                            {internship.status === 'OPEN_FOR_APPLICATION' ? t('open') || 'Open' : t('closed') || 'Closed'}
+                          </span>
+                          <ChevronRight size={16} style={{ color: txt2 }} />
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p style={{ fontSize: 13, fontStyle: "italic", color: txt2, textAlign: "center", margin: "16px 0 8px" }}>
+                      {t("noInternshipsFound") || "No internships posted yet."}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+            </div>
+
+            {/* RIGHT COLUMN - SIDEBAR */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+              
+              {/* Card 1: GPS Map & Location */}
+              <div className="premium-card">
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: txt, margin: "0 0 16px", display: "flex", alignItems: "center", gap: 8 }}>
+                  <MapPin size={18} style={{ color: txt2 }} />
+                  Company Location
+                </h3>
+                
+                {/* Embed GPS Google Map iframe */}
+                <div style={{ borderRadius: 14, overflow: "hidden", border: `1px solid ${bdr}`, marginBottom: 16, height: 200, background: dk ? "#18181b" : "#f4f4f5" }}>
+                  <iframe
+                    title="Company Location Map"
+                    src={`https://maps.google.com/maps?q=${encodeURIComponent(company.name + " " + (company.location || "Algeria"))}&t=&z=13&ie=UTF8&iwloc=&output=embed`}
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0, display: "block" }}
+                    allowFullScreen=""
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                  ></iframe>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <p style={{ fontSize: 13, color: txt, margin: 0, fontWeight: 600 }}>
+                    {company.location || "Algeria"}
+                  </p>
+                  <p style={{ fontSize: 12, color: txt2, margin: "0 0 16px", lineHeight: 1.4 }}>
+                    Official headquarters and primary development center coordinates.
+                  </p>
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(company.name + " " + (company.location || "Algeria"))}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ textDecoration: "none" }}
+                  >
+                    <button className="btn-premium-outline" style={{ width: "100%", height: 38, display: "flex", gap: 6, justifyContent: "center", fontSize: 12, borderRadius: 12 }}>
+                      Open in Google Maps
+                      <ArrowUpRight size={14} />
+                    </button>
+                  </a>
+                </div>
+              </div>
+
+              {/* Card 2: Company Snapshot details */}
+              <div className="premium-card">
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: txt, margin: "0 0 20px" }}>
+                  {t("companySnapshot")}
+                </h3>
+                
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  <SidebarItem icon={Calendar} label={t("founded")} value={company.founded_year?.toString() || t("notAvailable")} txt={txt} txt2={txt2} bdr={bdr} />
+                  <SidebarItem icon={Briefcase} label={t("field")} value={company.company_field || t("notAvailable")} txt={txt} txt2={txt2} bdr={bdr} />
+                  <SidebarItem icon={Users} label={t("companySize")} value={company.size || "10-50 Employees"} txt={txt} txt2={txt2} bdr={bdr} />
+                  <SidebarItem icon={Building2} label={t("headquarters")} value={company.location || t("notAvailable")} txt={txt} txt2={txt2} bdr={bdr} />
+                </div>
+
+                <div style={{ marginTop: 24, paddingTop: 24, borderTop: `1px solid ${bdr}`, display: "flex", flexDirection: "column", gap: 12 }}>
+                  {company.website && (
+                    <a href={company.website} target="_blank" rel="noreferrer" style={{ textDecoration: "none" }}>
+                      <button className="btn-premium-outline" style={{ width: "100%", height: 40, display: "flex", gap: 6, justifyContent: "center", fontSize: 13, borderRadius: 14 }}>
+                        {t("visitWebsite")}
+                        <ExternalLink size={14} />
+                      </button>
+                    </a>
+                  )}
+                  <button
+                    onClick={() => setIsChatOpen(true)}
+                    className="btn-premium-primary"
+                    style={{ width: "100%", height: 40, display: "flex", gap: 6, justifyContent: "center", fontSize: 13, borderRadius: 14 }}
+                  >
+                    <Mail size={14} />
+                    {t("contactUs")}
+                  </button>
+                </div>
+              </div>
+
+              {/* Card 3: Hiring callout banner */}
+              <div style={{
+                position: "relative",
+                background: dk ? "#18181b" : "#0f172a",
+                borderRadius: 20,
+                padding: "24px 22px",
+                color: "#ffffff",
+                overflow: "hidden",
+                border: dk ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(255,255,255,0.08)",
+                boxShadow: "0 12px 30px rgba(0,0,0,0.2)"
+              }}>
+
+                {/* Actively Hiring Pulse Tag */}
+                <div style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "4px 10px",
+                  borderRadius: 20,
+                  background: (company.total_internships_count || 0) > 0 ? "rgba(16, 185, 129, 0.15)" : "rgba(255, 255, 255, 0.08)",
+                  border: `1px solid ${(company.total_internships_count || 0) > 0 ? "rgba(16, 185, 129, 0.3)" : "rgba(255, 255, 255, 0.15)"}`,
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: (company.total_internships_count || 0) > 0 ? "#34d399" : "#a1a1aa",
+                  marginBottom: 14,
+                  position: "relative",
+                  zIndex: 2
+                }}>
+                  <span style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    background: (company.total_internships_count || 0) > 0 ? "#10b981" : "#a1a1aa",
+                    display: "inline-block",
+                    boxShadow: (company.total_internships_count || 0) > 0 ? "0 0 8px #10b981" : "none"
+                  }} />
+                  {(company.total_internships_count || 0) > 0 ? "ACTIVELY HIRING" : "NEXT CYCLE SOON"}
+                </div>
+                
+                <h3 style={{ fontSize: 17, fontWeight: 700, margin: "0 0 6px", position: "relative", zIndex: 2, letterSpacing: "-0.01em" }}>{t("weAreHiring")}</h3>
+                <p style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", margin: "0 0 20px", lineHeight: 1.4, position: "relative", zIndex: 2 }}>{t("joinOurTeam")}</p>
+                
+                {/* Side-by-Side Modern Metrics Panel */}
+                <div style={{
+                  display: "flex",
+                  gap: 10,
+                  marginBottom: 20,
+                  position: "relative",
+                  zIndex: 2
+                }}>
+                  <div style={{
+                    flex: 1,
+                    padding: "10px 12px",
+                    borderRadius: 12,
+                    background: "rgba(255, 255, 255, 0.04)",
+                    border: "1px solid rgba(255, 255, 255, 0.08)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 2
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 5, color: "rgba(255,255,255,0.5)" }}>
+                      <Briefcase size={11} />
+                      <span style={{ fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                        Open Roles
+                      </span>
+                    </div>
+                    <span style={{ fontSize: 18, fontWeight: 700, color: "#ffffff" }}>
+                      {(company.total_internships_count || 0) > 0 ? company.total_internships_count : 0}
+                    </span>
+                  </div>
+
+                  <div style={{
+                    flex: 1,
+                    padding: "10px 12px",
+                    borderRadius: 12,
+                    background: "rgba(255, 255, 255, 0.04)",
+                    border: "1px solid rgba(255, 255, 255, 0.08)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 2
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 5, color: "rgba(255,255,255,0.5)" }}>
+                      <Users size={11} />
+                      <span style={{ fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                        Hired Interns
+                      </span>
+                    </div>
+                    <span style={{ fontSize: 18, fontWeight: 700, color: "#ffffff" }}>
+                      {mockReviewsCount * 2 + 3}
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    const el = document.getElementById('internships-section');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  style={{
+                    width: "100%",
+                    height: 38,
+                    background: "#ffffff",
+                    color: "#0b0f19",
+                    border: "none",
+                    borderRadius: 12,
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 6,
+                    transition: "all 0.2s ease",
+                    position: "relative",
+                    zIndex: 2
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.transform = "translateY(-1.5px)";
+                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(255, 255, 255, 0.2)";
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
+                >
+                  <span>{t("viewOpportunities")}</span>
+                  <ArrowUpRight size={13} strokeWidth={2.5} />
+                </button>
+              </div>
+
+            </div>
+
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Floating Chat Modal */}
+      <ChatModal
+        open={isChatOpen}
+        onOpenChange={setIsChatOpen}
+        recipientId={company.id}
+        recipientName={company.name}
+      />
+    </>
   );
 }
 
-function SidebarItem({ icon: Icon, label, value }) {
+function SidebarItem({ icon: Icon, label, value, txt, txt2, bdr }) {
   return (
-    <div className="flex items-center gap-4">
-      <div className="h-10 w-10 rounded-xl bg-gray-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-700 flex items-center justify-center text-gray-500 shrink-0">
-        <Icon className="h-5 w-5" />
+    <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+      <div style={{
+        width: 36,
+        height: 36,
+        borderRadius: 10,
+        background: "transparent",
+        border: `1.5px solid ${bdr}`,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: txt2,
+        flexShrink: 0
+      }}>
+        <Icon size={15} />
       </div>
-      <div>
-        <p className="text-[10px] uppercase font-bold text-gray-400 tracking-widest">{label}</p>
-        <p className="font-bold text-sm text-gray-900 dark:text-gray-100">{value}</p>
+      <div style={{ minWidth: 0 }}>
+        <p style={{ fontSize: 9.5, textTransform: "uppercase", fontWeight: 700, color: txt2, letterSpacing: "0.06em", margin: "0 0 2px" }}>
+          {label}
+        </p>
+        <p style={{ fontSize: 13, fontWeight: 700, color: txt, margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {value}
+        </p>
       </div>
     </div>
   );

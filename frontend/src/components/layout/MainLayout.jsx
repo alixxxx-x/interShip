@@ -4,8 +4,8 @@ import Footer from "./Footer";
 
 const MainLayout = () => {
   const location = useLocation();
-  const hideFooterRoutes = ["/internships", "/settings"];
-  const shouldHideFooter = hideFooterRoutes.includes(location.pathname);
+  const hideFooterRoutes = ["/", "/internships", "/settings"];
+  const shouldHideFooter = hideFooterRoutes.includes(location.pathname) || location.pathname.startsWith("/internships/");
 
   return (
     <Navbar>
@@ -18,3 +18,4 @@ const MainLayout = () => {
 };
 
 export default MainLayout;
+

@@ -1,0 +1,128 @@
+CHAPTER 4: SYSTEM IMPLEMENTATION
+
+4.1 OVERVIEW
+This chapter presents the results of the technical implementation of the "InterShip" project. It covers the proposed system architecture, the hardware and software resources utilized, database schema details, and key implementation examples, followed by a presentation of the main user interfaces.
+
+4.2 PROPOSED SYSTEM ARCHITECTURE
+The system follows a modern Client-Server architecture based on the Single Page Application (SPA) model. This ensures a clean separation between the frontend presentation and the backend business logic.
+
+4.2.1 Presentation Tier (Frontend)
+Developed using React 19 and Vite, this tier manages the user interface and interactions. It uses Tailwind CSS for responsive design and Radix UI primitives for accessible components. Communication with the backend is handled via asynchronous HTTP requests using the Axios library.
+
+4.2.2 Application Tier (Backend)
+The logic is powered by Django 6.0 and Django REST Framework (DRF). This tier handles:
+- User authentication and authorization (JWT-based).
+- Business logic for internship applications and validations.
+- Real-time notifications and direct messaging.
+- Integration with external services (AI and PDF generation).
+
+4.2.3 Data Tier (Persistence)
+The relational database stores all system entities. While SQLite is used for development, the system is fully compatible with PostgreSQL for production environments. Media files (CVs, images) are managed through Django's storage system.
+
+4.3 RESOURCES UTILIZED
+4.3.1 Hardware Resources
+- Development Machine: Intel Core i7 / AMD Ryzen 7, 16GB RAM, 512GB SSD.
+- Web Server: Cloud-ready environment capable of running Python/Gunicorn.
+- Testing Devices: Modern web browsers (Chrome, Firefox, Safari) and mobile responsive testing.
+
+4.3.2 Software Resources and Versions Table
+-------------------------------------------------------------------------
+| Component            | Tool / Technology        | Version           |
+|----------------------|--------------------------|-------------------|
+| Operating System     | Windows / Linux          | -                 |
+| Development IDE      | Visual Studio Code       | 1.9x              |
+| Programming Language | Python / JavaScript      | 3.12 / ES6+       |
+| Backend Framework    | Django                   | 6.0.3             |
+| API Framework        | Django REST Framework    | 3.17.1            |
+| Frontend Framework   | React (Vite)             | 19.2.0            |
+| Styling & Design     | Tailwind CSS / Shadcn UI | 4.1.18            |
+| Database System      | SQLite / PostgreSQL      | 3.x / 16.x        |
+| Generative AI        | Google Gemini API        | 1.74.0            |
+-------------------------------------------------------------------------
+
+4.4 DATA AND PROCESSING IMPLEMENTATION EXAMPLES
+4.4.1 Admin Analytics Logic (Processing Example)
+The system calculates real-time placement rates using Django's ORM aggregation to provide administrators with accurate platform metrics.
+
+```python
+# Backend logic for calculating student placement stats
+def get_stats(self, request):
+    total_students = User.objects.filter(role=User.Role.STUDENT).count()
+    placed_students = Application.objects.filter(
+        status=Application.Status.ACCEPTED,
+        is_validated_by_admin=True
+    ).values('student').distinct().count()
+    
+    unplaced_students = total_students - placed_students
+    placement_rate = (placed_students / total_students * 100) if total_students > 0 else 0
+    return Response({
+        "total": total_students,
+        "rate": placement_rate
+    })
+```
+
+4.4.2 Multi-Role Model Inheritance (Data Example)
+The platform uses multi-table inheritance to extend the base user model while maintaining a unified authentication system.
+
+```python
+# Model inheritance implementation
+class User(AbstractUser):
+    role = models.CharField(max_length=10, choices=Role.choices)
+
+class Student(User):
+    university_id = models.CharField(max_length=50)
+    wilaya = models.CharField(max_length=100)
+    phone = models.CharField(max_length=20)
+```
+
+4.5 DATABASE STRUCTURE AND ENTITIES
+The database schema consists of several interconnected tables, each designed to manage a specific aspect of the internship workflow.
+
+1. USER (Base Table)
+   - Fields: id, email, username, password, role (STUDENT, COMPANY, ADMIN), profile_picture.
+   - Role: Handles core authentication and user identification.
+
+2. STUDENT (Inherits from User)
+   - Fields: user_ptr_id, university_id, wilaya, phone.
+   - Role: Stores academic-specific information for students.
+
+3. COMPANY (Inherits from User)
+   - Fields: user_ptr_id, name, logo, description, location, website, company_field.
+   - Role: Manages organization profiles and branding.
+
+4. INTERNSHIPOFFER
+   - Fields: id, title, description, company_id (FK), status (DRAFT, OPEN, CLOSED), location, type, duration, number_of_places.
+   - Role: Stores available internship opportunities posted by companies.
+
+5. APPLICATION
+   - Fields: id, student_id (FK), internship_id (FK), status (PENDING, ACCEPTED, REJECTED), application_date, is_validated_by_admin.
+   - Role: Tracks the relationship and status of candidate applications.
+
+6. SKILLS
+   - Fields: id, name, skill_level (BEGINNER, INTERMEDIATE, ADVANCED), internship_id (FK).
+   - Role: Categorizes technical requirements for offers and user profiles.
+
+7. DIGITALCV
+   - Fields: id, student_id (FK), first_name, last_name, email, skills, experience, education, cv_file, date_of_birth.
+   - Role: Centralized repository for student professional data.
+
+8. NOTIFICATION
+   - Fields: id, recipient_id (FK), notification_type, message, is_read, created_at.
+   - Role: Logs and delivers real-time alerts to stakeholders.
+
+9. MESSAGE
+   - Fields: id, sender_id (FK), recipient_id (FK), content, is_read, created_at.
+   - Role: Handles direct peer-to-peer communication between admin and companies.
+
+4.6 USER INTERFACES AND MANIPULATION
+4.6.1 Administrative Dashboard
+A live command center displaying platform health metrics and a validation queue for processing official internship agreements.
+
+4.6.2 Company Dashboard
+Enables employers to publish listings and manage applicants through a specialized glassmorphic interface.
+
+4.6.3 Student Interface
+A streamlined portal for finding internships and managing the Digital CV, featuring instant notifications.
+
+4.6.4 AI Support Chatbot
+A persistence interface powered by Google Gemini, offering automated 24/7 technical and procedural support to all users.
