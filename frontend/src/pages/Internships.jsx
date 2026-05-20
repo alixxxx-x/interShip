@@ -32,6 +32,22 @@ export default function Internships() {
   const [maxMonths, setMaxMonths] = useState(12);
   const [sortBy, setSortBy] = useState("default");
   const [sortOpen, setSortOpen] = useState(false);
+  const [selectedRatings, setSelectedRatings] = useState([]);
+  const [timeUnit, setTimeUnit] = useState("months"); // "days" | "weeks" | "months"
+
+  const handleUnitChange = (unit) => {
+    setTimeUnit(unit);
+    if (unit === "months") {
+      setMinMonths(1);
+      setMaxMonths(12);
+    } else if (unit === "weeks") {
+      setMinMonths(1);
+      setMaxMonths(24);
+    } else if (unit === "days") {
+      setMinMonths(1);
+      setMaxMonths(90);
+    }
+  };
 
   const getDurationMonths = (dStr) => {
     if (!dStr) return 3;
@@ -44,6 +60,32 @@ export default function Internships() {
       num = Math.max(1, Math.round(num / 30));
     }
     return num;
+  };
+  const getDurationInDays = (dStr) => {
+    if (!dStr) return 90; // Default 3 months = 90 days
+    const str = String(dStr).toLowerCase();
+    const match = str.match(/\d+/);
+    if (!match) return 90;
+    let num = parseInt(match[0], 10);
+    
+    if (str.includes('month')) {
+      return num * 30;
+    }
+    if (str.includes('week')) {
+      return num * 7;
+    }
+    if (str.includes('day')) {
+      return num;
+    }
+    // Handle Django timedelta format e.g. "90 00:00:00" (days)
+    if (str.includes(':')) {
+      return num;
+    }
+    // Fallback based on size of number
+    if (num <= 12) {
+      return num * 30; // Treat as months
+    }
+    return num; // Treat as days
   };
   const getPageNumbers = () => {
     const range = [];
@@ -77,11 +119,22 @@ export default function Internships() {
 
   const filtered = (Array.isArray(internships) ? internships : []).filter(i => {
     const q = search.toLowerCase();
-    const durationVal = getDurationMonths(i.internship_duration);
+    
+    // Parse duration in days dynamically
+    const durationDays = getDurationInDays(i.internship_duration);
+    const activeMinDays = minMonths * (timeUnit === "months" ? 30 : timeUnit === "weeks" ? 7 : 1);
+    const activeMaxDays = maxMonths * (timeUnit === "months" ? 30 : timeUnit === "weeks" ? 7 : 1);
+    
+    // Use only the internship-specific rating (not company-wide fallback)
+    const rating = parseFloat(parseFloat(i.rating || 0).toFixed(1));
+    const starBucket = Math.floor(rating);
+    const isRated = rating > 0;
+
     return (!q || i.title?.toLowerCase().includes(q) || i.company_name?.toLowerCase().includes(q))
       && (!type || i.internship_type === type) && (!loc || i.internship_location === loc)
       && (!wilaya || i.wilaya === wilaya) && (skills.length === 0 || (i.required_skills && skills.some(s => i.required_skills.includes(s))))
-      && (durationVal >= minMonths && durationVal <= maxMonths);
+      && (durationDays >= activeMinDays && durationDays <= activeMaxDays)
+      && (selectedRatings.length === 0 || (isRated && selectedRatings.includes(starBucket)));
   });
 
   const sorted = [...filtered].sort((a, b) => {
@@ -106,15 +159,44 @@ export default function Internships() {
 
   const pages = Math.max(1, Math.ceil(sorted.length / PER_PAGE));
   const items = sorted.slice((page-1)*PER_PAGE, page*PER_PAGE);
-  useEffect(() => { setPage(1); }, [search, type, loc, wilaya, skills, minMonths, maxMonths, sortBy]);
+  useEffect(() => { setPage(1); }, [search, type, loc, wilaya, skills, minMonths, maxMonths, sortBy, selectedRatings, timeUnit]);
 
   const pills = [];
   if (type) pills.push({ l: type.replace('_',' '), c: () => setType("") });
   if (loc) pills.push({ l: loc, c: () => setLoc("") });
   if (wilaya) pills.push({ l: wilaya, c: () => setWilaya("") });
-  if (minMonths > 1 || maxMonths < 12) pills.push({ l: `${minMonths} - ${maxMonths} Months`, c: () => { setMinMonths(1); setMaxMonths(12); } });
+  
+  // Custom unit pill
+  const isTimeFilterActive = () => {
+    if (timeUnit === "months") return minMonths > 1 || maxMonths < 12;
+    if (timeUnit === "weeks") return minMonths > 1 || maxMonths < 24;
+    return minMonths > 1 || maxMonths < 90;
+  };
+  if (isTimeFilterActive()) {
+    const unitLabel = timeUnit === "months" ? "Months" : timeUnit === "weeks" ? "Weeks" : "Days";
+    pills.push({
+      l: `${minMonths} - ${maxMonths} ${unitLabel}`,
+      c: () => {
+        if (timeUnit === "months") { setMinMonths(1); setMaxMonths(12); }
+        else if (timeUnit === "weeks") { setMinMonths(1); setMaxMonths(24); }
+        else { setMinMonths(1); setMaxMonths(90); }
+      }
+    });
+  }
+
   skills.forEach(s => pills.push({ l: s, c: () => setSkills(p => p.filter(x => x !== s)) }));
-  const clearAll = () => { setType(""); setLoc(""); setWilaya(""); setSkills([]); setSearch(""); setMinMonths(1); setMaxMonths(12); };
+  selectedRatings.forEach(r => pills.push({ l: `${r} Star`, c: () => setSelectedRatings(p => p.filter(x => x !== r)) }));
+  const clearAll = () => {
+    setType("");
+    setLoc("");
+    setWilaya("");
+    setSkills([]);
+    setSearch("");
+    setTimeUnit("months");
+    setMinMonths(1);
+    setMaxMonths(12);
+    setSelectedRatings([]);
+  };
 
   // Colors
   const bg = dk ? "#161618" : "#fff";
@@ -345,8 +427,60 @@ export default function Internships() {
             <div style={{ marginBottom: 28 }}>
               <h4 style={{ fontSize: 14, fontWeight: 600, color: txt, marginBottom: 4, fontFamily: F }}>Time Frame</h4>
               <div style={{ fontSize: 13, color: txt2, marginBottom: 12, fontWeight: 400, fontFamily: F }}>
-                {minMonths === maxMonths ? `${minMonths} Month${minMonths > 1 ? 's' : ''}` : `${minMonths} Month${minMonths > 1 ? 's' : ''} - ${maxMonths} Month${maxMonths > 1 ? 's' : ''}`}
+                {(() => {
+                  const unitLabel = timeUnit === "months" ? "Month" : timeUnit === "weeks" ? "Week" : "Day";
+                  if (minMonths === maxMonths) {
+                    return `${minMonths} ${unitLabel}${minMonths > 1 ? 's' : ''}`;
+                  }
+                  return `${minMonths} ${unitLabel}${minMonths > 1 ? 's' : ''} - ${maxMonths} ${unitLabel}${maxMonths > 1 ? 's' : ''}`;
+                })()}
               </div>
+
+              {/* Segmented Switcher */}
+              <div style={{
+                display: "flex",
+                width: "100%",
+                background: dk ? "rgba(255,255,255,0.04)" : "#f1f5f9",
+                border: `1px solid ${bdr}`,
+                borderRadius: 8,
+                padding: 2,
+                marginBottom: 16,
+                boxSizing: "border-box"
+              }}>
+                {[
+                  { id: "days", label: "Days" },
+                  { id: "weeks", label: "Weeks" },
+                  { id: "months", label: "Months" }
+                ].map(tab => {
+                  const active = timeUnit === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => handleUnitChange(tab.id)}
+                      style={{
+                        flex: 1,
+                        height: 24,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        border: "none",
+                        background: active ? (dk ? "rgba(255,255,255,0.08)" : "#fff") : "transparent",
+                        boxShadow: active ? "0 1px 3px rgba(0,0,0,0.06)" : "none",
+                        borderRadius: 6,
+                        fontSize: 11,
+                        fontWeight: active ? 600 : 500,
+                        color: active ? txt : txt2,
+                        cursor: "pointer",
+                        fontFamily: F,
+                        transition: "all 0.2s"
+                      }}
+                    >
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
+
               <div style={{ position: "relative", width: "100%", height: 2, margin: "12px 0 16px" }}>
                 {/* Background track */}
                 <div style={{
@@ -362,8 +496,8 @@ export default function Internships() {
                 {/* Active track segment */}
                 <div style={{
                   position: "absolute",
-                  left: `${((minMonths - 1) / 11) * 100}%`,
-                  right: `${100 - ((maxMonths - 1) / 11) * 100}%`,
+                  left: `${((minMonths - 1) / ((timeUnit === "months" ? 12 : timeUnit === "weeks" ? 24 : 90) - 1)) * 100}%`,
+                  right: `${100 - ((maxMonths - 1) / ((timeUnit === "months" ? 12 : timeUnit === "weeks" ? 24 : 90) - 1)) * 100}%`,
                   top: 0,
                   bottom: 0,
                   background: accent,
@@ -374,7 +508,7 @@ export default function Internships() {
                 <input
                   type="range"
                   min="1"
-                  max="12"
+                  max={timeUnit === "months" ? "12" : timeUnit === "weeks" ? "24" : "90"}
                   value={minMonths}
                   onChange={e => {
                     const val = Math.min(parseInt(e.target.value, 10), maxMonths);
@@ -385,7 +519,7 @@ export default function Internships() {
                 <input
                   type="range"
                   min="1"
-                  max="12"
+                  max={timeUnit === "months" ? "12" : timeUnit === "weeks" ? "24" : "90"}
                   value={maxMonths}
                   onChange={e => {
                     const val = Math.max(parseInt(e.target.value, 10), minMonths);
@@ -393,6 +527,80 @@ export default function Internships() {
                   }}
                   className="range-slider-input"
                 />
+              </div>
+            </div>
+
+            {/* Review Filter */}
+            <div style={{ marginBottom: 28 }}>
+              <h4 style={{ fontSize: 14, fontWeight: 600, color: txt, marginBottom: 12, fontFamily: F }}>Review</h4>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {[5, 4, 3, 2, 1].map(starsCount => {
+                  const on = selectedRatings.includes(starsCount);
+                  return (
+                    <button
+                      key={starsCount}
+                      onClick={() => setSelectedRatings(p => on ? p.filter(x => x !== starsCount) : [...p, starsCount])}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        padding: "4px 0",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        width: "100%",
+                        textAlign: "left",
+                        fontFamily: F
+                      }}
+                    >
+                      {/* Checkbox */}
+                      <div style={{
+                        width: 14,
+                        height: 14,
+                        borderRadius: 3,
+                        border: `1.5px solid ${on ? accent : (dk ? "rgba(255,255,255,0.25)" : "#ccc")}`,
+                        background: on ? accent : "transparent",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        transition: "all 0.2s"
+                      }}>
+                        {on && (
+                          <svg width="9" height="9" viewBox="0 0 12 12">
+                            <path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        )}
+                      </div>
+                      
+                      {/* Stars */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                        {Array(5).fill(0).map((_, idx) => {
+                          const isFilled = idx < starsCount;
+                          return (
+                            <svg
+                              key={idx}
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill={isFilled ? "#FFC107" : (dk ? "rgba(255,255,255,0.08)" : "#e2e8f0")}
+                              stroke={isFilled ? "#FFC107" : (dk ? "rgba(255,255,255,0.15)" : "#d1d5db")}
+                              strokeWidth="1"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                            </svg>
+                          );
+                        })}
+                      </div>
+                      
+                      {/* Label */}
+                      <span style={{ fontSize: 13, color: on ? txt : txt2, marginLeft: 4, transition: "color 0.2s" }}>
+                        {starsCount} Star
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -442,6 +650,8 @@ export default function Internships() {
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
                   {items.map(n => {
                     const spotsLeft = Math.max(0, n.number_of_places - (n.accepted_count || 0));
+                    const rating = parseFloat(parseFloat(n.rating || 0).toFixed(1));
+                    const isRated = rating > 0;
                     return (
                       <div key={n.id} onClick={() => navigate(`/internships/${n.id}`)} style={{ cursor: "pointer", transition: "transform 0.3s", borderRadius: 0 }}
                         onMouseEnter={e => e.currentTarget.style.transform="translateY(-3px)"} onMouseLeave={e => e.currentTarget.style.transform="translateY(0)"}>
@@ -461,7 +671,16 @@ export default function Internships() {
                         </div>
                         {/* Info */}
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                          <span style={{ fontSize: 12, color: txt2 }}>{n.company_name}</span>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span style={{ fontSize: 12, color: txt2 }}>{n.company_name}</span>
+                            <span style={{ fontSize: 8, color: dk ? "rgba(255,255,255,0.2)" : "#d1d5db" }}>•</span>
+                            <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill={isRated ? "#FFC107" : (dk ? "rgba(255,255,255,0.2)" : "#d1d5db")} stroke={isRated ? "#FFC107" : (dk ? "rgba(255,255,255,0.2)" : "#d1d5db")} strokeWidth="1">
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                              </svg>
+                              <span style={{ fontSize: 11, fontWeight: 600, color: isRated ? txt : txt2 }}>{rating}</span>
+                            </div>
+                          </div>
                           <span style={{ fontSize: 12, color: txt2 }}>{(n.type||"").replace("_"," ")}</span>
                         </div>
                         <h3 style={{ fontSize: 15, fontWeight: 600, color: txt, margin: "0 0 6px", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n.title}</h3>

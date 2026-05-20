@@ -497,6 +497,9 @@ class CompanySerializer(serializers.ModelSerializer):
     logo = serializers.SerializerMethodField()
     open_positions_count = serializers.SerializerMethodField()
     total_internships_count = serializers.SerializerMethodField()
+    company_rating = serializers.SerializerMethodField()
+    review_count = serializers.SerializerMethodField()
+    reviews = serializers.SerializerMethodField()
     hired_interns_count = serializers.SerializerMethodField()
     internships = serializers.SerializerMethodField()
 
@@ -505,8 +508,9 @@ class CompanySerializer(serializers.ModelSerializer):
         fields = [
             'id', 'email', 'name', 'logo', 'description', 'location', 'website', 
             'company_field', 'founded_year', 'is_active', 'open_positions_count', 
-            'total_internships_count', 'hired_interns_count', 'internships',
-            'phone', 'status_required', 'message', 'size'
+            'total_internships_count', 'hired_interns_count', 'company_rating', 
+            'review_count', 'reviews', 'internships', 'phone', 'status_required', 
+            'message', 'size'
         ]
         read_only_fields = ['id']
 
@@ -530,6 +534,24 @@ class CompanySerializer(serializers.ModelSerializer):
 
     def get_total_internships_count(self, obj):
         return InternshipOffer.objects.filter(company=obj).count()
+
+    def get_company_rating(self, obj):
+        from django.db.models import Avg
+        reviews = Review.objects.filter(internship__company=obj)
+        if reviews.exists():
+            avg = reviews.aggregate(Avg('rating'))['rating__avg']
+            return round(avg, 1) if avg else 0.0
+        return 0.0
+
+    def get_review_count(self, obj):
+        return Review.objects.filter(internship__company=obj).count()
+
+    def get_reviews(self, obj):
+        reviews = list(Review.objects.filter(internship__company=obj))
+        import random
+        selected_reviews = random.sample(reviews, min(len(reviews), 2)) if reviews else []
+        serializer = ReviewSerializer(selected_reviews, many=True, context=self.context)
+        return serializer.data
 
     def get_hired_interns_count(self, obj):
         return Application.objects.filter(
@@ -564,6 +586,8 @@ class InternshipSerializer(serializers.ModelSerializer):
     required_skills = serializers.CharField(write_only=True, required=False)
     banner_image = serializers.ImageField(write_only=True, required=False)
     accepted_count = serializers.SerializerMethodField()
+    company_rating = serializers.SerializerMethodField()
+    rating = serializers.SerializerMethodField()
 
     class Meta:
         model = InternshipOffer
@@ -573,6 +597,8 @@ class InternshipSerializer(serializers.ModelSerializer):
             'description',
             'company',
             'company_name',
+            'company_rating',
+            'rating',
             'internship_location',
             'status',
             'internship_type',
@@ -596,6 +622,20 @@ class InternshipSerializer(serializers.ModelSerializer):
             status__in=[Application.Status.VALIDATED, Application.Status.COMPLETE],
             is_validated_by_admin=True
         ).count()
+
+    def get_company_rating(self, obj):
+        from django.db.models import Avg
+        reviews = Review.objects.filter(internship__company_id=obj.company_id)
+        if reviews.exists():
+            return reviews.aggregate(Avg('rating'))['rating__avg']
+        return 0.0
+
+    def get_rating(self, obj):
+        from django.db.models import Avg
+        reviews = Review.objects.filter(internship=obj)
+        if reviews.exists():
+            return reviews.aggregate(Avg('rating'))['rating__avg']
+        return 0.0
 
     def create(self, validated_data):
         # Map frontend fields to backend fields
@@ -818,3 +858,46 @@ class DigitalCVSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
         instance.save()
         return instance
+
+
+from django.utils.timesince import timesince
+
+class ReviewSerializer(serializers.ModelSerializer):
+    name = serializers.SerializerMethodField()
+    avatar = serializers.SerializerMethodField()
+    time = serializers.SerializerMethodField()
+    internship_title = serializers.CharField(source='internship.title', read_only=True)
+    internship_year = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Review
+        fields = ['id', 'student', 'name', 'avatar', 'rating', 'title', 'text', 'is_verified', 'time', 'created_at', 'internship_title', 'internship_year']
+        read_only_fields = ['id', 'student', 'is_verified', 'created_at']
+
+    def get_internship_year(self, obj):
+        if obj.internship and obj.internship.offer_start_date:
+            return obj.internship.offer_start_date.year
+        if obj.created_at:
+            return obj.created_at.year
+        return 2025
+
+    def get_name(self, obj):
+        student = obj.student
+        fullname = f"{student.first_name} {student.last_name}".strip()
+        return fullname or student.username or student.email
+
+    def get_avatar(self, obj):
+        request = self.context.get('request')
+        avatar = obj.student.profile_picture.url if obj.student.profile_picture else None
+        if avatar and request:
+            return request.build_absolute_uri(avatar)
+        return avatar
+
+    def get_time(self, obj):
+        try:
+            ts = timesince(obj.created_at)
+            first_part = ts.split(',')[0]
+            return f"{first_part} ago"
+        except Exception:
+            return "recently"
+
