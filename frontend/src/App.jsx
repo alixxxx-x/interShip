@@ -32,8 +32,9 @@ import TrackInternships from "@/features/dashboards/TrackInternships";
 import StudentRoute from "@/routes/StudentRoute";
 import DashboardRedirect from "@/routes/DashboardRedirect";
 import MyCv from "@/features/dashboards/MyCv";
-import AdminDashboard from "@/features/dashboards/AdminDashboard";
+import AdminDeptDashboard from "@/features/dashboards/AdminDeptDashboard";
 import AdminUnivDashboard from "@/features/dashboards/AdminUnivDashboard";
+import AdminDepartments from "@/features/dashboards/AdminDepartments";
 import SuperAdminDashboard from "@/features/dashboards/SuperAdminDashboard";
 import SuperAdminUniversities from "@/features/dashboards/SuperAdminUniversities";
 import AdminUsers from "@/features/dashboards/AdminUsers";
@@ -115,7 +116,7 @@ function App() {
               </AdminRoute>
             }
           >
-            <Route index element={<AdminDashboard />} />
+            <Route index element={<AdminDeptDashboard />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="companies" element={<AdminCompanies />} />
             <Route path="validations" element={<AdminValidations />} />
@@ -133,9 +134,9 @@ function App() {
             }
           >
             <Route index element={<AdminUnivDashboard />} />
-            <Route path="users" element={<AdminUsers />} />
             <Route path="companies" element={<AdminCompanies />} />
-            <Route path="validations" element={<AdminValidations />} />
+            <Route path="departments" element={<AdminDepartments />} />
+            <Route path="users" element={<AdminUsers />} />
             <Route path="analytics" element={<AdminAnalytics />} />
             <Route path="messages" element={<AdminMessages />} />
             <Route path="notifications" element={<Notifications />} />

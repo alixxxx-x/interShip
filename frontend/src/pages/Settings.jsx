@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { User, Lock, Palette, Camera, Loader2, CheckCircle2, AlertCircle, Languages, LogOut, Globe, ShieldCheck, HelpCircle, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { User, Lock, Palette, Camera, Loader2, CheckCircle2, AlertCircle, Languages, LogOut, Globe, ShieldCheck, HelpCircle, ArrowLeft, Eye, EyeOff, FileText, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "@/api/api";
 import { useTheme } from "@/components/theme-provider";
@@ -16,6 +16,7 @@ export default function Settings() {
   const [activeTab, setActiveTab] = useState("account");
 
   const fileInputRef = useRef(null);
+  const resourcesInputRef = useRef(null);
   const [selectedFile, setSelectedFile] = useState(null);
 
   const [profileData, setProfileData] = useState({
@@ -38,7 +39,11 @@ export default function Settings() {
     department: "",
     status_required: "",
     message: "",
-    size: ""
+    message: "",
+    size: "",
+    resources: [],
+    new_resources: [],
+    deleted_resources: []
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -74,7 +79,12 @@ export default function Settings() {
           department: res.data.department || "",
           status_required: res.data.status_required || "",
           message: res.data.message || "",
-          size: res.data.size || ""
+          size: res.data.size || "",
+          message: res.data.message || "",
+          size: res.data.size || "",
+          resources: res.data.resources || [],
+          new_resources: [],
+          deleted_resources: []
         });
       } catch (error) {
         console.error("Failed to fetch profile:", error);
@@ -92,6 +102,30 @@ export default function Settings() {
       const previewUrl = URL.createObjectURL(file);
       setProfileData({ ...profileData, profile_picture: previewUrl });
     }
+  };
+
+  const handleResourceChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      setProfileData({ ...profileData, new_resources: [...(profileData.new_resources || []), ...files] });
+      // Clear the input so the same file can be selected again if needed
+      if (resourcesInputRef.current) resourcesInputRef.current.value = "";
+    }
+  };
+
+  const handleRemoveNewResource = (indexToRemove) => {
+    setProfileData(prev => ({
+      ...prev,
+      new_resources: prev.new_resources.filter((_, idx) => idx !== indexToRemove)
+    }));
+  };
+
+  const handleRemoveExistingResource = (resource) => {
+    setProfileData(prev => ({
+      ...prev,
+      resources: prev.resources.filter(r => r.id !== resource.id),
+      deleted_resources: [...(prev.deleted_resources || []), resource.id]
+    }));
   };
 
   const handleProfileUpdate = async (e) => {
@@ -112,6 +146,16 @@ export default function Settings() {
         formData.append("status_required", profileData.status_required);
         formData.append("message", profileData.message);
         formData.append("size", profileData.size);
+        if (profileData.new_resources && profileData.new_resources.length > 0) {
+          profileData.new_resources.forEach(file => {
+            formData.append("new_resources", file);
+          });
+        }
+        if (profileData.deleted_resources && profileData.deleted_resources.length > 0) {
+          profileData.deleted_resources.forEach(id => {
+            formData.append("deleted_resources", id);
+          });
+        }
       } else {
         formData.append("first_name", profileData.first_name);
         formData.append("last_name", profileData.last_name);
@@ -503,6 +547,63 @@ export default function Settings() {
                           </select>
                         </div>
                         <div className="md:col-span-2">
+                          <label className="settings-label">Program Resources & Downloads</label>
+                          <div className="flex flex-col gap-4">
+                            <button
+                              type="button"
+                              onClick={() => resourcesInputRef.current?.click()}
+                              className="settings-btn-primary bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 text-sm py-2 px-4 shadow-none w-fit"
+                            >
+                              Upload File
+                            </button>
+                            <input
+                              type="file"
+                              accept=".pdf,.doc,.docx"
+                              multiple
+                              ref={resourcesInputRef}
+                              onChange={handleResourceChange}
+                              className="hidden"
+                            />
+                            
+                            {/* Display list of resources */}
+                            <div className="flex flex-col gap-2 mt-2">
+                              {profileData.resources && profileData.resources.map((res, idx) => (
+                                <div key={`existing-${idx}`} className="flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-white/5">
+                                  <div className="flex items-center gap-3">
+                                    <FileText className="h-5 w-5 text-slate-500" />
+                                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate max-w-[300px]">{res.name}</span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveExistingResource(res)}
+                                    className="p-1 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              ))}
+                              {profileData.new_resources && profileData.new_resources.map((file, idx) => (
+                                <div key={`new-${idx}`} className="flex items-center justify-between p-3 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20">
+                                  <div className="flex items-center gap-3">
+                                    <FileText className="h-5 w-5 text-blue-500" />
+                                    <span className="text-sm font-medium text-blue-700 dark:text-blue-300 truncate max-w-[300px]">{file.name} (Pending Upload)</span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveNewResource(idx)}
+                                    className="p-1 rounded-md text-blue-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              ))}
+                              {(!profileData.resources?.length && !profileData.new_resources?.length) && (
+                                <span className="text-sm text-slate-500 italic">No files uploaded yet.</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="md:col-span-2">
                           <label className="settings-label" htmlFor="description">Corporate Statement</label>
                           <textarea
                             id="description"
@@ -538,44 +639,74 @@ export default function Settings() {
                           <label className="settings-label" htmlFor="email">{t("emailAddress")}</label>
                           <input id="email" value={profileData.email} disabled className="settings-input opacity-70 cursor-not-allowed" />
                         </div>
-                        <div>
-                          <label className="settings-label" htmlFor="phone">{t("phoneNumber")}</label>
-                          <input
-                            id="phone"
-                            value={profileData.phone}
-                            onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
-                            className="settings-input"
-                            placeholder="05 / 06 / 07 ..."
-                          />
-                        </div>
-                        <div>
-                          <label className="settings-label" htmlFor="wilaya">{t("wilaya")}</label>
-                          <input
-                            id="wilaya"
-                            value={profileData.wilaya}
-                            onChange={(e) => setProfileData({ ...profileData, wilaya: e.target.value })}
-                            className="settings-input"
-                          />
-                        </div>
-                        <div>
-                          <label className="settings-label" htmlFor="universityID">{t("universityID")}</label>
-                          <input
-                            id="universityID"
-                            value={profileData.university_id}
-                            onChange={(e) => setProfileData({ ...profileData, university_id: e.target.value })}
-                            className="settings-input"
-                          />
-                        </div>
-                        <div>
-                          <label className="settings-label" htmlFor="major">{t("majorField")}</label>
-                          <input
-                            id="major"
-                            value={profileData.major}
-                            onChange={(e) => setProfileData({ ...profileData, major: e.target.value })}
-                            className="settings-input"
-                            placeholder="Computer Science, Finance, etc."
-                          />
-                        </div>
+                        
+                        {/* Only show Phone Number for Students (Admins do not need it in settings) */}
+                        {profileData.role === "STUDENT" && (
+                          <div>
+                            <label className="settings-label" htmlFor="phone">{t("phoneNumber")}</label>
+                            <input
+                              id="phone"
+                              value={profileData.phone}
+                              onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                              className="settings-input"
+                              placeholder="05 / 06 / 07 ..."
+                            />
+                          </div>
+                        )}
+                        
+                        {/* Only show Wilaya for Students */}
+                        {profileData.role === "STUDENT" && (
+                          <div>
+                            <label className="settings-label" htmlFor="wilaya">{t("wilaya")}</label>
+                            <input
+                              id="wilaya"
+                              value={profileData.wilaya}
+                              onChange={(e) => setProfileData({ ...profileData, wilaya: e.target.value })}
+                              className="settings-input"
+                            />
+                          </div>
+                        )}
+                        
+                        {/* Show University ID only for Students */}
+                        {profileData.role === "STUDENT" && (
+                          <div>
+                            <label className="settings-label" htmlFor="universityID">{t("universityID")}</label>
+                            <input
+                              id="universityID"
+                              value={profileData.university_id}
+                              onChange={(e) => setProfileData({ ...profileData, university_id: e.target.value })}
+                              className="settings-input"
+                            />
+                          </div>
+                        )}
+
+                        {/* Show University Name for University Admins and Department Admins */}
+                        {(profileData.role === "ADMIN_UNIV" || profileData.role === "ADMIN_DEPT") && (
+                          <div>
+                            <label className="settings-label" htmlFor="universityName">{t("universityName") || "University Name"}</label>
+                            <input
+                              id="universityName"
+                              value={profileData.university_name}
+                              disabled
+                              className="settings-input opacity-70 cursor-not-allowed"
+                            />
+                          </div>
+                        )}
+                        
+                        {/* Show Department/Major for Dept Admins (read-only) and Students */}
+                        {(profileData.role === "STUDENT" || profileData.role === "ADMIN_DEPT") && (
+                          <div>
+                            <label className="settings-label" htmlFor="major">{profileData.role === "ADMIN_DEPT" ? (t("department") || "Department") : t("majorField")}</label>
+                            <input
+                              id="major"
+                              value={profileData.role === "ADMIN_DEPT" ? profileData.department : profileData.major}
+                              disabled={profileData.role === "ADMIN_DEPT"}
+                              onChange={(e) => setProfileData({ ...profileData, major: e.target.value })}
+                              className={`settings-input ${profileData.role === "ADMIN_DEPT" ? "opacity-70 cursor-not-allowed" : ""}`}
+                              placeholder="Computer Science, Finance, etc."
+                            />
+                          </div>
+                        )}
                       </>
                     )}
                   </div>

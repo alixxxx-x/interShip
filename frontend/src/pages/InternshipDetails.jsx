@@ -16,6 +16,7 @@ import {
   ArrowRight,
   Star,
   Send,
+  MessageSquare,
   Sparkles,
   BookOpen
 } from 'lucide-react';
@@ -484,15 +485,48 @@ export default function InternshipDetails() {
               {/* Featured Image */}
               <div style={{ width: "100%", aspectRatio: "1.2/1", borderRadius: 24, overflow: "hidden", border: `1px solid ${bdr}`, background: dk ? "rgba(255,255,255,0.02)" : "#f8f9fa", position: "relative", marginBottom: 16 }}>
                 <img src={activeImage} alt="Featured" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                {spotsLeft > 0 ? (
-                  <div style={{ position: "absolute", top: 16, left: 16, background: "rgba(16, 185, 129, 0.1)", color: "#10b981", fontSize: 11, fontWeight: 700, padding: "5px 12px", borderRadius: 20, border: "1px solid rgba(16, 185, 129, 0.2)" }}>
-                    Open for Application
-                  </div>
-                ) : (
-                  <div style={{ position: "absolute", top: 16, left: 16, background: "rgba(127, 140, 141, 0.1)", color: "#7f8c8d", fontSize: 11, fontWeight: 700, padding: "5px 12px", borderRadius: 20, border: "1px solid rgba(127, 140, 141, 0.2)" }}>
-                    Full
-                  </div>
-                )}
+                {(() => {
+                  if (internship.status === "OPEN_FOR_APPLICATION") {
+                    if (spotsLeft > 0) {
+                      return (
+                        <div style={{ position: "absolute", top: 16, left: 16, background: "rgba(16, 185, 129, 0.1)", color: "#10b981", fontSize: 11, fontWeight: 700, padding: "5px 12px", borderRadius: 20, border: "1px solid rgba(16, 185, 129, 0.2)" }}>
+                          Open for Application
+                        </div>
+                      );
+                    } else {
+                      return (
+                        <div style={{ position: "absolute", top: 16, left: 16, background: "rgba(127, 140, 141, 0.1)", color: "#7f8c8d", fontSize: 11, fontWeight: 700, padding: "5px 12px", borderRadius: 20, border: "1px solid rgba(127, 140, 141, 0.2)" }}>
+                          Full
+                        </div>
+                      );
+                    }
+                  } else if (internship.status === "CLOSED_FOR_APPLICATION") {
+                    return (
+                      <div style={{ position: "absolute", top: 16, left: 16, background: "rgba(127, 140, 141, 0.1)", color: "#7f8c8d", fontSize: 11, fontWeight: 700, padding: "5px 12px", borderRadius: 20, border: "1px solid rgba(127, 140, 141, 0.2)" }}>
+                        Closed
+                      </div>
+                    );
+                  } else if (internship.status === "ONGOING") {
+                    return (
+                      <div style={{ position: "absolute", top: 16, left: 16, background: "rgba(245, 158, 11, 0.1)", color: "#f59e0b", fontSize: 11, fontWeight: 700, padding: "5px 12px", borderRadius: 20, border: "1px solid rgba(245, 158, 11, 0.2)" }}>
+                        Ongoing
+                      </div>
+                    );
+                  } else if (internship.status === "FINISHED") {
+                    return (
+                      <div style={{ position: "absolute", top: 16, left: 16, background: "rgba(239, 68, 68, 0.1)", color: "#ef4444", fontSize: 11, fontWeight: 700, padding: "5px 12px", borderRadius: 20, border: "1px solid rgba(239, 68, 68, 0.2)" }}>
+                        Finished
+                      </div>
+                    );
+                  } else if (internship.status === "CANCELLED") {
+                    return (
+                      <div style={{ position: "absolute", top: 16, left: 16, background: "rgba(239, 68, 68, 0.1)", color: "#ef4444", fontSize: 11, fontWeight: 700, padding: "5px 12px", borderRadius: 20, border: "1px solid rgba(239, 68, 68, 0.2)" }}>
+                        Cancelled
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
 
               {/* Thumbnails list removed */}
@@ -571,7 +605,7 @@ export default function InternshipDetails() {
                   {/* Main Action buttons */}
                   <div style={{ flex: 1, display: "flex", gap: 12, minWidth: 200 }}>
                     {userRole === 'COMPANY' || userRole === 'ADMIN' ? (
-                      <div style={{ padding: "12px 24px", borderRadius: 24, background: pillBg, color: txt2, fontSize: 14, fontWeight: 600, textAlign: "center", width: "100%" }}>
+                      <div style={{ padding: "12px 24px", borderRadius: 24, background: pillBg, color: txt2, fontSize: 14, fontWeight: 600, textAlign: "center", width: "100%", cursor: "not-allowed", userSelect: "none" }}>
                         Recruiter Mode Active
                       </div>
                     ) : applied ? (
