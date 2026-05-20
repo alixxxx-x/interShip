@@ -793,6 +793,7 @@ class StudentDashboardView(generics.GenericAPIView):
                 "id": app.id,
                 "internship": app.internship.id,
                 "offer": app.internship.title,
+                "company": app.internship.company.name,
                 "status": status_map.get(app.status, app.status),
                 "appliedDate": app.application_date.strftime("%Y-%m-%d"),
             }

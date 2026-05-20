@@ -475,10 +475,10 @@ export default function AllApplications() {
       </div>
 
       {/* Main Mockup Table Container */}
-      <div className="bg-white dark:bg-zinc-900 border border-gray-150 dark:border-zinc-800/80 rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-zinc-900 border border-gray-150 dark:border-zinc-800/80 rounded-xl shadow-sm overflow-visible">
         
         {/* Table Body View */}
-        <div className="overflow-x-auto">
+        <div className="w-full">
           {paginatedApplications.length === 0 ? (
             <div className="p-8 text-center text-sm text-gray-500 dark:text-zinc-500">
               No applications found matching the search/status filters.

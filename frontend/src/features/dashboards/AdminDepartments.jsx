@@ -1,10 +1,4 @@
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { 
   GraduationCap, 
   PlusCircle, 
@@ -12,12 +6,14 @@ import {
   Loader2, 
   Trash2,
   Building2,
-  Award,
-  Users
+  Users,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import api from "@/api/api";
 import { useToast } from "@/components/ui/custom-toast";
 import { useNavigate } from "react-router-dom";
+import LoadingScreen from "@/components/ui/LoadingScreen";
 
 export default function AdminDepartments() {
   const toast = useToast();
@@ -25,11 +21,15 @@ export default function AdminDepartments() {
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [entriesPerPage, setEntriesPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
   
   // Create State
   const [showAddModal, setShowAddModal] = useState(false);
   const [adding, setAdding] = useState(false);
   const [newDeptName, setNewDeptName] = useState("");
+
+  const appleFont = "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 
   const fetchDepartments = async () => {
     try {
@@ -48,6 +48,10 @@ export default function AdminDepartments() {
   useEffect(() => {
     fetchDepartments();
   }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, entriesPerPage]);
 
   const handleCreateDepartment = async (e) => {
     e.preventDefault();
@@ -95,217 +99,251 @@ export default function AdminDepartments() {
     dept.name?.toLowerCase().includes(search.toLowerCase())
   );
 
+  const totalPages = Math.ceil(filteredDepartments.length / entriesPerPage) || 1;
+  const startIndex = (currentPage - 1) * entriesPerPage;
+  const paginatedDepartments = filteredDepartments.slice(startIndex, startIndex + entriesPerPage);
+
   const universityName = departments[0]?.university_name || "Your University";
 
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] w-full">
+        <LoadingScreen fullScreen={false} />
+      </div>
+    );
+  }
+
   return (
-    <div className="p-6 space-y-6 animate-in fade-in duration-500">
+    <div className="p-6 space-y-6 bg-background h-full animate-in fade-in duration-500" style={{ fontFamily: appleFont }}>
       
-      {/* Header section */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-primary via-indigo-500 to-indigo-600 bg-clip-text text-transparent">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-zinc-50 tracking-tight flex items-center gap-2.5">
             Departments Registry
+            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 select-none">
+              {departments.length} Total
+            </span>
           </h1>
-          <p className="text-muted-foreground text-sm max-w-xl">
+          <p className="text-[13px] font-medium text-gray-500 dark:text-zinc-400 mt-1 max-w-xl">
             Manage academic departments for {universityName}. These departments define choices available to students and administrators.
           </p>
         </div>
         
-        <Button 
-          onClick={() => setShowAddModal(true)} 
-          className="rounded-xl font-bold bg-primary hover:bg-primary/90 flex items-center gap-2 shadow-md"
-        >
-          <PlusCircle className="w-5 h-5" />
-          <span>Add Department</span>
-        </Button>
+        <div className="flex flex-col sm:flex-row items-center gap-3">
+          {/* Search */}
+          <div className="relative w-full sm:w-auto">
+            <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search departments..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 pr-4 py-1.5 w-full sm:w-56 border border-gray-255/80 dark:border-zinc-800 rounded-lg text-xs bg-white dark:bg-zinc-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-gray-800 dark:text-zinc-200 shadow-sm"
+            />
+          </div>
+          <button 
+            onClick={() => setShowAddModal(true)} 
+            className="flex items-center justify-center w-full sm:w-auto gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors shadow-sm"
+          >
+            <PlusCircle className="w-4 h-4" />
+            Add Department
+          </button>
+        </div>
       </div>
 
-      {/* Main card database view */}
-      <Card className="border border-border/60 shadow-lg bg-card/45 backdrop-blur-md overflow-hidden rounded-2xl">
-        <CardHeader className="pb-3 bg-gradient-to-b from-muted/20 to-transparent border-b border-border/40">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <CardTitle className="text-lg font-bold flex items-center gap-2">
-                Active Departments
-              </CardTitle>
-              <CardDescription className="text-xs">
-                List of academic departments configured for students and staff.
-              </CardDescription>
+      {/* Table Container */}
+      <div className="bg-white dark:bg-zinc-900 border border-gray-150 dark:border-zinc-800/80 rounded-xl shadow-sm overflow-visible">
+        {paginatedDepartments.length === 0 ? (
+          <div className="p-10 text-center flex flex-col items-center justify-center space-y-3 bg-gray-50/50 dark:bg-zinc-900/50 rounded-xl">
+            <span className="text-gray-400 dark:text-zinc-600">
+              <GraduationCap className="w-10 h-10 stroke-[1.5]" />
+            </span>
+            <span className="text-[13px] font-medium text-gray-500 dark:text-zinc-400">No departments found.</span>
+            <span className="text-[11px] font-medium text-gray-400 dark:text-zinc-500">
+              Add a new department to get started.
+            </span>
+          </div>
+        ) : (
+          <div className="w-full">
+            <table className="w-full table-fixed border-collapse text-left">
+              <thead>
+                <tr className="bg-blue-50 dark:bg-zinc-900 border-b border-blue-100 dark:border-zinc-800">
+                  <th className="text-[11px] font-bold tracking-wider text-blue-600 dark:text-blue-400 py-3.5 px-6 w-[280px] rounded-tl-xl">Department Name</th>
+                  <th className="text-[11px] font-bold tracking-wider text-blue-600 dark:text-blue-400 py-3.5 px-6 w-[200px]">Institution</th>
+                  <th className="text-[11px] font-bold tracking-wider text-blue-600 dark:text-blue-400 py-3.5 px-6 w-[160px] text-center">Students</th>
+                  <th className="text-[11px] font-bold tracking-wider text-blue-600 dark:text-blue-400 py-3.5 px-6 text-right rounded-tr-xl">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedDepartments.map((dept) => (
+                  <tr
+                    key={dept.id}
+                    className="border-b border-gray-100 dark:border-zinc-800/60 last:border-b-0 hover:bg-gray-50/40 dark:hover:bg-zinc-900/35 transition-colors duration-150 group"
+                  >
+                    <td className="py-3 px-6">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center border border-blue-100 dark:border-blue-800/30 shadow-sm shrink-0">
+                          <GraduationCap className="w-4 h-4 text-blue-500 dark:text-blue-400" />
+                        </div>
+                        <div className="flex flex-col gap-0.5 min-w-0">
+                          <span className="text-[13px] font-bold text-gray-900 dark:text-zinc-100 truncate">{dept.name}</span>
+                          <span className="text-[10px] text-gray-400 dark:text-zinc-500 font-mono">ID: {dept.id}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-3 px-6">
+                      <div className="flex items-center gap-1.5 text-[12px] font-medium text-gray-600 dark:text-zinc-300 truncate">
+                        <Building2 className="h-3.5 w-3.5 text-gray-400 dark:text-zinc-500 shrink-0" />
+                        {dept.university_name}
+                      </div>
+                    </td>
+                    <td className="py-3 px-6 text-center">
+                      <div className="inline-flex items-center justify-center gap-1.5">
+                        <div className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800/30">
+                          <Users className="w-3.5 h-3.5" />
+                          {dept.student_count ?? 0}
+                        </div>
+                        <button
+                          onClick={() => navigate(`/adminunivdashboard/users?role=STUDENT&department=${dept.id}`)}
+                          className="ml-1 px-2 py-0.5 rounded text-[10px] font-bold text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors border border-gray-200 dark:border-zinc-700"
+                        >
+                          View
+                        </button>
+                      </div>
+                    </td>
+                    <td className="py-3 px-6 text-right">
+                      <button
+                        onClick={() => handleDeleteDepartment(dept.id, dept.name)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 transition-colors border border-transparent"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Pagination Footer */}
+        {paginatedDepartments.length > 0 && (
+          <div className="px-6 py-4 border-t border-gray-150 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 rounded-b-xl">
+            <div className="flex items-center gap-1.5">
+              <span>Show</span>
+              <select 
+                value={entriesPerPage}
+                onChange={(e) => setEntriesPerPage(Number(e.target.value))}
+                className="border border-gray-255/80 dark:border-zinc-800 rounded px-1.5 py-0.5 bg-white dark:bg-zinc-900 text-gray-700 dark:text-zinc-300 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium"
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+              </select>
+              <span>per page</span>
             </div>
             
-            {/* Search Input */}
-            <div className="relative w-full sm:w-80">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/80" />
-              <Input 
-                placeholder="Search departments by name..." 
-                className="pl-9 bg-background/50 border border-border/80 focus:border-primary rounded-xl text-sm"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+            <div className="flex items-center gap-1">
+              <button 
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                className="p-1 hover:bg-gray-100 dark:hover:bg-zinc-855 rounded text-gray-400 disabled:opacity-30 transition-colors"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+              
+              {Array.from({ length: totalPages }).map((_, idx) => {
+                const pageNum = idx + 1;
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`w-6 h-6 flex items-center justify-center rounded-md font-semibold text-xs transition-colors ${
+                      currentPage === pageNum
+                        ? "bg-blue-600 text-white shadow-sm"
+                        : "hover:bg-gray-100 dark:hover:bg-zinc-855 text-gray-600 dark:text-zinc-400"
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+
+              <button 
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                className="p-1 hover:bg-gray-100 dark:hover:bg-zinc-855 rounded text-gray-400 disabled:opacity-30 transition-colors"
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
-        </CardHeader>
-
-        <CardContent className="p-0">
-          {loading ? (
-            <div className="p-20 flex flex-col items-center justify-center gap-3">
-              <Loader2 className="w-8 h-8 text-primary animate-spin" />
-              <span className="text-sm text-muted-foreground font-medium">Loading departments...</span>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader className="bg-muted/30">
-                  <TableRow>
-                    <TableHead className="font-bold text-xs uppercase pl-6">Department Name</TableHead>
-                    <TableHead className="font-bold text-xs uppercase">Institution</TableHead>
-                    <TableHead className="font-bold text-xs uppercase text-center">Students</TableHead>
-                    <TableHead className="font-bold text-xs uppercase text-right pr-6">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredDepartments.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={4} className="h-48 text-center text-muted-foreground">
-                        <div className="flex flex-col items-center justify-center gap-2">
-                          <GraduationCap className="w-9 h-9 text-muted-foreground/30" />
-                          <span className="text-sm font-semibold">No departments found</span>
-                          <span className="text-xs text-muted-foreground/60">Add a new department to get started.</span>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredDepartments.map((dept) => (
-                      <TableRow key={dept.id} className="hover:bg-muted/10 transition-colors">
-                        
-                        {/* Department Name */}
-                        <TableCell className="font-bold py-4 pl-6">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-500 shadow-sm">
-                              <GraduationCap className="w-5 h-5" />
-                            </div>
-                            <div className="flex flex-col gap-0.5">
-                              <span className="text-sm text-foreground font-bold tracking-tight">{dept.name}</span>
-                              <span className="text-[10px] text-muted-foreground font-mono">Department ID: {dept.id}</span>
-                            </div>
-                          </div>
-                        </TableCell>
-
-                        {/* Institution Name */}
-                        <TableCell className="py-4 font-semibold text-sm text-muted-foreground">
-                          {dept.university_name}
-                        </TableCell>
-
-                        {/* Students */}
-                        <TableCell className="py-4 text-center">
-                          <div className="flex flex-col items-center justify-center gap-1.5">
-                            <span className="text-sm font-bold text-foreground flex items-center gap-1">
-                              <Users className="w-4 h-4 text-muted-foreground" />
-                              {dept.student_count ?? 0} {dept.student_count === 1 ? 'Student' : 'Students'}
-                            </span>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="rounded-xl font-bold text-xs text-primary border-primary/20 hover:bg-primary/5 px-3 h-7 shadow-sm transition-all"
-                              onClick={() => navigate(`/adminunivdashboard/users?role=STUDENT&department=${dept.id}`)}
-                            >
-                              Show
-                            </Button>
-                          </div>
-                        </TableCell>
-
-                        {/* Actions */}
-                        <TableCell className="py-4 text-right pr-6">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-500 hover:text-red-700 hover:bg-red-500/10 rounded-xl font-bold gap-1"
-                            onClick={() => handleDeleteDepartment(dept.id, dept.name)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            Delete
-                          </Button>
-                        </TableCell>
-
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        )}
+      </div>
 
       {/* CREATE MODAL */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-card border border-border/80 rounded-2xl w-full max-w-md shadow-2xl p-6 relative overflow-hidden animate-in zoom-in-95 duration-300">
-            {/* Top decorative glow */}
-            <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
+          <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl w-full max-w-md shadow-2xl p-6 relative overflow-hidden animate-in zoom-in-95 duration-300" style={{ fontFamily: appleFont }}>
+            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-blue-400 to-blue-600 rounded-t-2xl" />
             
-            <div className="flex items-center gap-3 mt-2 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-500">
-                <GraduationCap className="w-5 h-5" />
+            <div className="flex items-center gap-3 mt-2 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/30 flex items-center justify-center">
+                <GraduationCap className="w-5 h-5 text-blue-500 dark:text-blue-400" />
               </div>
               <div>
-                <h3 className="text-xl font-extrabold tracking-tight text-foreground">
-                  Add New Department
-                </h3>
-                <p className="text-muted-foreground text-xs">
+                <h3 className="text-lg font-bold tracking-tight text-gray-900 dark:text-zinc-50">Add Department</h3>
+                <p className="text-[12px] font-medium text-gray-500 dark:text-zinc-400">
                   Create a new department under {universityName}.
                 </p>
               </div>
             </div>
 
-            <form onSubmit={handleCreateDepartment} className="space-y-4">
-              
-              {/* Department Name */}
+            <form onSubmit={handleCreateDepartment} className="space-y-5">
               <div className="space-y-1.5">
-                <Label htmlFor="dept_name" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Department Name</Label>
-                <Input 
+                <label htmlFor="dept_name" className="text-[12px] font-bold text-gray-700 dark:text-zinc-300">
+                  Department Name
+                </label>
+                <input 
                   id="dept_name"
-                  placeholder="e.g. Informatique, Génie des Procédés"
+                  type="text"
+                  placeholder="e.g. Informatique, Génie Civil"
                   value={newDeptName}
                   onChange={(e) => setNewDeptName(e.target.value)}
                   required
-                  className="rounded-xl border border-border/80 bg-background/50 focus:border-primary"
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50/50 dark:bg-zinc-900/50 focus:bg-white dark:focus:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-[13px] text-gray-900 dark:text-zinc-100 transition-all"
                 />
               </div>
 
-              {/* Actions */}
-              <div className="flex justify-end gap-2 pt-2 border-t border-border/60">
-                <Button 
+              <div className="flex justify-end gap-2 pt-2">
+                <button 
                   type="button" 
-                  variant="ghost" 
-                  className="rounded-xl"
                   onClick={() => {
                     setShowAddModal(false);
                     setNewDeptName("");
                   }}
+                  className="px-4 py-2 rounded-xl text-[12px] font-bold text-gray-600 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
                 >
                   Cancel
-                </Button>
-                <Button 
+                </button>
+                <button 
                   type="submit" 
                   disabled={adding} 
-                  className="rounded-xl bg-primary hover:bg-primary/90 font-bold px-5"
+                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[12px] font-bold transition-colors shadow-sm shadow-blue-500/20 flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {adding ? (
-                    <span className="flex items-center gap-1.5">
-                      <Loader2 className="w-4 h-4 animate-spin" /> Creating...
-                    </span>
+                    <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Creating...</>
                   ) : (
                     "Create Department"
                   )}
-                </Button>
+                </button>
               </div>
-
             </form>
           </div>
         </div>
       )}
-
     </div>
   );
 }
