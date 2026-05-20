@@ -330,7 +330,7 @@ export default function CreateCvModal({
 
       <form onSubmit={handleSubmit}>
 
-        <div className="flex items-center text-xs uppercase text-muted-foreground font-semibold mt-2 mb-1">
+        <div className="flex items-center text-[11px] text-muted-foreground font-semibold mt-2 mb-1">
           <div className="flex-1 border-t"></div>
           <span className="px-3">Personal Information</span>
           <div className="flex-1 border-t"></div>
@@ -383,9 +383,9 @@ export default function CreateCvModal({
           />
         </div>
 
-        <div className="flex items-center text-xs uppercase text-muted-foreground font-semibold mt-2 mb-1">
+        <div className="flex items-center text-[11px] text-muted-foreground font-semibold mt-2 mb-1">
           <div className="flex-1 border-t"></div>
-          <span className="px-3">contact information</span>
+          <span className="px-3">Contact Information</span>
           <div className="flex-1 border-t"></div>
         </div>
 
@@ -467,9 +467,9 @@ export default function CreateCvModal({
           />
         </div>
 
-        <div className="flex items-center text-xs uppercase text-muted-foreground font-semibold mt-2 mb-1">
+        <div className="flex items-center text-[11px] text-muted-foreground font-semibold mt-2 mb-1">
           <div className="flex-1 border-t"></div>
-          <span className="px-3">professional information</span>
+          <span className="px-3">Professional Information</span>
           <div className="flex-1 border-t"></div>
         </div>
 
@@ -541,7 +541,7 @@ export default function CreateCvModal({
 
             {/* Suggested Skills */}
             <div className="mt-2">
-              <p className="text-[10px] font-medium text-muted-foreground uppercase mb-2 tracking-wider">Suggested Skills</p>
+              <p className="text-[10px] font-medium text-muted-foreground mb-2 tracking-wider">Suggested Skills</p>
               <div className="flex flex-wrap gap-2">
                 {SUGGESTED_SKILLS.filter(s => !formData.skills.includes(s)).slice(0, 10).map((skill) => (
                   <button
@@ -603,7 +603,7 @@ export default function CreateCvModal({
 
             {/* Suggested Languages */}
             <div className="mt-2">
-              <p className="text-[10px] font-medium text-muted-foreground uppercase mb-2 tracking-wider">Suggested Languages</p>
+              <p className="text-[10px] font-medium text-muted-foreground mb-2 tracking-wider">Suggested Languages</p>
               <div className="flex flex-wrap gap-2">
                 {SUGGESTED_LANGUAGES.filter(l => !formData.languages.includes(l)).slice(0, 10).map((language) => (
                   <button
@@ -625,9 +625,9 @@ export default function CreateCvModal({
           </div>
         </div>
 
-        <div className="flex items-center text-xs uppercase text-muted-foreground font-semibold mt-2 mb-1">
+        <div className="flex items-center text-[11px] text-muted-foreground font-semibold mt-2 mb-1">
           <div className="flex-1 border-t"></div>
-          <span className="px-3">OR</span>
+          <span className="px-3">Or</span>
           <div className="flex-1 border-t"></div>
         </div>
 
@@ -656,7 +656,7 @@ export default function CreateCvModal({
           <DialogClose asChild>
             <Button type="button" variant="outline">Cancel</Button>
           </DialogClose>
-          <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Submitting..." : mode === "edit" ? "Confirm Edits" : "Create CV"}</Button>
+          <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white">{isSubmitting ? "Submitting..." : mode === "edit" ? "Confirm Edits" : "Create CV"}</Button>
         </DialogFooter>
       </form>
     </DialogContent>
