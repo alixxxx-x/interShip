@@ -181,6 +181,7 @@ class Application(models.Model):
     is_validated_by_admin = models.BooleanField(default=False)
     admin_validation_date = models.DateTimeField(null=True, blank=True)
     admin_rejection_date = models.DateTimeField(null=True, blank=True)
+    company_rejection_date = models.DateTimeField(null=True, blank=True)
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
@@ -288,6 +289,7 @@ class Notification(models.Model):
         VALIDATION_REQUIRED = 'VALIDATION_REQUIRED', 'Validation Required'
         APPLICATION_VALIDATED = 'APPLICATION_VALIDATED', 'Application Validated'
         NEW_INTERNSHIP_FROM_FOLLOWED = 'NEW_INTERNSHIP_FROM_FOLLOWED', 'New Internship From Followed Company'
+        WELCOME = 'WELCOME', 'Welcome'  
 
     recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
     notification_type = models.CharField(max_length=30, choices=NotificationType.choices)
