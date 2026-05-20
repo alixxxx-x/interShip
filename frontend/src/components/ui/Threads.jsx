@@ -131,12 +131,23 @@ const Threads = ({
     if (!containerRef.current) return;
     const container = containerRef.current;
 
-    const renderer = new Renderer({ alpha: true });
-    const gl = renderer.gl;
-    gl.clearColor(0, 0, 0, 0);
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    container.appendChild(gl.canvas);
+    let renderer;
+    let gl;
+    try {
+      renderer = new Renderer({ alpha: true });
+      gl = renderer.gl;
+      if (!gl) {
+        console.warn("WebGL not supported or context could not be created.");
+        return;
+      }
+      gl.clearColor(0, 0, 0, 0);
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      container.appendChild(gl.canvas);
+    } catch (e) {
+      console.error("Failed to initialize OGL WebGL renderer:", e);
+      return;
+    }
 
     const geometry = new Triangle(gl);
     const program = new Program(gl, {
@@ -157,6 +168,7 @@ const Threads = ({
     const mesh = new Mesh(gl, { geometry, program });
 
     function resize() {
+      if (!gl || !gl.canvas) return;
       const { clientWidth, clientHeight } = container;
       renderer.setSize(clientWidth, clientHeight);
       program.uniforms.iResolution.value.r = clientWidth;
@@ -210,8 +222,12 @@ const Threads = ({
         container.removeEventListener('mousemove', handleMouseMove);
         container.removeEventListener('mouseleave', handleMouseLeave);
       }
-      if (container.contains(gl.canvas)) container.removeChild(gl.canvas);
-      gl.getExtension('WEBGL_lose_context')?.loseContext();
+      if (gl && gl.canvas && container.contains(gl.canvas)) {
+        container.removeChild(gl.canvas);
+      }
+      if (gl) {
+        gl.getExtension('WEBGL_lose_context')?.loseContext();
+      }
     };
   }, [color, amplitude, distance, enableMouseInteraction]);
 

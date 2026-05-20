@@ -3,10 +3,13 @@ import { jwtDecode } from "jwt-decode";
 import { REFRESH_TOKEN } from "@/constants";
 
 function isTokenExpired(token) {
-    if (!token)
-        return (true);
-    else {
-        return jwtDecode(token).exp < Date.now() / 1000;
+    if (!token) return true;
+    try {
+        const decoded = jwtDecode(token);
+        if (!decoded || !decoded.exp) return true;
+        return decoded.exp < Date.now() / 1000;
+    } catch {
+        return true;
     }
 }
 
