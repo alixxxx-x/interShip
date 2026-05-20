@@ -86,7 +86,7 @@ export default function Profile() {
     const isCompany = profile.role === 'COMPANY';
 
     return (
-        <div className="bg-white dark:bg-background text-foreground min-h-screen py-16 px-4 md:px-6 transition-colors duration-300">
+        <div className="text-foreground min-h-screen py-16 px-4 md:px-6 transition-colors duration-300">
             <style>{`
                 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
                 
