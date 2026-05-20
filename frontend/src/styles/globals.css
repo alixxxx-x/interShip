@@ -86,43 +86,43 @@
 }
 
 .dark {
-  --background: 240 5% 9%;
-  --foreground: 210 40% 98%;
-  --card: 240 5% 9%;
-  --card-foreground: 210 40% 98%;
-  --popover: 240 5% 9%;
-  --popover-foreground: 210 40% 98%;
+  --background: 240 10% 4.5%;
+  --foreground: 0 0% 98%;
+  --card: 240 9% 10%;
+  --card-foreground: 0 0% 98%;
+  --popover: 240 9% 10%;
+  --popover-foreground: 0 0% 98%;
   --primary: 220 80% 60%;
   --primary-foreground: 220 80% 10%;
   --secondary: 350 80% 60%;
   --secondary-foreground: 350 80% 10%;
-  --muted: 220 32.6% 17.5%;
-  --muted-foreground: 215 20.2% 65.1%;
-  --accent: 350 50% 20%;
-  --accent-foreground: 350 80% 80%;
+  --muted: 240 7% 15%;
+  --muted-foreground: 240 5% 65%;
+  --accent: 350 50% 18%;
+  --accent-foreground: 350 80% 85%;
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 210 40% 98%;
-  --border: 220 32.6% 17.5%;
-  --input: 220 32.6% 17.5%;
+  --border: 240 8% 15%;
+  --input: 240 8% 15%;
   --ring: 220 80% 60%;
   --chart-1: 220 80% 60%;
   --chart-2: 350 80% 60%;
   --chart-3: 30 80% 55%;
   --chart-4: 280 65% 60%;
   --chart-5: 340 75% 55%;
-  --sidebar: 240 5.9% 10%;
-  --sidebar-foreground: 240 4.8% 95.9%;
+  --sidebar: 240 10% 3.5%;
+  --sidebar-foreground: 240 5% 85%;
   --sidebar-primary: 220 80% 60%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 240 3.7% 15.9%;
-  --sidebar-accent-foreground: 240 4.8% 95.9%;
-  --sidebar-border: 240 3.7% 15.9%;
+  --sidebar-accent: 240 9% 8%;
+  --sidebar-accent-foreground: 240 5% 95%;
+  --sidebar-border: 240 8% 12%;
   --sidebar-ring: 220 80% 60%;
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border outline-ring/50 transition-colors duration-200 ease-in-out;
   }
 
   body {
@@ -219,16 +219,14 @@
     border-bottom-color: hsl(var(--border)) !important;
   }
 
-  /* Utility to hide standard scrollbar in sidebars/containers securely */
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
+  /* Universal Utility to force-hide scrollbars on ALL containers (including html/body) */
+  *::-webkit-scrollbar {
+    display: none !important;
   }
 
-  .no-scrollbar {
-    -ms-overflow-style: none;
-    /* IE and Edge */
-    scrollbar-width: none;
-    /* Firefox */
+  * {
+    -ms-overflow-style: none !important; /* IE and Edge */
+    scrollbar-width: none !important; /* Firefox */
   }
 
   /* Override browser autofill/autocomplete styles globally for theme consistency */

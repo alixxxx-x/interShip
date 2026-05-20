@@ -13,18 +13,26 @@ import {
 } from "@/components/ui/breadcrumb"
 import { Outlet, useLocation } from "react-router-dom"
 import { useLanguage } from "@/components/language-provider"
+import { useTheme } from "@/components/theme-provider"
+import { Button } from "@/components/ui/button"
+import { Sun, Moon } from "lucide-react"
 
 export default function DashboardLayout() {
   const { t } = useLanguage()
+  const { theme, setTheme } = useTheme()
   const location = useLocation()
   const pathSegments = location.pathname.split("/").filter(Boolean)
+  const appleFont = "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 
   return (
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2 px-4">
+        <header 
+          className="flex h-16 shrink-0 items-center justify-between px-4 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 border-b border-border/40"
+          style={{ fontFamily: appleFont }}
+        >
+          <div className="flex items-center gap-2">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
             <Breadcrumb>
@@ -40,6 +48,21 @@ export default function DashboardLayout() {
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="h-9 w-9 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {theme === "dark" ? (
+                <Sun className="h-4.5 w-4.5 text-amber-500 fill-amber-500/20" />
+              ) : (
+                <Moon className="h-4.5 w-4.5 text-slate-700 dark:text-slate-300" />
+              )}
+            </Button>
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">

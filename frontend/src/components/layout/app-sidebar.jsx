@@ -70,7 +70,7 @@ const data = {
         },
         {
           title: "New Posting",
-          url: "/companydashboard?newOffer=true",
+          url: "/companydashboard/new-offer",
         },
       ],
     },
@@ -90,7 +90,7 @@ const data = {
           },
           {
             title: "Help Center",
-            url: "/help",
+            url: "/contact",
           },
         ],
       },
@@ -224,7 +224,7 @@ export function AppSidebar({ ...props }) {
           },
           {
             title: t("sidebarHelpCenter"),
-            url: "/help",
+            url: "/contact",
           },
         ],
       },
@@ -391,7 +391,7 @@ export function AppSidebar({ ...props }) {
           items: [
             { title: t("sidebarBrowseAll"), url: "/internships" },
             { title: t("sidebarMyListings"), url: "/companydashboard/listings" },
-            { title: t("sidebarNewPosting"), url: "/companydashboard?newOffer=true" },
+            { title: t("sidebarNewPosting"), url: "/companydashboard/new-offer" },
           ],
         },
         {
@@ -416,7 +416,7 @@ export function AppSidebar({ ...props }) {
           icon: Settings2,
           items: [
             { title: t("sidebarSettings"), url: "/settings" },
-            { title: t("sidebarHelpCenter"), url: "/help" },
+            { title: t("sidebarHelpCenter"), url: "/contact" },
           ],
         },
       ].map(item => {

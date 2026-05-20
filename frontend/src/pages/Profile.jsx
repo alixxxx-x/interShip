@@ -12,7 +12,6 @@ import {
     Shield,
     Calendar,
     Award,
-    Loader2,
     Settings,
     Briefcase,
     GraduationCap,
@@ -20,6 +19,7 @@ import {
     Heart
 } from "lucide-react";
 import { useLanguage } from "@/components/language-provider";
+import LoadingScreen from "@/components/ui/LoadingScreen";
 
 export default function Profile() {
     const { t } = useLanguage();
@@ -63,11 +63,8 @@ export default function Profile() {
 
     if (loading) {
         return (
-            <div className="flex h-[60vh] items-center justify-center bg-white dark:bg-background text-foreground transition-colors duration-300">
-                <div className="flex flex-col items-center gap-4">
-                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                    <p className="text-sm font-medium text-muted-foreground">{t("loadingProfile")}</p>
-                </div>
+            <div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] w-full">
+                <LoadingScreen fullScreen={false} />
             </div>
         );
     }

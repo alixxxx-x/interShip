@@ -22,6 +22,7 @@ import {
 import api from "@/api/api";
 import axios from "axios";
 import { useToast } from "@/components/ui/custom-toast";
+import LoadingScreen from "@/components/ui/LoadingScreen";
 
 export default function SuperAdminUniversities() {
   const toast = useToast();
@@ -177,9 +178,8 @@ export default function SuperAdminUniversities() {
 
         <CardContent className="p-0">
           {loading ? (
-            <div className="p-20 flex flex-col items-center justify-center gap-3">
-              <Loader2 className="w-8 h-8 text-primary animate-spin" />
-              <span className="text-sm text-muted-foreground font-medium">Querying security rosters...</span>
+            <div className="flex flex-col items-center justify-center min-h-[400px] w-full">
+              <LoadingScreen fullScreen={false} />
             </div>
           ) : (
             <div className="overflow-x-auto">

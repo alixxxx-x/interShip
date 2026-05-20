@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -13,6 +12,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import api from "@/api/api";
 import { Stepper } from "@/components/ui/stepper";
+import LoadingScreen from "@/components/ui/LoadingScreen";
 
 
 export default function MyApplications() {
@@ -44,11 +44,8 @@ export default function MyApplications() {
 
   if (loading) {
     return (
-      <div className="p-6">
-        <div className="flex items-center gap-3 text-muted-foreground">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          <span className="text-sm font-medium">Loading your applications...</span>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] w-full">
+        <LoadingScreen fullScreen={false} />
       </div>
     );
   }

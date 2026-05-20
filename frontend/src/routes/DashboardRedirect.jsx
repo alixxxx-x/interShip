@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import api from "@/api/api";
+import LoadingScreen from "@/components/ui/LoadingScreen";
 
 export default function DashboardRedirect() {
   const [target, setTarget] = useState(null);
@@ -32,11 +33,7 @@ export default function DashboardRedirect() {
   }, []);
 
   if (!target) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <LoadingScreen text="Redirecting to your workspace..." />;
   }
 
   return <Navigate to={target} replace />;
