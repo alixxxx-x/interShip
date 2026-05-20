@@ -1136,33 +1136,170 @@ class GenerateInternshipCertificateView(generics.GenericAPIView):
             )
 
         # =========================
-        # HTML TEMPLATE CONTEXT
+        # PREMIUM PDF GENERATION WITH BACKGROUND
         # =========================
+        import os
+        import uuid
+        from PIL import Image, ImageDraw, ImageFont
+
         student = application.student
         student_name = f"{student.first_name} {student.last_name}".strip() or student.username or student.email
-
-        html_string = render_to_string(
-            'internship_certificate.html', 
-            {
-                'student_name': student_name,
-                'company_name': application.internship.company.name,
-                'internship_title': application.internship.title,
-                'start_date': application.internship.offer_start_date,
-                'end_date': application.internship.offer_end_date,
-                'university_name': application.student.department.university.name,
-                'certificate_date': timezone.now().date(),
-            }
-        )
-
-        # =========================
-        # PDF GENERATION (xhtml2pdf)
-        # =========================
+        
+        # Paths to template and custom calligraphy font inside media root
+        template_path = os.path.join(settings.MEDIA_ROOT, 'internship_images', 'certificate_templates.png')
+        font_path = os.path.join(settings.MEDIA_ROOT, 'internship_images', 'ITCEDSCR.TTF')
+        
+        use_pillow_flow = os.path.exists(template_path)
+        temp_img_path = None
         result = io.BytesIO()
 
-        pdf = pisa.pisaDocument(
-            io.BytesIO(html_string.encode("UTF-8")),
-            result
-        )
+        if use_pillow_flow:
+            try:
+                # Open template image
+                img = Image.open(template_path)
+                width, height = img.size
+                draw = ImageDraw.Draw(img)
+                
+                # Standard sans-serif font for sentence dates and bottom date
+                sans_font_paths = [
+                    r"C:\Windows\Fonts\arial.ttf",
+                    "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+                    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                    "/usr/share/fonts/TTF/DejaVuSans.ttf",
+                ]
+                font_arial = None
+                font_bottom = None
+                for path in sans_font_paths:
+                    if os.path.exists(path):
+                        try:
+                            font_arial = ImageFont.truetype(path, 45)
+                            font_bottom = ImageFont.truetype(path, 55)
+                            break
+                        except Exception:
+                            pass
+
+                # Determine font (fallback to system Times Italic if custom font is missing)
+                if os.path.exists(font_path):
+                    font = ImageFont.truetype(font_path, 250)
+                else:
+                    # Robust calligraphy fallback paths for server-side compatibility
+                    calligraphy_font_paths = [
+                        r"C:\Windows\Fonts\timesi.ttf",
+                        "/usr/share/fonts/truetype/liberation/LiberationSerif-Italic.ttf",
+                        "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Italic.ttf",
+                    ]
+                    font = None
+                    for path in calligraphy_font_paths:
+                        if os.path.exists(path):
+                            try:
+                                font = ImageFont.truetype(path, 250)
+                                break
+                            except Exception:
+                                pass
+                    if not font:
+                        font = ImageFont.load_default()
+
+                if not font_arial:
+                    font_arial = font_bottom = ImageFont.load_default()
+                
+                # Draw student name centered horizontally and vertically at y = 870
+                draw.text((width / 2, 870), student_name.title(), fill="#1e293b", font=font, anchor="mm")
+                
+                # Get start and end dates and construct strings matching the user's reference style
+                english_months = [
+                    "January", "February", "March", "April", "May", "June",
+                    "July", "August", "September", "October", "November", "December"
+                ]
+                start_date = application.internship.offer_start_date
+                end_date = application.internship.offer_end_date
+                
+                start_month = english_months[start_date.month - 1]
+                end_month = english_months[end_date.month - 1]
+                
+                start_date_str = start_month
+                end_date_str = f"{end_month} {end_date.year}."
+                bottom_date_str = end_date.strftime("%d.%m.%y")
+                
+                # Draw end date above the Date line on bottom-left
+                draw.text((585, 1410), bottom_date_str, fill="#1e293b", font=font_bottom, anchor="mm")
+                
+                # Draw start and end dates in the "from [blank] to [blank]" gaps
+                draw.text((1385, 1165), start_date_str, fill="#1e293b", font=font_arial, anchor="mm")
+                draw.text((1620, 1165), end_date_str, fill="#1e293b", font=font_arial, anchor="mm")
+                
+                # Save modified image to a unique temp file inside media/internship_images
+                temp_filename = f"temp_cert_{uuid.uuid4().hex}.png"
+                temp_img_dir = os.path.join(settings.MEDIA_ROOT, 'internship_images')
+                os.makedirs(temp_img_dir, exist_ok=True)
+                temp_img_path = os.path.join(temp_img_dir, temp_filename)
+                img.save(temp_img_path)
+                
+                # HTML template containing only the dynamically generated image scaled to A4 landscape
+                html_string = f"""
+                <!DOCTYPE html>
+                <html>
+                <head>
+                <style>
+                    @page {{
+                        size: a4 landscape;
+                        margin: 0;
+                        @frame content_frame {{
+                            left: 0pt;
+                            top: 0pt;
+                            width: 842pt;
+                            height: 595pt;
+                        }}
+                    }}
+                    body {{
+                        margin: 0;
+                        padding: 0;
+                    }}
+                    img {{
+                        width: 842pt;
+                        height: 595pt;
+                    }}
+                </style>
+                </head>
+                <body>
+                    <img src="{temp_img_path}" />
+                </body>
+                </html>
+                """
+                
+                pdf = pisa.pisaDocument(
+                    io.BytesIO(html_string.encode("UTF-8")),
+                    result
+                )
+                
+            except Exception:
+                use_pillow_flow = False
+
+        if not use_pillow_flow:
+            # Fallback to older HTML template context in case Pillow generation fails
+            html_string = render_to_string(
+                'internship_certificate.html', 
+                {
+                    'student_name': student_name,
+                    'company_name': application.internship.company.name,
+                    'internship_title': application.internship.title,
+                    'start_date': application.internship.offer_start_date,
+                    'end_date': application.internship.offer_end_date,
+                    'university_name': application.student.department.university.name,
+                    'certificate_date': timezone.now().date(),
+                }
+            )
+            
+            pdf = pisa.pisaDocument(
+                io.BytesIO(html_string.encode("UTF-8")),
+                result
+            )
+
+        # Cleanup temporary image file if it was created
+        if temp_img_path and os.path.exists(temp_img_path):
+            try:
+                os.remove(temp_img_path)
+            except Exception:
+                pass
 
         if pdf.err:
             return Response(
@@ -1179,6 +1316,7 @@ class GenerateInternshipCertificateView(generics.GenericAPIView):
         )
 
         return response
+
 
 # CV Generation View 
 
