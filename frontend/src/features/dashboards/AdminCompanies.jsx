@@ -35,12 +35,28 @@ export default function AdminCompanies() {
   const [activeRecipient, setActiveRecipient] = useState(null);
   const [openMenuId, setOpenMenuId] = useState(null);
 
-  // Super Admin Pending Actions Modal State
-  const [showMatriculeModal, setShowMatriculeModal] = useState(false);
-  const [acceptedCompany, setAcceptedCompany] = useState({ name: "", matricule: "" });
-  const [copied, setCopied] = useState(false);
+  // Generate Matricule Modal State
+  const [isMatriculeModalOpen, setIsMatriculeModalOpen] = useState(false);
+  const [matriculeCompanyName, setMatriculeCompanyName] = useState("");
+  const [generatedMatricule, setGeneratedMatricule] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const isSuperAdmin = window.location.pathname.startsWith("/superadmindashboard");
+
+  const handleGenerateMatricule = async () => {
+    if (!matriculeCompanyName.trim()) return;
+    try {
+      setIsGenerating(true);
+      const res = await api.post("/admin/matricules/generate/", { company_name: matriculeCompanyName });
+      setGeneratedMatricule(res.data.matricule);
+      toast.success("Matricule generated successfully!");
+    } catch (error) {
+      console.error("Failed to generate matricule:", error);
+      toast.error(error.response?.data?.error || "Failed to generate matricule.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const appleFont = "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 
@@ -94,12 +110,9 @@ export default function AdminCompanies() {
 
   const handleAcceptCompany = async (company) => {
     try {
-      toast.info(`Generating secure matriculation for ${company.name}...`);
-      const res = await api.post(`/admin/companies/${company.id}/accept/`);
-      const data = res.data;
+      toast.info(`Activating ${company.name}...`);
+      await api.post(`/admin/companies/${company.id}/accept/`);
       toast.success(`Activated ${company.name} successfully!`);
-      setAcceptedCompany({ name: company.name, matricule: data.matricule });
-      setShowMatriculeModal(true);
       setCompanies(prev => prev.filter(c => c.id !== company.id));
     } catch (error) {
       console.error("Failed to accept company:", error);
@@ -118,13 +131,6 @@ export default function AdminCompanies() {
       console.error("Failed to reject company:", error);
       toast.error("Failed to reject company registration.");
     }
-  };
-
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(acceptedCompany.matricule);
-    setCopied(true);
-    toast.success("Registration Number copied to clipboard!");
-    setTimeout(() => setCopied(false), 2000);
   };
 
   const filteredCompanies = companies.filter(company =>
@@ -160,21 +166,31 @@ export default function AdminCompanies() {
           </h1>
           <p className="text-[13px] font-medium text-gray-500 dark:text-zinc-400 mt-1">
             {isSuperAdmin
-              ? "Approve incoming corporate registration requests and assign secure Matricule keys."
+              ? "Approve incoming corporate registration requests."
               : "Manage and monitor all active corporate partner organizations registered on the platform."}
           </p>
         </div>
 
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-gray-400" />
-          <input
-            type="text"
-            placeholder={isSuperAdmin ? "Search pending requests..." : "Search companies..."}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 pr-4 py-1.5 border border-gray-255/80 dark:border-zinc-800 rounded-lg text-xs bg-white dark:bg-zinc-900 w-60 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-gray-800 dark:text-zinc-200 shadow-sm"
-          />
+        {/* Actions & Search */}
+        <div className="flex items-center gap-3">
+          {isSuperAdmin && (
+            <Button 
+              onClick={() => setIsMatriculeModalOpen(true)}
+              className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+            >
+              Generate Matricule
+            </Button>
+          )}
+          <div className="relative">
+            <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-gray-400" />
+            <input
+              type="text"
+              placeholder={isSuperAdmin ? "Search pending requests..." : "Search companies..."}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 pr-4 py-1.5 border border-gray-255/80 dark:border-zinc-800 rounded-lg text-xs bg-white dark:bg-zinc-900 w-60 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-gray-800 dark:text-zinc-200 shadow-sm"
+            />
+          </div>
         </div>
       </div>
 
@@ -410,59 +426,85 @@ export default function AdminCompanies() {
       </div>
 
       {/* Chat Modal */}
-      <ChatModal
-        open={chatOpen}
-        onOpenChange={setChatOpen}
-        recipientId={activeRecipient?.id}
-        recipientName={activeRecipient?.name}
-      />
+      {chatOpen && activeRecipient && (
+        <ChatModal recipient={activeRecipient} onClose={() => setChatOpen(false)} />
+      )}
 
-      {/* REGISTRATION SUCCESS / MATRICULE DISPLAY MODAL */}
-      {showMatriculeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl w-full max-w-md shadow-2xl p-6 relative overflow-hidden animate-in zoom-in-95 duration-300" style={{ fontFamily: appleFont }}>
-            {/* Top decorative accent */}
-            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-emerald-400 via-teal-500 to-indigo-500 rounded-t-2xl" />
-
-            <div className="flex flex-col items-center text-center gap-4 mt-2">
-              <div className="w-14 h-14 rounded-full bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center shadow-sm">
-                <ShieldCheck className="w-7 h-7 text-emerald-500" />
-              </div>
-
-              <div>
-                <h3 className="text-lg font-bold tracking-tight text-gray-900 dark:text-zinc-50">Company Activated!</h3>
-                <p className="text-[12px] font-medium text-gray-500 dark:text-zinc-400 mt-1">
-                  Secure registration number generated for <b className="text-gray-700 dark:text-zinc-200">{acceptedCompany.name}</b>.
-                </p>
-              </div>
-
-              <div className="w-full bg-gray-50 dark:bg-zinc-800/50 border border-gray-200 dark:border-zinc-700 rounded-xl p-4 flex flex-col items-center gap-2">
-                <span className="text-[9px] uppercase font-bold text-gray-400 dark:text-zinc-500 tracking-wider">Registration Number</span>
-                <span className="text-2xl font-black font-mono tracking-wider text-emerald-500 select-all">
-                  {acceptedCompany.matricule}
-                </span>
-                <button
-                  onClick={copyToClipboard}
-                  className={`mt-1 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-colors ${
-                    copied
-                      ? "bg-emerald-50 border-emerald-200 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-800 dark:text-emerald-400"
-                      : "bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-200 hover:bg-gray-50 dark:hover:bg-zinc-800"
-                  }`}
-                >
-                  {copied ? <><Check className="w-3.5 h-3.5" /> Copied!</> : <><Copy className="w-3.5 h-3.5" /> Copy Code</>}
-                </button>
-              </div>
-
-              <p className="text-[11px] text-gray-400 dark:text-zinc-500 italic max-w-sm">
-                * The partner has been activated and can now log in and post unlimited internship listings immediately.
-              </p>
-
-              <button
-                onClick={() => setShowMatriculeModal(false)}
-                className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-bold transition-colors shadow-sm shadow-blue-600/20 mt-2"
+      {/* Generate Matricule Modal */}
+      {isMatriculeModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-zinc-900 w-[400px] rounded-xl shadow-xl border border-gray-150 dark:border-zinc-800 overflow-hidden">
+            <div className="flex justify-between items-center p-4 border-b border-gray-150 dark:border-zinc-800">
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-zinc-50">Generate Matricule Key</h2>
+              <button 
+                onClick={() => {
+                  setIsMatriculeModalOpen(false);
+                  setMatriculeCompanyName("");
+                  setGeneratedMatricule(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-zinc-300"
               >
-                Close & Finish Approval
+                <X className="w-4 h-4" />
               </button>
+            </div>
+            
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-zinc-300 mb-1.5">Company Name</label>
+                <input
+                  type="text"
+                  value={matriculeCompanyName}
+                  onChange={(e) => setMatriculeCompanyName(e.target.value)}
+                  placeholder="e.g. Ooredoo"
+                  className="w-full border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-gray-800 dark:text-zinc-200"
+                  disabled={isGenerating || generatedMatricule}
+                />
+              </div>
+
+              {generatedMatricule && (
+                <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/50 p-3 rounded-lg flex flex-col items-center gap-2">
+                  <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">Generated Matricule</span>
+                  <div className="flex items-center gap-2 w-full">
+                    <code className="flex-1 bg-white dark:bg-zinc-950 border border-emerald-200 dark:border-emerald-800/80 px-3 py-1.5 rounded text-center text-sm font-mono text-gray-900 dark:text-zinc-100 select-all">
+                      {generatedMatricule}
+                    </code>
+                    <button 
+                      onClick={() => {
+                        navigator.clipboard.writeText(generatedMatricule);
+                        toast.success("Copied to clipboard!");
+                      }}
+                      className="p-1.5 bg-white dark:bg-zinc-950 border border-emerald-200 dark:border-emerald-800/80 rounded hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
+                      title="Copy"
+                    >
+                      <Copy className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 p-4 border-t border-gray-150 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900/50">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setIsMatriculeModalOpen(false);
+                  setMatriculeCompanyName("");
+                  setGeneratedMatricule(null);
+                }}
+                className="h-8 text-xs bg-white dark:bg-zinc-950"
+              >
+                Close
+              </Button>
+              {!generatedMatricule && (
+                <Button 
+                  onClick={handleGenerateMatricule}
+                  disabled={isGenerating || !matriculeCompanyName.trim()}
+                  className="h-8 text-xs bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  {isGenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : null}
+                  Generate
+                </Button>
+              )}
             </div>
           </div>
         </div>
