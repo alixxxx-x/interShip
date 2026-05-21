@@ -123,7 +123,7 @@ export default function Internships() {
 
     // Parse duration in days dynamically
     const durationDays = getDurationInDays(i.internship_duration);
-    const activeMinDays = minMonths * (timeUnit === "months" ? 30 : timeUnit === "weeks" ? 7 : 1);
+    const activeMinDays = minMonths === 1 ? 0 : minMonths * (timeUnit === "months" ? 30 : timeUnit === "weeks" ? 7 : 1);
     const activeMaxDays = maxMonths * (timeUnit === "months" ? 30 : timeUnit === "weeks" ? 7 : 1);
 
     // Use only the internship-specific rating (not company-wide fallback)

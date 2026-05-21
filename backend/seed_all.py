@@ -236,26 +236,31 @@ def seed_database():
     ]
     
     internships = []
+    statuses = [
+        InternshipOffer.Status.OPEN_FOR_APPLICATION,
+        InternshipOffer.Status.ONGOING,
+        InternshipOffer.Status.FINISHED
+    ]
     for company in companies:
-        for i in range(2):
+        for status in statuses:
             title = random.choice(titles)
             internship = InternshipOffer.objects.create(
                 title=f"{title} at {company.name}",
                 description=f"Join {company.name} as a {title}. You will work on real-world projects and gain valuable experience in the {company.company_field} industry.",
                 company=company,
                 internship_location=random.choice(InternshipOffer.InternshipLocation.choices)[0],
-                status=InternshipOffer.Status.OPEN_FOR_APPLICATION,
+                status=status,
                 internship_type=random.choice(InternshipOffer.InternshipType.choices)[0],
                 internship_structure=InternshipOffer.InternshipStructure.FOR_CREDIT,
-                offer_start_date=date.today() + timedelta(days=7),
-                offer_end_date=date.today() + timedelta(days=90),
+                offer_start_date=date.today() - timedelta(days=30) if status != InternshipOffer.Status.OPEN_FOR_APPLICATION else date.today() + timedelta(days=7),
+                offer_end_date=date.today() + timedelta(days=60) if status == InternshipOffer.Status.ONGOING else (date.today() - timedelta(days=5) if status == InternshipOffer.Status.FINISHED else date.today() + timedelta(days=90)),
                 number_of_places=random.randint(2, 5),
                 internship_duration=timedelta(days=random.randint(30, 120)),
                 internship_salary=random.randint(5000, 20000),
                 wilaya=company.location
             )
             internships.append(internship)
-            print(f"Internship created: {internship.title}")
+            print(f"Internship created: {internship.title} with status {status}")
 
     # 5. Create Applications
     for student in students:

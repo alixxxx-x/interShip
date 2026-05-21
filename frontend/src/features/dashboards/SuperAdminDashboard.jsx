@@ -54,12 +54,10 @@ export default function SuperAdminDashboard() {
   });
   const [pendingCompanies, setPendingCompanies] = useState([]);
   const [activeCompanies, setActiveCompanies] = useState([]);
+  const [universities, setUniversities] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // Successful Activation Modal
-  const [showMatriculeModal, setShowMatriculeModal] = useState(false);
-  const [activatedCompany, setActivatedCompany] = useState({ name: "", matricule: "" });
-  const [copied, setCopied] = useState(false);
+
 
   // System status metrics (simulated real-time server stats for high visual impact)
   const [systemLogs, setSystemLogs] = useState([
@@ -74,15 +72,17 @@ export default function SuperAdminDashboard() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [statsRes, pendingRes, activeRes] = await Promise.all([
+      const [statsRes, pendingRes, activeRes, univRes] = await Promise.all([
         api.get("/admin/dashboard/stats/"),
         api.get("/admin/companies/pending/"),
-        api.get("/companies/")
+        api.get("/companies/"),
+        api.get("/universities/")
       ]);
       
       setStats(statsRes.data);
       setPendingCompanies(pendingRes.data.results || pendingRes.data);
       setActiveCompanies(activeRes.data.results || activeRes.data);
+      setUniversities(univRes.data.results || univRes.data || []);
     } catch (error) {
       console.error("Failed to load super admin dashboard stats:", error);
       toast.error("Failed to load real-time super admin metrics.");
@@ -113,17 +113,11 @@ export default function SuperAdminDashboard() {
 
   const handleAcceptCompany = async (company) => {
     try {
-      toast.info(`Generating credentials for ${company.name}...`);
-      const res = await api.post(`/admin/companies/${company.id}/accept/`);
-      const data = res.data;
+      toast.info(`Activating ${company.name}...`);
+      await api.post(`/admin/companies/${company.id}/accept/`);
 
       toast.success(`Registration accepted for ${company.name}!`);
       
-      setActivatedCompany({
-        name: company.name,
-        matricule: data.matricule
-      });
-      setShowMatriculeModal(true);
       setPendingCompanies(prev => prev.filter(c => c.id !== company.id));
       fetchDashboardData();
     } catch (error) {
@@ -144,13 +138,6 @@ export default function SuperAdminDashboard() {
       console.error("Failed to reject company:", error);
       toast.error("Failed to reject company registration.");
     }
-  };
-
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(activatedCompany.matricule);
-    setCopied(true);
-    toast.success("Copied Registration Number!");
-    setTimeout(() => setCopied(false), 2000);
   };
 
   if (loading) {
@@ -254,12 +241,12 @@ export default function SuperAdminDashboard() {
             <CardContent className="p-2 sm:p-3 md:p-3.5 lg:p-2.5 xl:p-4 2xl:p-5 flex flex-col justify-between">
               <div className="flex items-center gap-1.5 min-w-0">
                 <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-4.5 md:w-4.5 lg:h-3.5 lg:w-3.5 xl:h-4.5 xl:w-4.5 2xl:h-5 2xl:w-5 text-slate-500/80 flex-shrink-0" />
-                <span className="text-[9px] sm:text-[10px] md:text-[11px] lg:text-[10px] xl:text-xs 2xl:text-sm font-semibold text-slate-600 dark:text-slate-300 truncate leading-tight">Global Students</span>
+                <span className="text-[9px] sm:text-[10px] md:text-[11px] lg:text-[10px] xl:text-xs 2xl:text-sm font-semibold text-slate-600 dark:text-slate-300 truncate leading-tight">Global Users</span>
                 <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-none text-[8px] sm:text-[9px] md:text-[10px] lg:text-[8px] xl:text-[10px] 2xl:text-xs px-1 sm:px-1.5 py-0.5 rounded font-semibold shadow-none flex-shrink-0 ml-auto">+12%</Badge>
               </div>
               <div className="flex items-end justify-between mt-2 sm:mt-2.5 md:mt-3 lg:mt-2.5 xl:mt-4 2xl:mt-5">
                 <span className="text-lg sm:text-xl md:text-2xl lg:text-lg xl:text-2xl 2xl:text-3xl font-bold tracking-tight text-slate-900 dark:text-white leading-none">
-                  {String(stats?.total_students ?? 0).padStart(2, '0')}
+                  {String(stats?.total_users ?? 0).padStart(2, '0')}
                 </span>
                 <div className="w-10 h-5 sm:w-12 sm:h-6 md:w-14 md:h-7 lg:w-10 lg:h-5 xl:w-16 xl:h-8 2xl:w-20 2xl:h-10 flex-shrink-0">
                   <ResponsiveContainer width="100%" height="100%">
@@ -658,7 +645,7 @@ export default function SuperAdminDashboard() {
             </div>
           </Card>
 
-          {/* Domain Whitelist */}
+          {/* Domain Whitelist - from backend */}
           <Card className="rounded-2xl border border-border bg-card p-4 shadow-sm">
             <div className="flex items-center gap-2 pb-3 border-b border-border">
               <Settings className="h-4 w-4 text-blue-500" />
@@ -668,75 +655,29 @@ export default function SuperAdminDashboard() {
               </div>
             </div>
             <div className="pt-3 space-y-2.5">
-              {[
-                { name: "Constantine 2", domain: "@univ-constantine2.dz" },
-                { name: "USTHB", domain: "@usthb.dz" },
-                { name: "Constantine 1", domain: "@univ-constantine1.dz" }
-              ].map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between gap-2 text-xs border-b border-border/40 pb-2 last:border-0 last:pb-0 min-w-0">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <Globe className="w-3 h-3 text-muted-foreground shrink-0" />
-                    <span className="font-semibold text-foreground text-[11px] truncate">{item.name}</span>
+              {universities.length === 0 ? (
+                <p className="text-[11px] text-muted-foreground text-center py-2">No universities found.</p>
+              ) : (
+                universities.map((univ, idx) => (
+                  <div key={univ.id ?? idx} className="flex items-center justify-between gap-2 text-xs border-b border-border/40 pb-2 last:border-0 last:pb-0 min-w-0">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <Globe className="w-3 h-3 text-muted-foreground shrink-0" />
+                      <span className="font-semibold text-foreground text-[11px] truncate">{univ.name}</span>
+                    </div>
+                    {univ.email_domain && (
+                      <span className="font-mono text-[9px] text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20 px-1.5 py-0.5 rounded border border-blue-100 dark:border-blue-800/30 shrink-0">
+                        @{univ.email_domain.replace(/^@/, '')}
+                      </span>
+                    )}
                   </div>
-                  <span className="font-mono text-[9px] text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20 px-1.5 py-0.5 rounded border border-blue-100 dark:border-blue-800/30 shrink-0">
-                    {item.domain}
-                  </span>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </Card>
         </div>
       </div>
 
-      {/* GENERATION SUCCESS MODAL */}
-      {showMatriculeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl w-full max-w-md shadow-2xl p-6 relative overflow-hidden animate-in zoom-in-95 duration-300" style={{ fontFamily: appleFont }}>
-            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-emerald-400 via-teal-500 to-blue-500 rounded-t-2xl" />
 
-            <div className="flex flex-col items-center text-center gap-4 mt-2">
-              <div className="w-14 h-14 rounded-full bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center shadow-sm">
-                <ShieldCheck className="w-7 h-7 text-emerald-500" />
-              </div>
-
-              <div>
-                <h3 className="text-lg font-bold tracking-tight text-gray-900 dark:text-zinc-50">Entity Validated & Active!</h3>
-                <p className="text-[12px] font-medium text-gray-500 dark:text-zinc-400 mt-1">
-                  Secure registration number generated for <b className="text-gray-700 dark:text-zinc-200">{activatedCompany.name}</b>.
-                </p>
-              </div>
-
-              <div className="w-full bg-gray-50 dark:bg-zinc-800/50 border border-gray-200 dark:border-zinc-700 rounded-xl p-4 flex flex-col items-center gap-2">
-                <span className="text-[9px] font-bold text-gray-400 dark:text-zinc-500 tracking-wider">Registration Number</span>
-                <span className="text-2xl font-black font-mono tracking-wider text-emerald-500 select-all">
-                  {activatedCompany.matricule}
-                </span>
-                <button
-                  onClick={copyToClipboard}
-                  className={`mt-1 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-colors ${
-                    copied
-                      ? "bg-emerald-50 border-emerald-200 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-800 dark:text-emerald-400"
-                      : "bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-200 hover:bg-gray-50 dark:hover:bg-zinc-800"
-                  }`}
-                >
-                  {copied ? <><Check className="w-3.5 h-3.5" /> Copied!</> : <><Copy className="w-3.5 h-3.5" /> Copy Code</>}
-                </button>
-              </div>
-
-              <p className="text-[11px] text-gray-400 dark:text-zinc-500 italic max-w-sm">
-                * The partner has been activated and can now log in and post unlimited internship listings immediately.
-              </p>
-
-              <button
-                onClick={() => setShowMatriculeModal(false)}
-                className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-bold transition-colors shadow-sm shadow-blue-600/20 mt-2"
-              >
-                Close & Finish Approval
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
     </div>
   );
