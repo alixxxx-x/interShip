@@ -787,6 +787,9 @@ class ApplicationSerializer(serializers.ModelSerializer):
     company_name = serializers.CharField(source='internship.company.name', read_only=True)
     email = serializers.EmailField(source='student.email', read_only=True)
     cv = serializers.SerializerMethodField()
+    internship_status = serializers.SerializerMethodField()
+    student_details = serializers.SerializerMethodField()
+    internship_details = serializers.SerializerMethodField()
 
     class Meta:
         model = Application
@@ -794,14 +797,37 @@ class ApplicationSerializer(serializers.ModelSerializer):
             'id', 'student', 'internship', 'status', 'application_date', 
             'candidate', 'offer', 'company_name', 'email', 'cv', 
             'is_validated_by_admin', 'admin_validation_date', 'admin_rejection_date',
-            'company_rejection_date'
+            'company_rejection_date', 'internship_status', 'student_details', 'internship_details'
         ]
         read_only_fields = [
             'id', 'student', 'internship', 'application_date', 
             'candidate', 'offer', 'company_name', 'email', 'cv',
             'is_validated_by_admin', 'admin_validation_date', 'admin_rejection_date',
-            'company_rejection_date'
+            'company_rejection_date', 'internship_status', 'student_details', 'internship_details'
         ]
+
+    def get_student_details(self, obj):
+        student = obj.student
+        return {
+            'id': student.id,
+            'first_name': student.first_name,
+            'last_name': student.last_name,
+            'username': student.username,
+            'email': student.email,
+            'department': student.department.name if student.department else "Student",
+        }
+
+    def get_internship_details(self, obj):
+        return {
+            'id': obj.internship.id,
+            'title': obj.internship.title,
+        }
+
+    def get_internship_status(self, obj):
+        try:
+            return obj.internship.status
+        except Exception:
+            return None
 
     def get_candidate(self, obj):
         student = obj.student

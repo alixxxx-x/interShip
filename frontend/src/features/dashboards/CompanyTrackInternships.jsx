@@ -108,29 +108,37 @@ export default function CompanyTrackInternships() {
     }
   };
 
-  const getBadgeStyle = (status) => {
+  const getBadgeStyle = (status, internshipStatus) => {
     const raw = String(status || "").trim().toUpperCase();
-    switch (raw) {
-      case "COMPLETE":
-        return {
-          bg: "bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400",
-          dot: "bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.8)]",
-          label: "Completed",
-        };
-      case "CANCELLED":
-        return {
-          bg: "bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400",
-          dot: "bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.8)]",
-          label: "Terminated",
-        };
-      case "VALIDATED":
-      default:
-        return {
-          bg: "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400",
-          dot: "bg-blue-500 shadow-[0_0_6px_rgba(59,130,246,0.8)]",
-          label: "Ongoing",
-        };
+    const internshipRaw = String(internshipStatus || "").trim().toUpperCase();
+    if (raw === "COMPLETE") {
+      return {
+        bg: "bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400",
+        dot: "bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.8)]",
+        label: "Completed",
+      };
     }
+    if (raw === "CANCELLED") {
+      return {
+        bg: "bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400",
+        dot: "bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.8)]",
+        label: "Terminated",
+      };
+    }
+    // If the internship offer itself is FINISHED, reflect that
+    if (internshipRaw === "FINISHED") {
+      return {
+        bg: "bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400",
+        dot: "bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.8)]",
+        label: "Finished",
+      };
+    }
+    // VALIDATED + internship still active = Ongoing
+    return {
+      bg: "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400",
+      dot: "bg-blue-500 shadow-[0_0_6px_rgba(59,130,246,0.8)]",
+      label: "Ongoing",
+    };
   };
 
   if (loading) {
@@ -151,9 +159,11 @@ export default function CompanyTrackInternships() {
 
     const filtered = applications.filter(app => {
       const statusRaw = String(app.status || "").trim().toUpperCase();
+      const internshipRaw = String(app.internship_status || "").trim().toUpperCase();
       let mappedStatus = "ONGOING";
       if (statusRaw === "COMPLETE") mappedStatus = "COMPLETED";
       else if (statusRaw === "CANCELLED") mappedStatus = "TERMINATED";
+      else if (internshipRaw === "FINISHED") mappedStatus = "FINISHED";
 
       const searchLower = searchQuery.toLowerCase();
       const matchesSearch = app.candidate.toLowerCase().includes(searchLower) || (app.email && app.email.toLowerCase().includes(searchLower));
@@ -275,7 +285,7 @@ export default function CompanyTrackInternships() {
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowStatusFilter(false)} />
                 <div className="absolute right-0 mt-1.5 w-40 rounded-lg bg-white dark:bg-zinc-850 border border-gray-200 dark:border-zinc-700/80 shadow-lg py-1 z-20 text-left">
-                  {["ALL", "ONGOING", "COMPLETED", "TERMINATED"].map((status) => (
+                  {["ALL", "ONGOING", "FINISHED", "COMPLETED", "TERMINATED"].map((status) => (
                     <button
                       key={status}
                       className={`w-full text-left px-4 py-2 text-[12px] font-semibold transition-colors flex items-center gap-2 ${statusFilter === status
@@ -289,8 +299,9 @@ export default function CompanyTrackInternships() {
                     >
                       <span className={`w-1.5 h-1.5 rounded-full ${status === "ALL" ? "bg-gray-400" :
                           status === "ONGOING" ? "bg-blue-500" :
-                            status === "COMPLETED" ? "bg-green-500" :
-                              "bg-red-500"
+                            status === "FINISHED" ? "bg-amber-500" :
+                              status === "COMPLETED" ? "bg-green-500" :
+                                "bg-red-500"
                         }`} />
                       {status === "ALL" ? "All Statuses" : status.charAt(0) + status.slice(1).toLowerCase()}
                     </button>
@@ -337,7 +348,9 @@ export default function CompanyTrackInternships() {
                 <tbody>
                   {paginatedApplications.map((application) => {
                     const status = String(application.status || "").trim().toUpperCase();
-                    const style = getBadgeStyle(status);
+                    const internshipStatus = String(application.internship_status || "").trim().toUpperCase();
+                    const style = getBadgeStyle(status, internshipStatus);
+                    const isFinished = internshipStatus === "FINISHED";
 
                     return (
                       <tr
@@ -357,7 +370,7 @@ export default function CompanyTrackInternships() {
                           <span className="text-[12px] text-gray-500 dark:text-zinc-400 truncate">{application.email}</span>
                         </td>
                         <td className="py-4 px-6 text-left">
-                          {status === "COMPLETE" ? (
+                          {status === "COMPLETE" || isFinished ? (
                             <button
                               onClick={() => downloadCertificate(application)}
                               className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-[11px] font-bold tracking-wide rounded-[6px] bg-blue-50/50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100/60 dark:hover:bg-blue-900/40 border border-blue-200/50 dark:border-blue-800/30 transition-all duration-200"
@@ -376,7 +389,7 @@ export default function CompanyTrackInternships() {
                           )}
                         </td>
                         <td className="py-4 px-6 text-right">
-                          {status !== "COMPLETE" && status !== "CANCELLED" && (
+                          {status !== "COMPLETE" && status !== "CANCELLED" && !isFinished && (
                             <button
                               className="inline-flex items-center justify-center px-3 py-1.5 text-[11px] font-bold tracking-wide rounded-[6px] bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-900/30 transition-all duration-200"
                               onClick={() => confirmStop(offer, application.id)}
@@ -389,6 +402,9 @@ export default function CompanyTrackInternships() {
                           )}
                           {status === "CANCELLED" && (
                             <span className="text-[12px] text-red-600 dark:text-red-500 font-bold">Terminated</span>
+                          )}
+                          {isFinished && status !== "COMPLETE" && status !== "CANCELLED" && (
+                            <span className="text-[12px] text-amber-600 dark:text-amber-400 font-bold">Finished</span>
                           )}
                         </td>
                       </tr>

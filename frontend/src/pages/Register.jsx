@@ -80,6 +80,19 @@ function Register() {
             });
     }, []);
 
+    // Reactively update the selected university's email domain whenever
+    // the selection or the universities list changes (handles async loading).
+    useEffect(() => {
+        if (selectedUniv && universities.length > 0) {
+            const univ = [...universities, ...fallbackUniversities].find(
+                (u) => String(u.id) === String(selectedUniv)
+            );
+            setSelectedUnivDomain(normalizeDomain(univ?.email_domain || ""));
+        } else if (!selectedUniv) {
+            setSelectedUnivDomain("");
+        }
+    }, [selectedUniv, universities]);
+
     const handleUnivChange = (univId) => {
         setSelectedUniv(univId);
         setErrors(prev => ({ ...prev, university: null }));
@@ -90,19 +103,14 @@ function Register() {
                     if (res.data && res.data.length > 0) {
                         setDepartments(res.data);
                     } else {
-                        console.log("Empty department list from API, using fallback.");
                         setDepartments(fallbackDepartments[univId] || []);
                     }
                 })
-                .catch((err) => {
-                    console.error("Failed to fetch departments, using fallback:", err);
+                .catch(() => {
                     setDepartments(fallbackDepartments[univId] || []);
                 });
-            const univ = [...universities, ...fallbackUniversities].find(u => String(u.id) === String(univId));
-            setSelectedUnivDomain(normalizeDomain(univ?.email_domain || ""));
         } else {
             setDepartments([]);
-            setSelectedUnivDomain("");
         }
         setSelectedDept("");
     };
@@ -121,10 +129,9 @@ function Register() {
         }
         if (!email.trim()) {
             EmptyErrors.email = "Email is required";
-        } else if (role === "STUDENT") {
-            const requiredDomain = selectedUnivDomain || "@univ.dz";
-            if (!email.toLowerCase().endsWith(requiredDomain)) {
-                EmptyErrors.email = `Student email must end with ${requiredDomain}`;
+        } else if (role === "STUDENT" && selectedUnivDomain) {
+            if (!email.toLowerCase().endsWith(selectedUnivDomain)) {
+                EmptyErrors.email = `Student email must end with ${selectedUnivDomain}`;
             }
         }
         if (!password) EmptyErrors.password = "Password is required";
@@ -349,7 +356,7 @@ function Register() {
                                 <div className="relative">
                                     <input
                                         type="email"
-                                        placeholder={role === "STUDENT" ? "name@univ.dz" : "m@example.com"}
+                                        placeholder={role === "STUDENT" ? `name${selectedUnivDomain || "@univ.dz"}` : "m@example.com"}
                                         value={email}
                                         onChange={(e) => { setEmail(e.target.value); setErrors(prev => ({ ...prev, email: null })) }}
                                         className="w-full h-[40px] px-3.5 rounded-[12px] border border-slate-200 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 bg-white transition-all text-[13px] font-medium placeholder:text-slate-400 font-sans"

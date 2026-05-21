@@ -79,6 +79,7 @@ urlpatterns = [
     path('admin/companies/<int:pk>/reject/', AdminRejectCompanyView.as_view(), name='admin-reject-company'),
     path('admin/matricules/generate/', AdminGenerateMatriculeView.as_view(), name='admin-generate-matricule'),
 
+
     # Messaging
     path('messages/', MessageListView.as_view(), name='message-list'),
     path('messages/send/', MessageCreateView.as_view(), name='message-send'),
