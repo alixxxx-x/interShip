@@ -36,6 +36,7 @@ function Login() {
     const [lastName, setLastName] = useState("");
     const [university, setUniversity] = useState(""); // This will hold the university ID
     const [major, setMajor] = useState(""); // This will hold the department name
+    const [studyLevel, setStudyLevel] = useState("UNDERGRADUATE"); // Type of student
 
     const [universitiesList, setUniversitiesList] = useState([]);
     const [departmentsList, setDepartmentsList] = useState([]);
@@ -71,6 +72,7 @@ function Login() {
         setConfirmPassword("");
         setUniversity("");
         setMajor("");
+        setStudyLevel("UNDERGRADUATE");
         setRegistrationNumber("");
     }, [isRegister]);
 
@@ -141,7 +143,7 @@ function Login() {
                 password,
                 role,
                 ...(role === "STUDENT"
-                    ? { first_name: firstName, last_name: lastName, department_id: major }
+                    ? { first_name: firstName, last_name: lastName, department_id: major, study_level: studyLevel }
                     : { username, name: username, matricule: registrationNumber })
             };
             await api.post("/auth/register/", payload);
@@ -829,6 +831,42 @@ function Login() {
                                                         ))}
                                                     </select>
                                                     {errors.major && <p style={{ fontSize: 9.5, color: "#ff3b30", marginTop: 2 }}>{errors.major}</p>}
+                                                </div>
+
+                                                {/* Type Of Student */}
+                                                <div style={{ marginBottom: 10 }}>
+                                                    <label style={{
+                                                        display: "block", fontSize: 11, fontWeight: 500,
+                                                        color: themeLabelColor, marginBottom: 4, fontFamily: font,
+                                                    }}>Type Of Student</label>
+                                                    <select
+                                                        value={studyLevel}
+                                                        onChange={(e) => setStudyLevel(e.target.value)}
+                                                        style={{
+                                                            width: "100%",
+                                                            height: 32,
+                                                            padding: "0 24px 0 10px",
+                                                            borderRadius: 6,
+                                                            border: themeInputBorder,
+                                                            background: themeInputBg,
+                                                            fontSize: 11,
+                                                            color: themeTextColor,
+                                                            outline: "none",
+                                                            fontFamily: font,
+                                                            boxSizing: "border-box",
+                                                            cursor: "pointer",
+                                                            appearance: "none",
+                                                            backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238e8e93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                                                            backgroundRepeat: "no-repeat",
+                                                            backgroundPosition: "right 8px center",
+                                                            backgroundSize: "12px",
+                                                        }}
+                                                    >
+                                                        <option value="UNDERGRADUATE" style={{ color: themeTextColor, background: themeCardBg }}>Undergraduate</option>
+                                                        <option value="MASTERS" style={{ color: themeTextColor, background: themeCardBg }}>Masters</option>
+                                                        <option value="PHD" style={{ color: themeTextColor, background: themeCardBg }}>PhD</option>
+                                                        <option value="OTHER" style={{ color: themeTextColor, background: themeCardBg }}>Other</option>
+                                                    </select>
                                                 </div>
                                             </>
                                         ) : (

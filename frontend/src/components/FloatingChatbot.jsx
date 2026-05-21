@@ -3,13 +3,36 @@ import { useLocation } from 'react-router-dom';
 import { Bot, X, Send, Loader2, Sparkles, HelpCircle, MessageSquare } from 'lucide-react';
 import { useLanguage } from '@/components/language-provider';
 import { useTheme } from '@/components/theme-provider';
+import api from '@/api/api';
+import { ACCESS_TOKEN } from '@/constants';
 
 export default function FloatingChatbot() {
   const { t } = useLanguage();
   const { theme } = useTheme();
   const location = useLocation();
   
+  const [isStudent, setIsStudent] = useState(false);
+  const [studentId, setStudentId] = useState(null);
+  const [sessionId, setSessionId] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem(ACCESS_TOKEN);
+    if (!token) {
+      setIsStudent(false);
+      return;
+    }
+    
+    api
+      .get("/auth/profile/")
+      .then((res) => {
+        setIsStudent(res.data.role === "STUDENT");
+        setStudentId(res.data.id);
+      })
+      .catch(() => {
+        setIsStudent(false);
+      });
+  }, [location.pathname]);
   const [showTooltip, setShowTooltip] = useState(false);
   const [chatHistory, setChatHistory] = useState([
     {
@@ -40,50 +63,67 @@ export default function FloatingChatbot() {
     }
   }, [chatHistory, isTyping]);
 
+  const renderMessageText = (text) => {
+    if (!text) return null;
+    const parts = text.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={i}>{part.slice(2, -2)}</strong>;
+      }
+      return part;
+    });
+  };
+
   const handleOpenToggle = () => {
     setIsOpen(!isOpen);
     setShowTooltip(false);
     sessionStorage.setItem('chatbot_opened', 'true');
   };
 
-  const handleSend = (e) => {
+  const handleSend = async (e) => {
     e.preventDefault();
     if (!question.trim()) return;
 
     const userMsg = { role: 'user', text: question.trim() };
+    const currentHistory = [...chatHistory];
     setChatHistory(prev => [...prev, userMsg]);
-    const currentQuestion = question.trim().toLowerCase();
+    const currentQuestion = question.trim();
     setQuestion("");
     setIsTyping(true);
 
-    // AI Response generation (Local mockup)
-    setTimeout(() => {
-      let botResponse = "I'm not sure about that. Try asking about 'digital CV', 'apply', 'convention', or 'contact'!";
+    try {
+      const response = await fetch('http://localhost:8001/api/chat/assistant', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          student_id: studentId,
+          message: currentQuestion,
+          session_id: sessionId
+        })
+      });
 
-      if (currentQuestion.includes("cv") || currentQuestion.includes("profile") || currentQuestion.includes("portfolio")) {
-        botResponse = "To create or update your Digital CV, head over to your Student Dashboard and click on the 'Digital CV' section. You can fill in your skills, experience, and educational background.";
-      } else if (currentQuestion.includes("apply") || currentQuestion.includes("application") || currentQuestion.includes("internship")) {
-        botResponse = "You can browse active internships on the 'Internships' tab. Once you find one that fits your skills, click the 'Apply' button to submit your application directly to the recruiter.";
-      } else if (currentQuestion.includes("convention") || currentQuestion.includes("agreement") || currentQuestion.includes("document")) {
-        botResponse = "After a company accepts your application, the University Internship Office will validate it. Once validated, your official 'Convention de Stage' will be generated as a PDF, ready to download from your dashboard!";
-      } else if (currentQuestion.includes("hello") || currentQuestion.includes("hi") || currentQuestion.includes("hey")) {
-        botResponse = "Hello there! How can I assist you with your internship search today?";
-      } else if (currentQuestion.includes("company") || currentQuestion.includes("recruiter")) {
-        botResponse = "Companies can post multiple internship offers, review incoming student applications, schedule interviews, and accept placements directly through their Company Space.";
-      } else if (currentQuestion.includes("contact") || currentQuestion.includes("help") || currentQuestion.includes("support")) {
-        botResponse = "You can reach out to our team via the 'Contact Us' page or check our 'FAQ' page for more detailed guides.";
-      } else if (currentQuestion.includes("rating") || currentQuestion.includes("review")) {
-        botResponse = "Students can leave ratings and detailed reviews for companies after completing their internships. This helps build a transparent matching ecosystem!";
+      if (response.ok) {
+        const data = await response.json();
+        setChatHistory(prev => [...prev, { role: 'model', text: data.reply }]);
+        if (data.session_id && !sessionId) {
+            setSessionId(data.session_id);
+        }
+      } else {
+        setChatHistory(prev => [...prev, { role: 'model', text: "Sorry, I couldn't process your request at the moment. Please try again." }]);
       }
-
-      setChatHistory(prev => [...prev, { role: 'model', text: botResponse }]);
+    } catch (error) {
+      console.error("Error communicating with AI chatbot:", error);
+      setChatHistory(prev => [...prev, { role: 'model', text: "I'm having trouble connecting to the server. Please try again later." }]);
+    } finally {
       setIsTyping(false);
-    }, 1200);
+    }
   };
 
-  // Hide the chatbot on Login and Register routes
+  // Hide the chatbot on Login and Register routes or if user is not a student
   const hideRoutes = ["/login", "/register"];
-  if (hideRoutes.includes(location.pathname)) {
+  if (hideRoutes.includes(location.pathname) || !isStudent) {
     return null;
   }
 
@@ -318,7 +358,7 @@ export default function FloatingChatbot() {
                         boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
                       }}
                     >
-                      {msg.text}
+                      {renderMessageText(msg.text)}
                     </div>
                   </div>
                 );

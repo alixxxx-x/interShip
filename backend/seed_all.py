@@ -86,7 +86,7 @@ def seed_database():
         print(f"Admin Dept created: {admin_email}")
     else:
         admin = User.objects.get(email=admin_email)
-        print(f" Admin already exists: {admin_email}")
+        print(f"[Admin] Admin already exists: {admin_email}")
 
     # 3. Create Companies
     companies_data = [
@@ -198,7 +198,7 @@ def seed_database():
                 cv.save()
                 
             students.append(student)
-            print(f"ℹ️ Student updated: {student.first_name} {student.last_name} ({univ_name} - {dept.name})")
+            print(f"[Info] Student updated: {student.first_name} {student.last_name} ({univ_name} - {dept.name})")
 
     # Update ANY other existing students in the database that are not in the predefined list
     all_db_students = Student.objects.exclude(email__in=[s['email'] for s in students_data])
@@ -226,7 +226,7 @@ def seed_database():
         if not created:
             cv.education = f"Bachelor in {dept.name} at {univ_name}"
             cv.save()
-        print(f"🔄 Existing DB Student updated: {student.first_name} {student.last_name} ({univ_name} - {dept.name})")
+        print(f"[Info] Existing DB Student updated: {student.first_name} {student.last_name} ({univ_name} - {dept.name})")
 
     # 4. Create Internship Offers
     titles = [
@@ -235,6 +235,23 @@ def seed_database():
         "UI/UX Design Intern", "Embedded Systems Intern"
     ]
     
+    skills_map = {
+        "Web Developer Intern": "HTML, CSS, JavaScript, React, Django, SQL",
+        "AI Research Intern": "Python, PyTorch, Machine Learning, Deep Learning, SQL",
+        "Network Security Assistant": "Linux, Networking, Wireshark, Cybersecurity, Python",
+        "Data Analyst Intern": "Python, SQL, Tableau, Excel, Pandas",
+        "Mobile App Developer": "Flutter, Dart, React Native, iOS, Android",
+        "Cloud Engineering Intern": "AWS, Docker, Kubernetes, Linux, DevOps",
+        "UI/UX Design Intern": "Figma, Adobe XD, Prototyping, Wireframing, CSS",
+        "Embedded Systems Intern": "C, C++, RTOS, Microcontrollers, Embedded Systems"
+    }
+
+    wilayas_pool = ["Algiers", "Oran", "Constantine", "Bejaia", "Tizi Ouzou"]
+    
+    # Clean previous offers to ensure clean state
+    InternshipOffer.objects.all().delete()
+    print("Deleted old internship offers.")
+
     internships = []
     statuses = [
         InternshipOffer.Status.OPEN_FOR_APPLICATION,
@@ -242,14 +259,32 @@ def seed_database():
         InternshipOffer.Status.FINISHED
     ]
     for company in companies:
+<<<<<<< HEAD
         for status in statuses:
             title = random.choice(titles)
+=======
+        # Create one ONSITE and one REMOTE/HYBRID internship per company with realistic skills
+        for i in range(3):  # Let's create 3 offers per company
+            title = titles[(companies.index(company) * 3 + i) % len(titles)]
+            location_type = random.choice([
+                InternshipOffer.InternshipLocation.ONSITE,
+                InternshipOffer.InternshipLocation.REMOTE,
+                InternshipOffer.InternshipLocation.HYBRID
+            ])
+            wilaya = random.choice(wilayas_pool) if location_type != InternshipOffer.InternshipLocation.REMOTE else company.location
+            
+>>>>>>> origin/ali
             internship = InternshipOffer.objects.create(
                 title=f"{title} at {company.name}",
                 description=f"Join {company.name} as a {title}. You will work on real-world projects and gain valuable experience in the {company.company_field} industry.",
                 company=company,
+<<<<<<< HEAD
                 internship_location=random.choice(InternshipOffer.InternshipLocation.choices)[0],
                 status=status,
+=======
+                internship_location=location_type,
+                status=InternshipOffer.Status.OPEN_FOR_APPLICATION,
+>>>>>>> origin/ali
                 internship_type=random.choice(InternshipOffer.InternshipType.choices)[0],
                 internship_structure=InternshipOffer.InternshipStructure.FOR_CREDIT,
                 offer_start_date=date.today() - timedelta(days=30) if status != InternshipOffer.Status.OPEN_FOR_APPLICATION else date.today() + timedelta(days=7),
@@ -257,10 +292,15 @@ def seed_database():
                 number_of_places=random.randint(2, 5),
                 internship_duration=timedelta(days=random.randint(30, 120)),
                 internship_salary=random.randint(5000, 20000),
-                wilaya=company.location
+                internship_skills=skills_map.get(title, ""),
+                wilaya=wilaya
             )
             internships.append(internship)
+<<<<<<< HEAD
             print(f"Internship created: {internship.title} with status {status}")
+=======
+            print(f"Internship created: {internship.title} (Location: {internship.internship_location}, Wilaya: {internship.wilaya}, Skills: {internship.internship_skills})")
+>>>>>>> origin/ali
 
     # 5. Create Applications
     for student in students:
