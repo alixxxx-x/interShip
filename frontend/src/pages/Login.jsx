@@ -40,6 +40,25 @@ function Login() {
 
     const [universitiesList, setUniversitiesList] = useState([]);
     const [departmentsList, setDepartmentsList] = useState([]);
+    const [selectedUnivDomain, setSelectedUnivDomain] = useState("");
+
+    const normalizeDomain = (domain) => {
+        if (!domain) return "";
+        const cleaned = domain.trim().toLowerCase();
+        return cleaned.startsWith("@") ? cleaned : `@${cleaned}`;
+    };
+
+    useEffect(() => {
+        if (university && universitiesList.length > 0) {
+            const univ = universitiesList.find(
+                (u) => String(u.id) === String(university)
+            );
+            setSelectedUnivDomain(normalizeDomain(univ?.email_domain || ""));
+        } else if (!university) {
+            setSelectedUnivDomain("");
+        }
+    }, [university, universitiesList]);
+
 
     useEffect(() => {
         if (isRegister) {
@@ -65,7 +84,6 @@ function Login() {
 
     const navigate = useNavigate();
 
-    // Clear password and errors on mode switch
     useEffect(() => {
         setErrors({});
         setPassword("");
@@ -74,6 +92,7 @@ function Login() {
         setMajor("");
         setStudyLevel("UNDERGRADUATE");
         setRegistrationNumber("");
+        setSelectedUnivDomain("");
     }, [isRegister]);
 
     const memoizedThreads = useMemo(() => (
@@ -120,8 +139,11 @@ function Login() {
         }
         if (!email.trim()) {
             EmptyErrors.email = "Email is required";
-        } else if (role === "STUDENT" && !email.toLowerCase().endsWith("@univ.dz")) {
-            EmptyErrors.email = "Student email must end with @univ.dz";
+        } else if (role === "STUDENT") {
+            const expectedDomain = selectedUnivDomain || "@univ.dz";
+            if (!email.toLowerCase().endsWith(expectedDomain.toLowerCase())) {
+                EmptyErrors.email = `Student email must end with ${expectedDomain}`;
+            }
         }
         if (!password) EmptyErrors.password = "Password is required";
         if (!confirmPassword) {
@@ -928,7 +950,7 @@ function Login() {
                                                 type="text"
                                                 value={email}
                                                 onChange={(e) => { setEmail(e.target.value); setErrors(p => ({ ...p, email: null })) }}
-                                                placeholder={role === "STUDENT" ? "yourname@univ.dz" : "company@domain.com"}
+                                                placeholder={role === "STUDENT" ? `yourname${selectedUnivDomain || "@univ.dz"}` : "company@domain.com"}
                                                 style={{
                                                     width: "100%", height: 32, padding: "0 10px",
                                                     borderRadius: 6, border: errors.email ? "1px solid #ff3b30" : themeInputBorder,

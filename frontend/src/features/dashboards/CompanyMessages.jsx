@@ -68,14 +68,16 @@ export default function CompanyMessages() {
       const studentIds = new Set();
 
       apps.forEach(app => {
-        if (app.student && !studentIds.has(app.student.id)) {
-          studentIds.add(app.student.id);
+        const student = app.student_details;
+        const internship = app.internship_details;
+        if (student && !studentIds.has(student.id)) {
+          studentIds.add(student.id);
           uniqueStudents.push({
-            id: app.student.id,
-            name: `${app.student.first_name || ""} ${app.student.last_name || ""}`.trim() || app.student.username || app.student.email,
-            email: app.student.email,
-            department: app.student.department || "Student",
-            internship: app.internship?.title || "Applicant"
+            id: student.id,
+            name: `${student.first_name || ""} ${student.last_name || ""}`.trim() || student.username || student.email,
+            email: student.email,
+            department: student.department || "Student",
+            internship: internship?.title || "Applicant"
           });
         }
       });
@@ -218,13 +220,6 @@ export default function CompanyMessages() {
       ws.current.send(JSON.stringify({
         message: finalContent
       }));
-
-      // Add to active conversations dynamically when sending a message
-      setActiveConversationIds(prev => {
-        const next = new Set(prev);
-        next.add(activeRecipient.id);
-        return next;
-      });
 
       setNewMessage("");
       setReplyingTo(null);

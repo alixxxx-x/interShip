@@ -58,7 +58,9 @@ export default function AdminDeptDashboard() {
     total_students: 0,
     placed_students: 0,
     unplaced_students: 0,
-    placement_rate: 0
+    placement_rate: 0,
+    university_name: "",
+    department_name: ""
   });
   const [pendingValidations, setPendingValidations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -156,6 +158,11 @@ export default function AdminDeptDashboard() {
       {/* 1. TOP HEADER ROW */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-1">
         <div className="flex flex-col">
+          {stats.university_name && (
+            <span className="text-[11px] font-semibold text-muted-foreground/75 dark:text-zinc-500 mb-0.5 select-none">
+              {stats.university_name} {stats.department_name ? `• ${stats.department_name}` : ""}
+            </span>
+          )}
           <h1 className="text-[18px] sm:text-[20px] font-bold text-foreground leading-tight">Department Overview</h1>
           <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5">
             Monitor placements and validate internship agreements.

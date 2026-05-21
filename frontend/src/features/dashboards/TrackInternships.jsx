@@ -38,34 +38,42 @@ export default function TrackInternships() {
     load();
   }, []);
 
-  const getBadgeStyle = (status) => {
+  const getBadgeStyle = (status, internshipStatus) => {
     const raw = String(status || "").trim().toUpperCase();
-    switch (raw) {
-      case "PENDING":
-        return {
-          bg: "bg-purple-50 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400",
-          dot: "bg-purple-500 shadow-[0_0_6px_rgba(168,85,247,0.8)]",
-          label: "Pending",
-        };
-      case "COMPLETE":
-        return {
-          bg: "bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400",
-          dot: "bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.8)]",
-          label: "Completed",
-        };
-      case "VALIDATED":
-        return {
-          bg: "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400",
-          dot: "bg-blue-500 shadow-[0_0_6px_rgba(59,130,246,0.8)]",
-          label: "Validated",
-        };
-      default:
-        return {
-          bg: "bg-gray-50 text-gray-600 dark:bg-gray-500/10 dark:text-gray-400",
-          dot: "bg-gray-500 shadow-[0_0_6px_rgba(107,114,128,0.8)]",
-          label: status || "Unknown",
-        };
+    const internshipRaw = String(internshipStatus || "").trim().toUpperCase();
+    if (raw === "PENDING") {
+      return {
+        bg: "bg-purple-50 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400",
+        dot: "bg-purple-500 shadow-[0_0_6px_rgba(168,85,247,0.8)]",
+        label: "Pending",
+      };
     }
+    if (raw === "COMPLETE") {
+      return {
+        bg: "bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400",
+        dot: "bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.8)]",
+        label: "Completed",
+      };
+    }
+    if (raw === "VALIDATED" && internshipRaw === "FINISHED") {
+      return {
+        bg: "bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400",
+        dot: "bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.8)]",
+        label: "Finished",
+      };
+    }
+    if (raw === "VALIDATED") {
+      return {
+        bg: "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400",
+        dot: "bg-blue-500 shadow-[0_0_6px_rgba(59,130,246,0.8)]",
+        label: "Validated",
+      };
+    }
+    return {
+      bg: "bg-gray-50 text-gray-600 dark:bg-gray-500/10 dark:text-gray-400",
+      dot: "bg-gray-500 shadow-[0_0_6px_rgba(107,114,128,0.8)]",
+      label: status || "Unknown",
+    };
   };
 
   if (loading) {
@@ -128,8 +136,9 @@ export default function TrackInternships() {
                   (application.internship ? `Internship #${application.internship}` : "-");
 
                 const isCompleted = String(application.status || "").trim().toUpperCase() === "COMPLETE";
+                const isFinished = String(application.internship_status || "").trim().toUpperCase() === "FINISHED";
                 const offerId = application.internship;
-                const style = getBadgeStyle(application.status);
+                const style = getBadgeStyle(application.status, application.internship_status);
 
                 return (
                   <tr 
@@ -157,7 +166,7 @@ export default function TrackInternships() {
                       </span>
                     </td>
                     <td className="py-4 px-6 text-right">
-                      {isCompleted && application.is_validated_by_admin ? (
+                      {(isCompleted || isFinished) && application.is_validated_by_admin ? (
                         <button
                           onClick={async () => {
                             try {

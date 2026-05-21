@@ -8,7 +8,11 @@ import {
   Building2,
   Users,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  UserPlus,
+  Eye,
+  EyeOff,
+  ShieldCheck
 } from "lucide-react";
 import api from "@/api/api";
 import { useToast } from "@/components/ui/custom-toast";
@@ -28,6 +32,18 @@ export default function AdminDepartments() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [adding, setAdding] = useState(false);
   const [newDeptName, setNewDeptName] = useState("");
+
+  // Assign Admin State
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [assigningDept, setAssigningDept] = useState(null);
+  const [assigningAdmin, setAssigningAdmin] = useState(false);
+  const [showAssignPassword, setShowAssignPassword] = useState(false);
+  const [adminForm, setAdminForm] = useState({
+    email: "",
+    password: "",
+    first_name: "",
+    last_name: ""
+  });
 
   const appleFont = "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 
@@ -92,6 +108,48 @@ export default function AdminDepartments() {
     } catch (error) {
       console.error("Failed to delete department:", error);
       toast.error("Failed to delete department. It may have associated students or administrators.");
+    }
+  };
+
+  const openAssignModal = (dept) => {
+    setAssigningDept(dept);
+    setAdminForm({ email: "", password: "", first_name: "", last_name: "" });
+    setShowAssignPassword(false);
+    setShowAssignModal(true);
+  };
+
+  const handleAssignAdmin = async (e) => {
+    e.preventDefault();
+    if (!adminForm.email || !adminForm.password) {
+      toast.error("Email and password are required.");
+      return;
+    }
+    setAssigningAdmin(true);
+    try {
+      await api.post("/auth/register/", {
+        email: adminForm.email,
+        password: adminForm.password,
+        first_name: adminForm.first_name,
+        last_name: adminForm.last_name,
+        role: "ADMIN_DEPT",
+        department_id: assigningDept.id,
+        university_name: assigningDept.university_name
+      });
+      toast.success(`Department admin created for ${assigningDept.name}!`);
+      setShowAssignModal(false);
+      setAssigningDept(null);
+    } catch (error) {
+      console.error("Failed to assign admin:", error);
+      if (error.response?.data) {
+        const msg = typeof error.response.data === "string"
+          ? error.response.data
+          : Object.values(error.response.data).flat().join(" ");
+        toast.error(msg || "Failed to create department admin.");
+      } else {
+        toast.error("Server error while creating department admin.");
+      }
+    } finally {
+      setAssigningAdmin(false);
     }
   };
 
@@ -171,7 +229,8 @@ export default function AdminDepartments() {
                 <tr className="bg-blue-50 dark:bg-zinc-900 border-b border-blue-100 dark:border-zinc-800">
                   <th className="text-[11px] font-bold tracking-wider text-blue-600 dark:text-blue-400 py-3.5 px-6 w-[280px] rounded-tl-xl">Department Name</th>
                   <th className="text-[11px] font-bold tracking-wider text-blue-600 dark:text-blue-400 py-3.5 px-6 w-[200px]">Institution</th>
-                  <th className="text-[11px] font-bold tracking-wider text-blue-600 dark:text-blue-400 py-3.5 px-6 w-[160px] text-center">Students</th>
+                  <th className="text-[11px] font-bold tracking-wider text-blue-600 dark:text-blue-400 py-3.5 px-6 w-[140px] text-center">Students</th>
+                  <th className="text-[11px] font-bold tracking-wider text-blue-600 dark:text-blue-400 py-3.5 px-6 text-center w-[160px]">Dept Admin</th>
                   <th className="text-[11px] font-bold tracking-wider text-blue-600 dark:text-blue-400 py-3.5 px-6 text-right rounded-tr-xl">Actions</th>
                 </tr>
               </thead>
@@ -211,6 +270,15 @@ export default function AdminDepartments() {
                           View
                         </button>
                       </div>
+                    </td>
+                    <td className="py-3 px-6 text-center">
+                      <button
+                        onClick={() => openAssignModal(dept)}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-bold text-violet-600 dark:text-violet-400 bg-violet-50 hover:bg-violet-100 dark:bg-violet-950/20 dark:hover:bg-violet-950/40 transition-colors border border-transparent"
+                      >
+                        <UserPlus className="w-3.5 h-3.5" />
+                        Assign Admin
+                      </button>
                     </td>
                     <td className="py-3 px-6 text-right">
                       <button
@@ -334,9 +402,119 @@ export default function AdminDepartments() {
                   className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[12px] font-bold transition-colors shadow-sm shadow-blue-500/20 flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {adding ? (
-                    <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Creating...</>
+                    <><Loader2 className="w-3.5 h-3.5 animate-spin" />Creating...</>
                   ) : (
                     "Create Department"
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ASSIGN ADMIN MODAL */}
+      {showAssignModal && assigningDept && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl w-full max-w-md shadow-2xl p-6 relative overflow-hidden animate-in zoom-in-95 duration-300" style={{ fontFamily: appleFont }}>
+            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-violet-400 to-violet-600 rounded-t-2xl" />
+
+            <div className="flex items-center gap-3 mt-2 mb-1">
+              <div className="w-10 h-10 rounded-xl bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-800/30 flex items-center justify-center">
+                <UserPlus className="w-5 h-5 text-violet-500 dark:text-violet-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold tracking-tight text-gray-900 dark:text-zinc-50">Assign Department Admin</h3>
+                <p className="text-[12px] font-medium text-gray-500 dark:text-zinc-400">
+                  Create an admin account for <span className="font-bold text-violet-600 dark:text-violet-400">{assigningDept.name}</span>
+                </p>
+              </div>
+            </div>
+
+            {/* Department info badge */}
+            <div className="flex items-center gap-2 mb-5 px-3 py-2 rounded-xl bg-violet-50 dark:bg-violet-950/20 border border-violet-100 dark:border-violet-800/30">
+              <GraduationCap className="w-3.5 h-3.5 text-violet-500 shrink-0" />
+              <span className="text-[11px] font-semibold text-violet-700 dark:text-violet-300">{assigningDept.name}</span>
+              <span className="ml-auto text-[10px] font-mono text-violet-400">ID: {assigningDept.id}</span>
+            </div>
+
+            <form onSubmit={handleAssignAdmin} className="space-y-4">
+              {/* Name row */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-[12px] font-bold text-gray-700 dark:text-zinc-300">First Name</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Ahmed"
+                    value={adminForm.first_name}
+                    onChange={(e) => setAdminForm({ ...adminForm, first_name: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50/50 dark:bg-zinc-900/50 focus:bg-white dark:focus:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 text-[13px] text-gray-900 dark:text-zinc-100 transition-all"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[12px] font-bold text-gray-700 dark:text-zinc-300">Last Name</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Benali"
+                    value={adminForm.last_name}
+                    onChange={(e) => setAdminForm({ ...adminForm, last_name: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50/50 dark:bg-zinc-900/50 focus:bg-white dark:focus:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 text-[13px] text-gray-900 dark:text-zinc-100 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Email */}
+              <div className="space-y-1.5">
+                <label className="text-[12px] font-bold text-gray-700 dark:text-zinc-300">Admin Email <span className="text-rose-500">*</span></label>
+                <input
+                  type="email"
+                  placeholder="e.g. admin.dept@univ.dz"
+                  value={adminForm.email}
+                  onChange={(e) => setAdminForm({ ...adminForm, email: e.target.value })}
+                  required
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50/50 dark:bg-zinc-900/50 focus:bg-white dark:focus:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 text-[13px] text-gray-900 dark:text-zinc-100 transition-all"
+                />
+              </div>
+
+              {/* Password */}
+              <div className="space-y-1.5">
+                <label className="text-[12px] font-bold text-gray-700 dark:text-zinc-300">Password <span className="text-rose-500">*</span></label>
+                <div className="relative">
+                  <input
+                    type={showAssignPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={adminForm.password}
+                    onChange={(e) => setAdminForm({ ...adminForm, password: e.target.value })}
+                    required
+                    className="w-full px-3 py-2 pr-10 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50/50 dark:bg-zinc-900/50 focus:bg-white dark:focus:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 text-[13px] text-gray-900 dark:text-zinc-100 transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowAssignPassword(!showAssignPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-zinc-300"
+                  >
+                    {showAssignPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-zinc-800">
+                <button
+                  type="button"
+                  onClick={() => { setShowAssignModal(false); setAssigningDept(null); }}
+                  className="px-4 py-2 rounded-xl text-[12px] font-bold text-gray-600 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={assigningAdmin}
+                  className="px-5 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-[12px] font-bold transition-colors shadow-sm shadow-violet-500/20 flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {assigningAdmin ? (
+                    <><Loader2 className="w-3.5 h-3.5 animate-spin" />Creating...</>
+                  ) : (
+                    <><ShieldCheck className="w-3.5 h-3.5" />Create Admin</>
                   )}
                 </button>
               </div>
@@ -347,3 +525,4 @@ export default function AdminDepartments() {
     </div>
   );
 }
+
