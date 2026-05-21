@@ -107,7 +107,7 @@ export default function StudentDashboard() {
     },
     {
       title: "Profile Completion",
-      value: "85%",
+      value: `${stats?.profileCompletion ?? 0}%`,
       icon: FileText,
       description: "Based on CV details",
       iconColor: "text-amber-500"

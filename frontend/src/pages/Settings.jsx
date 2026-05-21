@@ -37,6 +37,8 @@ export default function Settings() {
     wilaya: "",
     phone: "",
     department: "",
+    major: "",
+    study_level: "UNDERGRADUATE",
     status_required: "",
     message: "",
     size: "",
@@ -76,6 +78,8 @@ export default function Settings() {
           wilaya: res.data.wilaya || "",
           phone: res.data.phone || "",
           department: res.data.department || "",
+          major: res.data.major || res.data.department || "",
+          study_level: res.data.study_level || "UNDERGRADUATE",
           status_required: res.data.status_required || "",
           message: res.data.message || "",
           size: res.data.size || "",
@@ -159,7 +163,10 @@ export default function Settings() {
         formData.append("university_id", profileData.university_id);
         formData.append("wilaya", profileData.wilaya);
         formData.append("phone", profileData.phone);
-        formData.append("department", profileData.department);
+        formData.append("department", profileData.role === "STUDENT" ? profileData.major : profileData.department);
+        if (profileData.role === "STUDENT") {
+          formData.append("study_level", profileData.study_level || "UNDERGRADUATE");
+        }
       }
 
       if (selectedFile) {
@@ -702,6 +709,25 @@ export default function Settings() {
                               className={`settings-input ${profileData.role === "ADMIN_DEPT" ? "opacity-70 cursor-not-allowed" : ""}`}
                               placeholder="Computer Science, Finance, etc."
                             />
+                          </div>
+                        )}
+
+                        {/* Type Of Student dropdown — students only */}
+                        {profileData.role === "STUDENT" && (
+                          <div>
+                            <label className="settings-label" htmlFor="study_level">Type Of Student</label>
+                            <select
+                              id="study_level"
+                              value={profileData.study_level || "UNDERGRADUATE"}
+                              onChange={(e) => setProfileData({ ...profileData, study_level: e.target.value })}
+                              className="settings-input"
+                              style={{ cursor: "pointer" }}
+                            >
+                              <option value="UNDERGRADUATE">Undergraduate</option>
+                              <option value="MASTERS">Masters</option>
+                              <option value="PHD">PhD</option>
+                              <option value="OTHER">Other</option>
+                            </select>
                           </div>
                         )}
                       </>

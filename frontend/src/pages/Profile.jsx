@@ -429,7 +429,12 @@ export default function Profile() {
                                 </div>
                                 <div>
                                     <div className="grid-label">Type Of Student</div>
-                                    <div className="grid-value">{profile.major || 'Undergraduate'}</div>
+                                    <div className="grid-value">{{
+                                        'UNDERGRADUATE': 'Undergraduate',
+                                        'MASTERS': 'Masters',
+                                        'PHD': 'PhD',
+                                        'OTHER': 'Other'
+                                    }[profile.study_level] || 'Undergraduate'}</div>
                                 </div>
                                 <div>
                                     <div className="grid-label">University Portal ID</div>

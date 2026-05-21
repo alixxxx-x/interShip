@@ -67,6 +67,7 @@ class UserSerializer(serializers.ModelSerializer):
     size = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
     guidelines_handbook = serializers.FileField(required=False, write_only=True, allow_null=True)
     agreement_template = serializers.FileField(required=False, write_only=True, allow_null=True)
+    study_level = serializers.CharField(required=False, write_only=True, allow_blank=True, allow_null=True)
     
     class Meta:
         model = User
@@ -75,7 +76,8 @@ class UserSerializer(serializers.ModelSerializer):
             'first_name', 'last_name', 'is_active', 'university_id', 'wilaya', 'phone',
             'name', 'logo', 'description', 'location', 'website', 'company_field', 'founded_year', 'department',
             'department_id', 'university_name', 'email_domain', 'departments', 'matricule',
-            'status_required', 'message', 'size', 'guidelines_handbook', 'agreement_template'
+            'status_required', 'message', 'size', 'guidelines_handbook', 'agreement_template',
+            'study_level'
         ]
         read_only_fields = ['id']
     def _normalize_domain(self, domain):
@@ -247,8 +249,10 @@ class UserSerializer(serializers.ModelSerializer):
                 data['phone'] = student.phone
                 data['department_id'] = student.department_id
                 data['department'] = student.department.name if student.department_id else None
+                data['major'] = student.department.name if student.department_id else None
                 data['university_name'] = student.department.university.name if student.department_id else None
                 data['email_domain'] = student.department.university.email_domain if student.department_id else None
+                data['study_level'] = student.study_level or 'UNDERGRADUATE'
 
                 if hasattr(student, 'digital_cv'):
                     data['has_cv'] = True
@@ -422,6 +426,8 @@ class UserSerializer(serializers.ModelSerializer):
                 student.wilaya = validated_data.get('wilaya')
             if 'phone' in validated_data:
                 student.phone = validated_data.get('phone')
+            if 'study_level' in validated_data:
+                student.study_level = validated_data.get('study_level')
             department = validated_data.pop('_resolved_department', None)
             if not department:
                 department = self._resolve_department(
@@ -701,20 +707,9 @@ class InternshipSerializer(serializers.ModelSerializer):
         if request and request.user.is_authenticated and request.user.role == User.Role.STUDENT:
             student = getattr(request.user, 'student', None)
             if student:
-                from .services import calculate_skills_match, calculate_location_score
-                student_skills_str = ""
-                student_wilaya = student.wilaya or ""
-                if hasattr(student, 'digital_cv') and student.digital_cv:
-                    student_skills_str = student.digital_cv.skills or ""
-                    if student.digital_cv.wilaya:
-                        student_wilaya = student.digital_cv.wilaya
-
-                skills_score = calculate_skills_match(student_skills_str, obj.internship_skills)
-                location_score = calculate_location_score(student_wilaya, obj.wilaya, obj.internship_location)
+                from .services import calculate_unified_relevance_score
                 is_followed = CompanyFollow.objects.filter(student=student, company_id=obj.company_id).exists()
-                follow_score = 30.0 if is_followed else 0.0
-
-                return round(skills_score + location_score + follow_score, 1)
+                return calculate_unified_relevance_score(student, obj, is_followed)
         return None
 
     def get_accepted_count(self, obj):

@@ -43,6 +43,30 @@ const SUGGESTED_LANGUAGES = [
   "English", "Arabic", "French", "Spanish", "German", "Portuguese", "Italian"
 ];
 
+const formatExtractedText = (val) => {
+  if (!val) return "";
+  if (typeof val === "string") return val;
+  if (Array.isArray(val)) {
+    return val.map(item => {
+      if (typeof item === "string") return item;
+      if (typeof item === "object" && item !== null) {
+        return Object.entries(item)
+          .filter(([_, v]) => v)
+          .map(([k, v]) => `${k.charAt(0).toUpperCase() + k.slice(1)}: ${v}`)
+          .join("\n");
+      }
+      return String(item);
+    }).join("\n\n");
+  }
+  if (typeof val === "object" && val !== null) {
+    return Object.entries(val)
+      .filter(([_, v]) => v)
+      .map(([k, v]) => `${k.charAt(0).toUpperCase() + k.slice(1)}: ${v}`)
+      .join("\n");
+  }
+  return String(val);
+};
+
 export default function CreateCvModal({
   open,
   onOpenChange,
@@ -242,14 +266,14 @@ export default function CreateCvModal({
         setFormData((prev) => ({
           ...prev,
           email: extracted.email || prev.email,
-          phone_number: extracted.phone || prev.phone_number,
-          first_name: extracted.first_name || prev.first_name,
-          last_name: extracted.last_name || prev.last_name,
+          phone_number: String(extracted.phone || prev.phone_number || "").substring(0, 20),
+          first_name: String(extracted.first_name || prev.first_name || "").substring(0, 100),
+          last_name: String(extracted.last_name || prev.last_name || "").substring(0, 100),
           github_link: extracted.github || prev.github_link,
           portfolio_link: extracted.linkedin || prev.portfolio_link,
-          profile_summary: extracted.profile_summary || prev.profile_summary,
-          any_experience: extracted.experience || prev.any_experience,
-          education: extracted.education || prev.education,
+          profile_summary: formatExtractedText(extracted.profile_summary) || prev.profile_summary,
+          any_experience: formatExtractedText(extracted.experience) || prev.any_experience,
+          education: formatExtractedText(extracted.education) || prev.education,
           skills: Array.isArray(extracted.skills)
             ? Array.from(new Set([...(prev.skills || []), ...extracted.skills]))
             : prev.skills,

@@ -58,18 +58,30 @@ def haversine_distance(coord1, coord2):
     R = 6371.0  # Earth's radius in kilometers
     return R * c
 
-def calculate_skills_match(student_skills_str, internship_skills_str):
-    if not internship_skills_str:
-        return 40.0
+def calculate_skills_match(student_skills_str, internship_skills_str, internship_title="", internship_description=""):
     if not student_skills_str:
         return 0.0
-    
-    # Split skills by comma, semicolon, or newline and clean them
+        
     student_skills = set(s.strip().lower() for s in re.split(r'[,;\n]', student_skills_str) if s.strip())
+    
+    if not internship_skills_str:
+        # Fallback: search student's skills in description and title
+        text_to_search = f"{(internship_title or '')} {(internship_description or '')}".lower()
+        matched = 0
+        for skill in student_skills:
+            if len(skill) > 1:
+                pattern = r'\b' + re.escape(skill) + r'\b'
+                if re.search(pattern, text_to_search):
+                    matched += 1
+        if matched > 0:
+            return min(matched * 5.0, 20.0)
+        return 5.0  # low baseline instead of 40.0
+        
+    # Split skills by comma, semicolon, or newline and clean them
     internship_skills = [s.strip().lower() for s in re.split(r'[,;\n]', internship_skills_str) if s.strip()]
     
     if not internship_skills:
-        return 40.0
+        return 5.0
         
     matched = 0
     for req_skill in internship_skills:
@@ -83,6 +95,62 @@ def calculate_skills_match(student_skills_str, internship_skills_str):
                     break
                     
     return (matched / len(internship_skills)) * 40.0
+
+def calculate_department_match(department_name, internship_title, company_field=None):
+    if not department_name or not internship_title:
+        return 5.0  # default baseline
+
+    dept_lower = department_name.lower()
+    title_lower = internship_title.lower()
+    field_lower = (company_field or "").lower()
+
+    # Category flags
+    is_tech = any(kw in dept_lower for kw in ["informatique", "ntic", "computer", "software", "tech", "web", "génie logiciel", "systeme", "réseau", "isil", "si"])
+    is_math = any(kw in dept_lower for kw in ["math", "stat", "actuariat"])
+    is_business = any(kw in dept_lower for kw in ["économ", "econom", "finance", "droit", "commerce", "gestion", "business", "marketing"])
+
+    if is_tech:
+        tech_kws = ["web", "developer", "developpeur", "ai", "cloud", "mobile", "network", "security", "data", "software", "embedded", "computer", "system", "it", "code", "cyber", "fullstack", "frontend", "backend", "conception"]
+        if any(kw in title_lower for kw in tech_kws) or any(kw in field_lower for kw in ["tech", "telecom", "internet", "software", "consulting"]):
+            return 20.0
+        return 10.0
+
+    if is_math:
+        math_kws = ["data", "analyst", "ai", "research", "stat", "finance", "actuarial", "quant", "model", "embed"]
+        if any(kw in title_lower for kw in math_kws):
+            return 20.0
+        return 10.0
+
+    if is_business:
+        business_kws = ["finance", "account", "comptabilité", "marketing", "business", "sales", "vente", "analyst", "management", "hr", "rh", "law", "juridique", "droit", "admin"]
+        if any(kw in title_lower for kw in business_kws):
+            return 20.0
+        return 10.0
+
+    return 10.0  # fallback
+
+def calculate_keyword_overlap(student_skills_str, student_summary_str, internship_title, internship_description):
+    score = 0.0
+    text_to_search = f"{(internship_title or '')} {(internship_description or '')}".lower()
+    
+    # Check skill direct occurrences
+    skills = [s.strip().lower() for s in re.split(r'[,;\n]', student_skills_str or "") if s.strip()]
+    for skill in skills:
+        if len(skill) > 1:
+            pattern = r'\b' + re.escape(skill) + r'\b'
+            if re.search(pattern, text_to_search):
+                score += 2.0  # 2 points per skill keyword matched
+                
+    # Check summary words
+    summary_words = set(re.findall(r'\b[a-zA-Z]{3,}\b', (student_summary_str or "").lower()))
+    stop_words = {"the", "and", "for", "with", "this", "that", "from", "are", "was", "were", "been", "have", "has", "had", "will", "would"}
+    clean_words = summary_words - stop_words
+    
+    for word in clean_words:
+        if word in text_to_search:
+            score += 0.5
+            
+    return min(score, 10.0)
 
 def calculate_location_score(student_wilaya, internship_wilaya, internship_location=None):
     if internship_location == 'REMOTE':
@@ -114,6 +182,52 @@ def calculate_location_score(student_wilaya, internship_wilaya, internship_locat
             return 5.0
             
     return 15.0  # Fallback average score
+
+def calculate_unified_relevance_score(student, internship, is_followed=False):
+    # Fetch student skills & wilaya
+    student_skills_str = ""
+    student_summary = ""
+    student_wilaya = student.wilaya or ""
+    
+    if hasattr(student, 'digital_cv') and student.digital_cv:
+        student_skills_str = student.digital_cv.skills or ""
+        student_summary = student.digital_cv.profile_summary or ""
+        if student.digital_cv.wilaya:
+            student_wilaya = student.digital_cv.wilaya
+            
+    # 1. Skills match (max 40)
+    skills_score = calculate_skills_match(
+        student_skills_str, 
+        internship.internship_skills,
+        internship.title,
+        internship.description
+    )
+    
+    # 2. Location score (max 20, scaled from 30)
+    raw_location_score = calculate_location_score(student_wilaya, internship.wilaya, internship.internship_location)
+    location_score = (raw_location_score / 30.0) * 20.0
+    
+    # 3. Department alignment score (max 20)
+    dept_score = calculate_department_match(
+        student.department.name if student.department_id else "",
+        internship.title,
+        internship.company.company_field if internship.company else ""
+    )
+    
+    # 4. Keyword overlap score (max 10)
+    overlap_score = calculate_keyword_overlap(
+        student_skills_str,
+        student_summary,
+        internship.title,
+        internship.description
+    )
+    
+    # 5. Follow score (max 10)
+    follow_score = 10.0 if is_followed else 0.0
+    
+    # Combined Relevance Score (max 100)
+    relevance_score = round(skills_score + location_score + dept_score + overlap_score + follow_score, 1)
+    return relevance_score
 
 def update_finished_internships():
     """

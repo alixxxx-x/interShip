@@ -417,7 +417,7 @@ class InternshipListView(generics.ListAPIView):
         if user.is_authenticated and user.role == User.Role.STUDENT:
             student = getattr(user, 'student', None)
             if student:
-                from .services import calculate_skills_match, calculate_location_score
+                from .services import calculate_unified_relevance_score
                 
                 # Pre-fetch follows to optimize database queries
                 followed_company_ids = set(
@@ -425,27 +425,10 @@ class InternshipListView(generics.ListAPIView):
                     .values_list('company_id', flat=True)
                 )
                 
-                # Fetch student's CV skills and wilaya
-                student_skills_str = ""
-                student_wilaya = student.wilaya or ""
-                if hasattr(student, 'digital_cv') and student.digital_cv:
-                    student_skills_str = student.digital_cv.skills or ""
-                    if student.digital_cv.wilaya:
-                        student_wilaya = student.digital_cv.wilaya
-                
                 scored_internships = []
                 for internship in queryset:
-                    # 1. Skills Match (40%)
-                    skills_score = calculate_skills_match(student_skills_str, internship.internship_skills)
-                    
-                    # 2. Location Proximity (30%)
-                    location_score = calculate_location_score(student_wilaya, internship.wilaya, internship.internship_location)
-                    
-                    # 3. Follow Company Status (30%)
                     is_followed = internship.company_id in followed_company_ids
-                    follow_score = 30.0 if is_followed else 0.0
-                    
-                    relevance_score = round(skills_score + location_score + follow_score, 1)
+                    relevance_score = calculate_unified_relevance_score(student, internship, is_followed)
                     internship.relevance_score = relevance_score
                     scored_internships.append(internship)
                 
@@ -769,10 +752,33 @@ class StudentDashboardView(generics.GenericAPIView):
         student = getattr(request.user, 'student', None)
         applications = Application.objects.filter(student=student)
         
+        # Calculate profile completion from CV fields
+        profile_completion = 0
+        try:
+            cv = DigitalCV.objects.filter(student=student).first() if student else None
+        except Exception:
+            cv = None
+        if cv:
+            # Define fields and their weights (total = 100)
+            field_checks = [
+                (bool(cv.first_name and cv.first_name.strip()), 10),
+                (bool(cv.last_name and cv.last_name.strip()), 10),
+                (bool(cv.email and cv.email.strip()), 10),
+                (bool(cv.phone and cv.phone.strip()), 5),
+                (bool(cv.profile_summary and cv.profile_summary.strip()), 15),
+                (bool(cv.education and cv.education.strip()), 15),
+                (bool(cv.skills and cv.skills.strip() and cv.skills.strip() != '[]'), 15),
+                (bool(cv.experience and cv.experience.strip()), 10),
+                (bool(cv.languages and cv.languages.strip() and cv.languages.strip() != '[]'), 5),
+                (bool(cv.address and cv.address.strip()), 5),
+            ]
+            profile_completion = sum(weight for filled, weight in field_checks if filled)
+
         stats = {
             "pendingAplications": applications.filter(status=Application.Status.PENDING).count(),
             "acceptedApplications": applications.filter(status__in=[Application.Status.VALIDATED, Application.Status.COMPLETE]).count(),
             "totalApplications": applications.count(),
+            "profileCompletion": profile_completion,
         }
         
         # Recent applications (limit to 5)
