@@ -5,27 +5,26 @@
 
 PROJECT IDENTITY
 ----------------
-Name          : interShip! (also branded as "Stag.Io" and "Inter.Ship")
+Name          : Internia
 Type          : Full-Stack Web Application — Final Graduation Project
-Academic Unit : L3TI Workshop, Academic Year 2025–2026
-Authors       : Alix, Meissa, Aymen (Computer Science Students)
-Repository    : c:\Users\THinKpad\Documents\GitHub\interShip
+Academic Unit : L3 TI Workshop, Academic Year 2025–2026
+Authors       : Ali, Roumeissa, Aymen 
 
 PURPOSE & DESCRIPTION
 ---------------------
-interShip! is a University-Enterprise Internship Management Platform designed to
+Internia! is a University-Enterprise Internship Management Platform designed to
 fully digitize and automate the internship placement process in Algeria.
 
 It connects three main actors:
   1. Students   — Apply for internships using a digital CV
   2. Companies  — Post offers and manage candidate pipelines
-  3. Admins     — Validate placements and auto-generate official "Convention de Stage" PDFs
+  3. Admins     — Validate placements and auto-generate official PDFs
 
 The system supports full lifecycle management:
   Offer Creation → Student Application → Company Review →
   Admin Validation → Automatic PDF Agreement Generation (Convention de Stage)
 
-Students MUST register using an @univ.dz university email.
+Students MUST register using a professional university email.
 
 ================================================================================
   TECH STACK
@@ -47,6 +46,7 @@ File Storage  : Local media/ directory (Pillow for image handling)
 PDF Generation: ReportLab (reportlab) — used for:
                 - "Convention de Stage" (Internship Agreement)
                 - Student CV generation (formatted A4 PDF)
+                - Certificate generation
 AI Chatbot    : Google Gemini AI (google-genai SDK)
                 - Model: gemini-2.0-flash
                 - System instruction tuned for internship platform context
