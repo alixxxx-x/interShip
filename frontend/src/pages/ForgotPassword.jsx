@@ -143,7 +143,7 @@ function ForgotPasswordModal({ isOpen, onClose }) {
         setErrors({});
         setLoading(true);
         try {
-            await axios.post("http://127.0.0.1:8000/api/auth/forgot-password/", { email });
+            await api.post("/auth/forgot-password/", { email });
             setStep(1);
             startResendTimer();
         } catch (error) {
@@ -185,7 +185,7 @@ function ForgotPasswordModal({ isOpen, onClose }) {
         setErrors({});
         setLoading(true);
         try {
-            await axios.post("http://127.0.0.1:8000/api/auth/verify-reset-code/", { email, code });
+            await api.post("/auth/verify-reset-code/", { email, code });
             setStep(2);
         } catch (error) { 
             const msg = error.response?.data?.error || t("invalidCode");
@@ -206,7 +206,7 @@ function ForgotPasswordModal({ isOpen, onClose }) {
         setErrors({});
         setLoading(true);
         try {
-            await axios.post("http://127.0.0.1:8000/api/auth/reset-password/", { email, code: otp.join(""), new_password: newPassword });
+            await api.post("/auth/reset-password/", { email, code: otp.join(""), new_password: newPassword });
             setStep(3);
         } catch { setErrors({ newPassword: t("failedToReset") }); }
         finally { setLoading(false); }

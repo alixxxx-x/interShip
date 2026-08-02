@@ -3,8 +3,11 @@
 import axios from "axios";
 import { ACCESS_TOKEN, REFRESH_TOKEN } from "@/constants";
 
+const DEFAULT_API_BASE_URL = "http://127.0.0.1:8000/api";
+const apiBaseUrl = import.meta.env.VITE_API_URL || DEFAULT_API_BASE_URL;
+
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL, // bch mndirouch koul mara [axios.get('http://localhost:8000/users')] nwilw direct [api.get('/users')] 
+    baseURL: apiBaseUrl,
 });
 
 // request intercepter : function that runs before every request + yjib access token mn local storage + y7otou fl header automatically
@@ -37,7 +40,7 @@ api.interceptors.response.use(
 
             try {
                 const res = await axios.post(     // we use axios. and not api. to avoid infinite loops api keeps calling its interceptor infinitely
-                    `${import.meta.env.VITE_API_URL}/auth/refresh/`,
+                    `${apiBaseUrl}/auth/refresh/`,
                     { refresh: refreshToken }
                 );
 

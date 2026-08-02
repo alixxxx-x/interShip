@@ -12,7 +12,7 @@ from .models import *
 from .serializers import *
 from .permissions import *
 # gemini ai
-from google import genai
+#from google import genai
 from django.conf import settings
 from rest_framework import status
 import json
@@ -65,7 +65,7 @@ class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
 
 # Initialize Gemini Client
-client = genai.Client(api_key=settings.GEMINI_API_KEY)
+#client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
 SYSTEM_INSTRUCTION = """
     You are a helpful AI assistant for a University-Enterprise internship matching platform. 
@@ -80,48 +80,16 @@ SYSTEM_INSTRUCTION = """
 """
 
 class ChatbotView(APIView):
-    permission_classes = [AllowAny]  # anyone can ask questions, even without logging in
+    permission_classes = [AllowAny]
 
     def post(self, request):
-        try:
-            user_question = request.data.get('question', '').strip()
-            chat_history = request.data.get('chat_history', [])
-
-            if not user_question:
-                return Response(
-                    {'error': 'No question provided'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            #Prepare history for Gemini
-            history = []
-            for msg in chat_history:
-                history.append({
-                    "role": "user" if msg.get("role") == "user" else "model",
-                    "parts": [{"text": msg.get("text", "")}]
-                })
-
-            #Gemini request
-            response = client.models.generate_content(
-                model='gemini-2.0-flash',
-                config={'system_instruction': SYSTEM_INSTRUCTION},
-                contents=history + [{
-                    "role": "user",
-                    "parts": [{"text": user_question}]
-                }]
-            )
-
-            return Response({
-                'success': True,
-                'response': response.text
-            })
-
-        except Exception as e:
-            print(f"Error in chatbot: {str(e)}")
-            return Response(
-                {'error': str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+        return Response(
+            {
+                "success": False,
+                "message": "Chatbot is temporarily disabled."
+            },
+            status=status.HTTP_503_SERVICE_UNAVAILABLE
+        )
 
 # Authentication Views
 

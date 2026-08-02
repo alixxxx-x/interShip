@@ -107,7 +107,8 @@ export default function CreateCvModal({
     if (typeof maybeRelativeUrl !== "string") return null;
     if (maybeRelativeUrl.startsWith("http://") || maybeRelativeUrl.startsWith("https://")) return maybeRelativeUrl;
 
-    const origin = new URL(import.meta.env.VITE_API_URL).origin;
+    const apiBaseUrl = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api";
+    const origin = new URL(apiBaseUrl).origin;
     if (maybeRelativeUrl.startsWith("/")) return `${origin}${maybeRelativeUrl}`;
     return `${origin}/${maybeRelativeUrl}`;
   };
