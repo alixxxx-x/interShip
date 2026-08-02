@@ -253,9 +253,14 @@ def seed_database():
     print("Deleted old internship offers.")
 
     internships = []
+    statuses = [
+        InternshipOffer.Status.OPEN_FOR_APPLICATION,
+        InternshipOffer.Status.ONGOING,
+        InternshipOffer.Status.FINISHED
+    ]
     for company in companies:
-        # Create one ONSITE and one REMOTE/HYBRID internship per company with realistic skills
-        for i in range(3):  # Let's create 3 offers per company
+        # Create one ONSITE/REMOTE/HYBRID internship per company with realistic skills and different statuses
+        for i, status in enumerate(statuses):
             title = titles[(companies.index(company) * 3 + i) % len(titles)]
             location_type = random.choice([
                 InternshipOffer.InternshipLocation.ONSITE,
@@ -269,11 +274,11 @@ def seed_database():
                 description=f"Join {company.name} as a {title}. You will work on real-world projects and gain valuable experience in the {company.company_field} industry.",
                 company=company,
                 internship_location=location_type,
-                status=InternshipOffer.Status.OPEN_FOR_APPLICATION,
+                status=status,
                 internship_type=random.choice(InternshipOffer.InternshipType.choices)[0],
                 internship_structure=InternshipOffer.InternshipStructure.FOR_CREDIT,
-                offer_start_date=date.today() + timedelta(days=7),
-                offer_end_date=date.today() + timedelta(days=90),
+                offer_start_date=date.today() - timedelta(days=30) if status != InternshipOffer.Status.OPEN_FOR_APPLICATION else date.today() + timedelta(days=7),
+                offer_end_date=date.today() + timedelta(days=60) if status == InternshipOffer.Status.ONGOING else (date.today() - timedelta(days=5) if status == InternshipOffer.Status.FINISHED else date.today() + timedelta(days=90)),
                 number_of_places=random.randint(2, 5),
                 internship_duration=timedelta(days=random.randint(30, 120)),
                 internship_salary=random.randint(5000, 20000),
@@ -281,7 +286,7 @@ def seed_database():
                 wilaya=wilaya
             )
             internships.append(internship)
-            print(f"Internship created: {internship.title} (Location: {internship.internship_location}, Wilaya: {internship.wilaya}, Skills: {internship.internship_skills})")
+            print(f"Internship created: {internship.title} (Location: {internship.internship_location}, Wilaya: {internship.wilaya}, Skills: {internship.internship_skills}, Status: {status})")
 
     # 5. Create Applications
     for student in students:

@@ -83,6 +83,7 @@ export default function CreateCvModal({
       phone_number: "",
       email: "",
       address: "",
+      linkedin: "",
       github_link: "",
       portfolio_link: "",
       education: "",
@@ -253,7 +254,7 @@ export default function CreateCvModal({
 
       // Call the FastAPI OCR parsing endpoint (make sure your fastAPI is running on port 8001)
       const fastApiUrl = "http://localhost:8001/api/cv/parse";
-      
+
       const response = await fetch(fastApiUrl, {
         method: "POST",
         body: formDataUpload,
@@ -278,7 +279,7 @@ export default function CreateCvModal({
             ? Array.from(new Set([...(prev.skills || []), ...extracted.skills]))
             : prev.skills,
         }));
-        
+
         toast.success("CV prefilled successfully via AI!");
       } else {
         const errorData = await response.json();

@@ -1,9 +1,0 @@
-axios
-react-router-dom
-jwt-decode
-tailwindcss
-postcss
-autoprefixer
-@tailwindcss/postcss
-lucide-react
-tailwindcss-animate

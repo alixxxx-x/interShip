@@ -173,7 +173,7 @@ export default function MyApplications() {
                   const offerId = application.internship;
                   const isAdminRejected = statusRaw === "REJECTED" && !!application.admin_rejection_date;
 
-                  let currentStep = 1;
+                  let currentStep = 2;
                   if (statusRaw === "ACCEPTED") currentStep = 3;
                   if (statusRaw === "VALIDATED" || statusRaw === "COMPLETE" || application.is_validated_by_admin) currentStep = 4;
                   if (statusRaw === "REJECTED" || statusRaw === "CANCELLED") {

@@ -77,6 +77,7 @@ urlpatterns = [
     path('admin/companies/pending/', AdminPendingCompaniesView.as_view(), name='admin-pending-companies'),
     path('admin/companies/<int:pk>/accept/', AdminAcceptCompanyView.as_view(), name='admin-accept-company'),
     path('admin/companies/<int:pk>/reject/', AdminRejectCompanyView.as_view(), name='admin-reject-company'),
+    path('admin/matricules/generate/', AdminGenerateMatriculeView.as_view(), name='admin-generate-matricule'),
 
 
     # Messaging
