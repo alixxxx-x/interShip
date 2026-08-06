@@ -201,7 +201,7 @@ export function AppSidebar({ ...props }) {
           isActive: location.pathname.startsWith("/studentdashboard/MyApplications"),
         },
         {
-          title: "Track Internships",
+          title: t("trackInternships"),
           url: "/studentdashboard/TrackInternships",
           icon: CheckCircle,
           isActive: location.pathname.startsWith("/studentdashboard/TrackInternships"),
@@ -253,13 +253,13 @@ export function AppSidebar({ ...props }) {
               ],
             },
             {
-              title: "Universities",
+              title: t("universities"),
               url: "/superadmindashboard/universities",
               icon: GraduationCap,
               isActive: location.pathname.startsWith("/superadmindashboard/universities"),
             },
             {
-              title: "Pending Companies",
+              title: t("pendingCompanies"),
               url: "/superadmindashboard/companies",
               icon: ShieldAlert,
               isActive: location.pathname.startsWith("/superadmindashboard/companies"),
@@ -271,15 +271,15 @@ export function AppSidebar({ ...props }) {
               isActive: location.pathname.startsWith("/superadmindashboard/users"),
               items: [
                 {
-                  title: "Student",
+                  title: t("student"),
                   url: "/superadmindashboard/users?role=STUDENT",
                 },
                 {
-                  title: "Company",
+                  title: t("company"),
                   url: "/superadmindashboard/users?role=COMPANY",
                 },
                 {
-                  title: "University",
+                  title: t("university"),
                   url: "/superadmindashboard/users?role=ADMIN_UNIV",
                 },
               ],
@@ -304,13 +304,13 @@ export function AppSidebar({ ...props }) {
               ],
             },
             {
-              title: "Companies",
+              title: t("companies"),
               url: "/adminunivdashboard/companies",
               icon: Building2,
               isActive: location.pathname.startsWith("/adminunivdashboard/companies"),
             },
             {
-              title: "Departments",
+              title: t("departments"),
               url: "/adminunivdashboard/departments",
               icon: GraduationCap,
               isActive: location.pathname.startsWith("/adminunivdashboard/departments"),
@@ -400,7 +400,7 @@ export function AppSidebar({ ...props }) {
           icon: Users,
         },
         {
-          title: "Track Internships",
+          title: t("trackInternships"),
           url: "/companydashboard/TrackInternships",
           icon: CheckCircle,
         },

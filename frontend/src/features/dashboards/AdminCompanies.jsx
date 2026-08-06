@@ -4,25 +4,19 @@ import {
   MapPin,
   Globe,
   Search,
-  MoreHorizontal,
-  Archive,
-  UserCheck,
-  UserX,
   MessageSquare,
   Check,
   X,
-  Copy,
-  ShieldCheck,
-  Loader2,
-  AlertCircle,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Copy,
+  Loader2
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import api from "@/api/api";
 import ChatModal from "./ChatModal";
 import { useToast } from "@/components/ui/custom-toast";
 import LoadingScreen from "@/components/ui/LoadingScreen";
+import { Button } from "@/components/ui/button";
 
 export default function AdminCompanies() {
   const toast = useToast();
@@ -60,15 +54,6 @@ export default function AdminCompanies() {
 
   const appleFont = "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 
-  // Close menu on outside click
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (!e.target.closest(".menu-container")) setOpenMenuId(null);
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
   const fetchCompanies = async () => {
     try {
       setLoading(true);
@@ -94,19 +79,6 @@ export default function AdminCompanies() {
   useEffect(() => {
     setCurrentPage(1);
   }, [search, entriesPerPage]);
-
-  const handleToggleStatus = async (company) => {
-    try {
-      const newStatus = !company.is_active;
-      setCompanies(prev => prev.map(c => c.id === company.id ? { ...c, is_active: newStatus } : c));
-      await api.patch(`/users/${company.id}/`, { is_active: newStatus });
-      toast.success(`${company.name} status updated.`);
-    } catch (error) {
-      console.error("Failed to toggle status:", error);
-      setCompanies(prev => prev.map(c => c.id === company.id ? { ...c, is_active: company.is_active } : c));
-      toast.error("Failed to update company status.");
-    }
-  };
 
   const handleAcceptCompany = async (company) => {
     try {
@@ -211,11 +183,13 @@ export default function AdminCompanies() {
             <table className="w-full table-fixed border-collapse text-left">
               <thead>
                 <tr className="bg-blue-50 dark:bg-zinc-900 border-b border-blue-100 dark:border-zinc-800">
-                  <th className="text-[11px] font-bold tracking-wider text-blue-600 dark:text-blue-400 py-3.5 px-6 w-[280px] rounded-tl-xl">Organization</th>
-                  <th className="text-[11px] font-bold tracking-wider text-blue-600 dark:text-blue-400 py-3.5 px-6 w-[160px]">Sector</th>
-                  <th className="text-[11px] font-bold tracking-wider text-blue-600 dark:text-blue-400 py-3.5 px-6 w-[160px]">Location</th>
-                  <th className="text-[11px] font-bold tracking-wider text-blue-600 dark:text-blue-400 py-3.5 px-6 w-[140px]">Status</th>
-                  <th className="text-[11px] font-bold tracking-wider text-blue-600 dark:text-blue-400 py-3.5 px-6 text-right rounded-tr-xl">Actions</th>
+                  <th className={`text-[11px] font-bold tracking-wider text-blue-600 dark:text-blue-400 py-3.5 px-6 rounded-tl-xl ${isSuperAdmin ? 'w-[32%]' : 'w-[40%]'}`}>Organization</th>
+                  <th className={`text-[11px] font-bold tracking-wider text-blue-600 dark:text-blue-400 py-3.5 px-6 ${isSuperAdmin ? 'w-[18%]' : 'w-[20%]'}`}>Sector</th>
+                  <th className={`text-[11px] font-bold tracking-wider text-blue-600 dark:text-blue-400 py-3.5 px-6 ${isSuperAdmin ? 'w-[20%]' : 'w-[22%]'}`}>Location</th>
+                  <th className={`text-[11px] font-bold tracking-wider text-blue-600 dark:text-blue-400 py-3.5 px-6 ${isSuperAdmin ? 'w-[15%]' : 'w-[18%] rounded-tr-xl'}`}>Status</th>
+                  {isSuperAdmin && (
+                    <th className="text-[11px] font-bold tracking-wider text-blue-600 dark:text-blue-400 py-3.5 px-6 text-right rounded-tr-xl w-[15%]">Actions</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -295,8 +269,8 @@ export default function AdminCompanies() {
                     </td>
 
                     {/* Actions */}
-                    <td className="py-3 px-6 text-right">
-                      {isSuperAdmin ? (
+                    {isSuperAdmin && (
+                      <td className="py-3 px-6 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => { setActiveRecipient(company); setChatOpen(true); }}
@@ -318,51 +292,8 @@ export default function AdminCompanies() {
                             <Check className="w-3.5 h-3.5" /> Approve
                           </button>
                         </div>
-                      ) : (
-                        <div className="relative menu-container flex items-center justify-end">
-                          <button
-                            onClick={() => setOpenMenuId(openMenuId === company.id ? null : company.id)}
-                            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-400 hover:text-gray-600 dark:text-zinc-500 dark:hover:text-zinc-300 transition-colors"
-                          >
-                            <MoreHorizontal className="w-4 h-4" />
-                          </button>
-                          {openMenuId === company.id && (
-                            <div className="absolute right-0 top-8 z-50 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700/80 rounded-xl shadow-lg overflow-hidden min-w-[160px] py-1">
-                              <div className="px-3 py-1.5 text-[9px] font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-wider">
-                                Company Controls
-                              </div>
-                              <button
-                                onClick={() => { handleToggleStatus(company); setOpenMenuId(null); }}
-                                className={`flex items-center gap-2 w-full px-3 py-2 text-[11px] font-semibold transition-colors ${
-                                  company.is_active
-                                    ? "text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30"
-                                    : "text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
-                                }`}
-                              >
-                                {company.is_active ? <UserX className="w-3.5 h-3.5" /> : <UserCheck className="w-3.5 h-3.5" />}
-                                {company.is_active ? "Deactivate Partner" : "Activate Partner"}
-                              </button>
-                              <div className="my-1 border-t border-gray-100 dark:border-zinc-800" />
-                              <button
-                                onClick={() => { setActiveRecipient(company); setChatOpen(true); setOpenMenuId(null); }}
-                                className="flex items-center gap-2 w-full px-3 py-2 text-[11px] font-semibold text-gray-700 dark:text-zinc-200 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors"
-                              >
-                                <MessageSquare className="w-3.5 h-3.5 text-blue-500" />
-                                Direct Chat
-                              </button>
-                              <div className="my-1 border-t border-gray-100 dark:border-zinc-800" />
-                              <button
-                                onClick={() => { handleToggleStatus(company); setOpenMenuId(null); }}
-                                className="flex items-center gap-2 w-full px-3 py-2 text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors"
-                              >
-                                <Archive className="w-3.5 h-3.5" />
-                                Archive Organization
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </td>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

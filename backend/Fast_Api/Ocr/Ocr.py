@@ -27,8 +27,11 @@ except ImportError:
     openai = None
 
 from apis.models import DigitalCV, Student
+from Fast_Api.routes.chat_routes import chat_router
 
-app = FastAPI(title="CV OCR API")
+app = FastAPI(title="CV OCR & Chat API")
+
+app.include_router(chat_router)
 
 app.add_middleware(
     CORSMiddleware,

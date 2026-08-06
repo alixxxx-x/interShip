@@ -104,10 +104,24 @@ class Department(models.Model):
         return f"{self.name} ({self.university.name})"
 
 class Student(User):
+
+    class StudyLevel(models.TextChoices):
+        UNDERGRADUATE = 'UNDERGRADUATE', 'Undergraduate'
+        MASTERS = 'MASTERS', 'Masters'
+        PHD = 'PHD', 'PhD'
+        OTHER = 'OTHER', 'Other'
+
     university_id = models.CharField(max_length=50, blank=True, null=True)
     wilaya = models.CharField(max_length=100, blank=True, null=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
-    department = models.ForeignKey('Department', on_delete=models.PROTECT, related_name='students')
+    department = models.ForeignKey('Department', on_delete=models.PROTECT, related_name='students', null=True, blank=True)
+    study_level = models.CharField(
+        max_length=20,
+        choices=StudyLevel.choices,
+        default=StudyLevel.UNDERGRADUATE,
+        blank=True,
+        null=True
+    )
 
     @property
     def university_name(self):
@@ -260,7 +274,7 @@ class DigitalCV(models.Model):
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     email = models.EmailField()
-    phone = models.CharField(max_length=20)
+    phone = models.CharField(max_length=20, blank=True, null=True)
     linkedin = models.URLField(blank=True, null=True)
     github = models.URLField(blank=True, null=True)
     portfolio_link = models.URLField(blank=True, null=True)

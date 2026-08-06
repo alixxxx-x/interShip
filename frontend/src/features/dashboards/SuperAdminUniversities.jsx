@@ -80,7 +80,7 @@ export default function SuperAdminUniversities() {
     try {
       const departments = formData.departmentsText
         ? formData.departmentsText.split(",").map(d => d.trim()).filter(Boolean)
-        : ["Informatique", "Mathématiques", "Économie"];
+        : [];
 
       const payload = {
         email: formData.email,

@@ -28,7 +28,7 @@ export default function Internships() {
   const [liked, setLiked] = useState(new Set());
   const [wSearch, setWSearch] = useState("");
   const [wOpen, setWOpen] = useState(false);
-  const [minMonths, setMinMonths] = useState(1);
+  const [minMonths, setMinMonths] = useState(0);
   const [maxMonths, setMaxMonths] = useState(12);
   const [sortBy, setSortBy] = useState("default");
   const [sortOpen, setSortOpen] = useState(false);
@@ -38,13 +38,13 @@ export default function Internships() {
   const handleUnitChange = (unit) => {
     setTimeUnit(unit);
     if (unit === "months") {
-      setMinMonths(1);
+      setMinMonths(0);
       setMaxMonths(12);
     } else if (unit === "weeks") {
-      setMinMonths(1);
+      setMinMonths(0);
       setMaxMonths(24);
     } else if (unit === "days") {
-      setMinMonths(1);
+      setMinMonths(0);
       setMaxMonths(90);
     }
   };
@@ -169,18 +169,18 @@ export default function Internships() {
 
   // Custom unit pill
   const isTimeFilterActive = () => {
-    if (timeUnit === "months") return minMonths > 1 || maxMonths < 12;
-    if (timeUnit === "weeks") return minMonths > 1 || maxMonths < 24;
-    return minMonths > 1 || maxMonths < 90;
+    if (timeUnit === "months") return minMonths > 0 || maxMonths < 12;
+    if (timeUnit === "weeks") return minMonths > 0 || maxMonths < 24;
+    return minMonths > 0 || maxMonths < 90;
   };
   if (isTimeFilterActive()) {
     const unitLabel = timeUnit === "months" ? "Months" : timeUnit === "weeks" ? "Weeks" : "Days";
     pills.push({
       l: `${minMonths} - ${maxMonths} ${unitLabel}`,
       c: () => {
-        if (timeUnit === "months") { setMinMonths(1); setMaxMonths(12); }
-        else if (timeUnit === "weeks") { setMinMonths(1); setMaxMonths(24); }
-        else { setMinMonths(1); setMaxMonths(90); }
+        if (timeUnit === "months") { setMinMonths(0); setMaxMonths(12); }
+        else if (timeUnit === "weeks") { setMinMonths(0); setMaxMonths(24); }
+        else { setMinMonths(0); setMaxMonths(90); }
       }
     });
   }
@@ -194,7 +194,7 @@ export default function Internships() {
     setSkills([]);
     setSearch("");
     setTimeUnit("months");
-    setMinMonths(1);
+    setMinMonths(0);
     setMaxMonths(12);
     setSelectedRatings([]);
   };
@@ -498,8 +498,8 @@ export default function Internships() {
                 {/* Active track segment */}
                 <div style={{
                   position: "absolute",
-                  left: `${((minMonths - 1) / ((timeUnit === "months" ? 12 : timeUnit === "weeks" ? 24 : 90) - 1)) * 100}%`,
-                  right: `${100 - ((maxMonths - 1) / ((timeUnit === "months" ? 12 : timeUnit === "weeks" ? 24 : 90) - 1)) * 100}%`,
+                  left: `${(minMonths / (timeUnit === "months" ? 12 : timeUnit === "weeks" ? 24 : 90)) * 100}%`,
+                  right: `${100 - (maxMonths / (timeUnit === "months" ? 12 : timeUnit === "weeks" ? 24 : 90)) * 100}%`,
                   top: 0,
                   bottom: 0,
                   background: accent,
@@ -509,7 +509,7 @@ export default function Internships() {
                 {/* Overlay Inputs */}
                 <input
                   type="range"
-                  min="1"
+                  min="0"
                   max={timeUnit === "months" ? "12" : timeUnit === "weeks" ? "24" : "90"}
                   value={minMonths}
                   onChange={e => {
@@ -520,7 +520,7 @@ export default function Internships() {
                 />
                 <input
                   type="range"
-                  min="1"
+                  min="0"
                   max={timeUnit === "months" ? "12" : timeUnit === "weeks" ? "24" : "90"}
                   value={maxMonths}
                   onChange={e => {

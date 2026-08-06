@@ -10,7 +10,24 @@ The active AI provider is configured via the `.env` file using the `OCR_PROVIDER
 ## Base URL
 The API runs alongside the Django application or independently on the FastAPI port (typically `http://localhost:8000`).
 
+## Setup & Running
+
+The OCR service is a separate FastAPI application that needs to be run alongside the main Django backend.
+
+1. **Install Requirements**: Ensure your virtual environment is active and you have installed all dependencies from the backend `requirements.txt`:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. **Environment Variables**: Configure the AI provider in your `.env` file as described in the Configuration section above.
+
+3. **Run the Microservice**: Start the FastAPI server using Uvicorn on port `8001`. Run this command from the `backend` directory:
+   ```bash
+   uvicorn Fast_Api.Ocr.Ocr:app --host 127.0.0.1 --port 8001 --reload
+   ```
+
 ---
+
 
 ## Endpoints
 

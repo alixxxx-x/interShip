@@ -385,7 +385,7 @@ class InternshipListView(generics.ListAPIView):
         if user.is_authenticated and user.role == User.Role.STUDENT:
             student = getattr(user, 'student', None)
             if student:
-                from .services import calculate_skills_match, calculate_location_score
+                from .services import calculate_unified_relevance_score
                 
                 # Pre-fetch follows to optimize database queries
                 followed_company_ids = set(
@@ -393,27 +393,10 @@ class InternshipListView(generics.ListAPIView):
                     .values_list('company_id', flat=True)
                 )
                 
-                # Fetch student's CV skills and wilaya
-                student_skills_str = ""
-                student_wilaya = student.wilaya or ""
-                if hasattr(student, 'digital_cv') and student.digital_cv:
-                    student_skills_str = student.digital_cv.skills or ""
-                    if student.digital_cv.wilaya:
-                        student_wilaya = student.digital_cv.wilaya
-                
                 scored_internships = []
                 for internship in queryset:
-                    # 1. Skills Match (40%)
-                    skills_score = calculate_skills_match(student_skills_str, internship.internship_skills)
-                    
-                    # 2. Location Proximity (30%)
-                    location_score = calculate_location_score(student_wilaya, internship.wilaya, internship.internship_location)
-                    
-                    # 3. Follow Company Status (30%)
                     is_followed = internship.company_id in followed_company_ids
-                    follow_score = 30.0 if is_followed else 0.0
-                    
-                    relevance_score = round(skills_score + location_score + follow_score, 1)
+                    relevance_score = calculate_unified_relevance_score(student, internship, is_followed)
                     internship.relevance_score = relevance_score
                     scored_internships.append(internship)
                 
@@ -737,10 +720,33 @@ class StudentDashboardView(generics.GenericAPIView):
         student = getattr(request.user, 'student', None)
         applications = Application.objects.filter(student=student)
         
+        # Calculate profile completion from CV fields
+        profile_completion = 0
+        try:
+            cv = DigitalCV.objects.filter(student=student).first() if student else None
+        except Exception:
+            cv = None
+        if cv:
+            # Define fields and their weights (total = 100)
+            field_checks = [
+                (bool(cv.first_name and cv.first_name.strip()), 10),
+                (bool(cv.last_name and cv.last_name.strip()), 10),
+                (bool(cv.email and cv.email.strip()), 10),
+                (bool(cv.phone and cv.phone.strip()), 5),
+                (bool(cv.profile_summary and cv.profile_summary.strip()), 15),
+                (bool(cv.education and cv.education.strip()), 15),
+                (bool(cv.skills and cv.skills.strip() and cv.skills.strip() != '[]'), 15),
+                (bool(cv.experience and cv.experience.strip()), 10),
+                (bool(cv.languages and cv.languages.strip() and cv.languages.strip() != '[]'), 5),
+                (bool(cv.address and cv.address.strip()), 5),
+            ]
+            profile_completion = sum(weight for filled, weight in field_checks if filled)
+
         stats = {
             "pendingAplications": applications.filter(status=Application.Status.PENDING).count(),
             "acceptedApplications": applications.filter(status__in=[Application.Status.VALIDATED, Application.Status.COMPLETE]).count(),
             "totalApplications": applications.count(),
+            "profileCompletion": profile_completion,
         }
         
         # Recent applications (limit to 5)
@@ -1146,13 +1152,28 @@ class AdminStatsView(generics.GenericAPIView):
             match = next((item for item in apps_by_month if item["month"] == month), None)
             final_chart_data.append(match if match else {"month": month, "count": 0})
 
+        university_name = None
+        department_name = None
+        if request.user.role == User.Role.ADMIN_DEPT:
+            dept = getattr(request.user, 'admindept', None)
+            if dept and dept.department:
+                department_name = dept.department.name
+                if dept.department.university:
+                    university_name = dept.department.university.name
+        elif request.user.role == User.Role.ADMIN_UNIV:
+            admin_univ = getattr(request.user, 'adminuniv', None)
+            if admin_univ and hasattr(admin_univ, 'university') and admin_univ.university:
+                university_name = admin_univ.university.name
+
         return Response({
             "total_users": total_users,
             "total_students": total_students,
             "placed_students": placed_students,
             "unplaced_students": unplaced_students,
             "placement_rate": (placed_students / total_students * 100) if total_students > 0 else 0,
-            "apps_by_month": final_chart_data
+            "apps_by_month": final_chart_data,
+            "university_name": university_name,
+            "department_name": department_name
         })
 
 # Document generation views
@@ -1212,11 +1233,54 @@ class GenerateInternshipAgreementView(generics.GenericAPIView):
         # =========================
         # HTML TEMPLATE CONTEXT
         # =========================
+        # Format the duration nicely
+        duration_days = application.internship.internship_duration.days
+        if duration_days <= 0:
+            if application.internship.offer_start_date and application.internship.offer_end_date:
+                duration_days = (application.internship.offer_end_date - application.internship.offer_start_date).days
+        
+        if duration_days > 0:
+            if duration_days % 30 == 0:
+                duration_str = f"{duration_days // 30} mois"
+            elif duration_days % 7 == 0:
+                duration_str = f"{duration_days // 7} semaines"
+            else:
+                duration_str = f"{duration_days} jours"
+        else:
+            duration_str = "Non spécifiée"
+
+        student = application.student
+        student_name = f"{student.first_name} {student.last_name}".strip() or student.username or student.email
+        student_filename = student.first_name or student.username or "Etudiant"
+        
+        # Determine university details
+        university = getattr(student.department, 'university', None)
+        university_name = university.name if university else "Université"
+        
+        university_admin = getattr(university, 'admin', None) if university else None
+        if university_admin:
+            university_supervisor = f"{university_admin.first_name} {university_admin.last_name}".strip() or university_admin.username
+        else:
+            university_supervisor = "Le Recteur"
+            
+        university_phone = '0555555555'
+        university_email = university_admin.email if university_admin else (f"contact@{university.email_domain}" if university and university.email_domain else "admin@univ.edu")
+        university_wilaya = student.wilaya or "Sétif"
+        
+        faculty = student.department.name if student.department else "Faculté"
+        department = student.department.name if student.department else "Département"
+        student_phone = student.phone or 'Non spécifié'
+
         html_string = render_to_string(
             'internship_agreement.html', 
             {
-                'student_name': application.student.first_name,
-                'student_email': application.student.email,
+                'academic_year': '2025/2026',
+                
+                'student_name': student_name,
+                'student_email': student.email,
+                'student_phone': student_phone,
+                'faculty': faculty,
+                'department': department,
 
                 'company_name': application.internship.company.name,
                 'company_email': application.internship.company.email,
@@ -1226,19 +1290,23 @@ class GenerateInternshipAgreementView(generics.GenericAPIView):
                 'internship_theme': application.internship.title,
                 'start_date': application.internship.offer_start_date,
                 'end_date': application.internship.offer_end_date,
-                'duration': application.internship.duration,
+                'duration': duration_str,
 
-                'university_name': application.student.department.university.name,
+                'university_name': university_name,
+                'university_supervisor': university_supervisor,
+                'university_phone': university_phone,
+                'university_email': university_email,
+                'university_wilaya': university_wilaya,
             }
         )
 
         # =========================
         # PDF GENERATION (xhtml2pdf)
         # =========================
-        result = io.BytesIO()
+        result = BytesIO()
 
         pdf = pisa.pisaDocument(
-            io.BytesIO(html_string.encode("UTF-8")),
+            BytesIO(html_string.encode("UTF-8")),
             result
         )
 
@@ -1253,7 +1321,7 @@ class GenerateInternshipAgreementView(generics.GenericAPIView):
         # =========================
         response = HttpResponse(result.getvalue(), content_type='application/pdf')
         response['Content-Disposition'] = (
-            f'attachment; filename="Convention_{application.student.first_name}.pdf"'
+            f'attachment; filename="Convention_{student_filename}.pdf"'
         )
 
         return response
@@ -1275,9 +1343,12 @@ class GenerateInternshipCertificateView(generics.GenericAPIView):
         # Refresh application from database to get latest state
         application.refresh_from_db()
 
-        if application.status != Application.Status.COMPLETE:
+        internship_is_finished = application.internship.status == InternshipOffer.Status.FINISHED
+        application_is_complete = application.status == Application.Status.COMPLETE
+
+        if not application_is_complete and not internship_is_finished:
             return Response(
-                {"error": "Certificate is available only after internship completion."},
+                {"error": "Certificate is available only after internship completion or when the internship is finished."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -1764,9 +1835,6 @@ class FollowedCompaniesInternshipsView(generics.ListAPIView):
 import uuid
 from datetime import timedelta
 from django.utils import timezone
-
-def _generate_unique_matricule():
-    return f"MAT-{str(uuid.uuid4()).upper()[:8]}"
 
 class AdminPendingCompaniesView(generics.ListAPIView):
     """
